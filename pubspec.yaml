@@ -35,7 +35,7 @@ dependencies:
   flutter_form_builder: ^7.7.0
   http: ^0.13.5
   get_storage: ^2.0.3
-  image_picker: ^0.8.6+1
+  image_picker: ^0.8.7
   geolocator: any
   flutter_map: any
   flutter_map_marker_cluster: any
