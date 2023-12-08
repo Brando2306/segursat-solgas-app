@@ -209,6 +209,81 @@ void notificationInfo(BuildContext context, String content, Function callBack) {
   );
 }
 
+void notificationInfoWithoutWillPopScope({
+  required BuildContext context,
+  required String content,
+  required Function callBack,
+  bool onWillPop = false,
+  bool barrierDismissible = false,
+}) {
+  showDialog(
+    barrierDismissible: barrierDismissible,
+    context: context,
+    builder: (BuildContext context) {
+      return WillPopScope(
+        onWillPop: () async => onWillPop,
+        child: Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: Colors.white,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded, // Ícono de aviso
+                  color: Colors.orange, // Color de aviso
+                  size: 40,
+                ),
+                SizedBox(height: 10),
+                Text(
+                  "Aviso",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange, // Color de aviso
+                  ),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  content,
+                  style: TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context, rootNavigator: true).pop();
+                    callBack();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: Colors.orange, // Color de aviso
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      'Aceptar',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
 notificationConfirmation(context, Widget? content, Function function) {
   showDialog(
     barrierDismissible: false,

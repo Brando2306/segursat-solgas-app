@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:floating/floating.dart';
 import 'package:flutter/foundation.dart';
@@ -19,6 +20,7 @@ import 'package:safe_driving_app/widgets/next_button.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SpeedometerPage extends StatefulWidget {
   const SpeedometerPage({super.key});
@@ -403,14 +405,14 @@ class _SpeedometerPageState extends State<SpeedometerPage>
     try {
       String? rootType = readStorage('root.type');
 
-      print(rootType);
+      log(rootType ?? '');
 
       if (rootType == null) {
         response = await finishRouteProvider();
-        print('finishRouteProvider.response: $response');
+        log('finishRouteProvider.response: $response');
       } else {
         response = await cancelRouteProvider();
-        print('cancelRouteProvider.response: $response');
+        log('cancelRouteProvider.response: $response');
       }
 
       if (response['status'] == STATUSCODE.OK) {
@@ -491,39 +493,56 @@ class _SpeedometerPageState extends State<SpeedometerPage>
     showDialog(
       barrierDismissible: false,
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext contextDialog) {
         return AlertDialog(
           title: Text(
-            "Confirmación",
+            "Emergencia",
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Color.fromARGB(255, 9, 43, 145),
             ),
           ),
-          content: Text('Está seguro que quiere finalizar la ruta.'),
+          content: Text('¿Desea comunicarse con el área de Emergencia y terminar su ruta?'),
           actions: <Widget>[
             ElevatedButton(
-              onPressed: () {
-                Navigator.of(context, rootNavigator: true).pop();
-                writeStorage('root.type', ROOT_TYPE.SOS);
-                stopLocationUpdates();
-                Navigator.pushNamed(context, '/root/finish');
+              onPressed: () async {
+                Navigator.of(contextDialog, rootNavigator: true).pop();
+                await callEmergecyPhone();
+                await finishRoute(context);
               },
               style: ElevatedButton.styleFrom(primary: Colors.green),
-              child: Text('Confirmar'),
+              child: Text('Sí'),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
               },
               style: ElevatedButton.styleFrom(primary: Colors.deepOrange),
-              child: Text('Cerrar'),
+              child: Text('No'),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> callEmergecyPhone() async {
+    EasyLoading.show(status: 'Obteniendo número de emergencia...');
+
+    writeStorage('root.type', ROOT_TYPE.SOS);
+
+    final response = await getEmergencyNumber();
+
+    if (response['status'] == STATUSCODE.OK) {
+      final url = Uri(scheme: 'tel', path: response['emergency_phone']);
+
+      if (await canLaunchUrl(url)) {
+        launchUrl(url);
+      }
+    }
+
+    EasyLoading.dismiss();
   }
 
   Column alertButton(context) {

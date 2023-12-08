@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -206,10 +207,9 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
       margin: EdgeInsets.fromLTRB(getWidth(context, 5), getHeight(context, 2),
           getWidth(context, 5), getHeight(context, 2)),
       child: Column(children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: const [Text(SESION.LABEL_DOCUMENTINPUT)],
-        ),
+        Row(mainAxisAlignment: MainAxisAlignment.start, children: const [
+          Expanded(child: Text(SESION.LABEL_DOCUMENTINPUT, maxLines: 3))
+        ]),
         SizedBox(height: getHeight(context, 1)),
         documentInput(context),
         SizedBox(height: getHeight(context, 2)),
@@ -334,6 +334,8 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
       'Authorization': ENDPOINTS.auth(),
     });
 
+    log('url session_page response.body');
+
     return json.decode(response.body);
   }
 
@@ -415,6 +417,7 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
             // FLUJO CONTINUAR RUTA
           } else {
             await writeStorage('personal.lastRoute', unit['last_route']);
+            await writeStorage('root.createRoute.id', unit['last_route']);
             await writeStorage(
                 'personal.lastRouteStatus', unit['last_route_status']);
 
@@ -422,19 +425,24 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
 
             EasyLoading.dismiss();
 
-            notificationInfo(context,
-                'Tienes una ruta activa en curso.\nPor favor, completa la ruta antes de iniciar una nueva.',
-                () async {
-              print('validation $validation');
+            notificationInfoWithoutWillPopScope(
+              context: context,
+              onWillPop: true,
+              barrierDismissible: true,
+              content:
+                  'Tienes una ruta activa en curso.\nPor favor, completa la ruta antes de iniciar una nueva.',
+              callBack: () async {
+                print('validation $validation');
 
-              if (validation) {
-                await writeStorage('personal.pushRouteSpeedometer', true);
-                await validationResume();
-              } else {
-                await writeStorage('sesionPageValidation', true);
-                showLocationSettingsDialog(context);
-              }
-            });
+                if (validation) {
+                  await writeStorage('personal.pushRouteSpeedometer', true);
+                  await validationResume();
+                } else {
+                  await writeStorage('sesionPageValidation', true);
+                  showLocationSettingsDialog(context);
+                }
+              },
+            );
           }
         } else {
           setState(() {

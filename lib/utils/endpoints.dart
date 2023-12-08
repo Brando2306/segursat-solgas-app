@@ -19,6 +19,7 @@ class ENDPOINTS {
   static const String GET_LOCATION = 'web/api/control/get-location/';
   static const String FINISH_ROUTE = 'web/api/control/finish-route/';
   static const String CANCEL_ROUTE = 'web/api/control/cancel-route/';
+  static const String EMERGENCY_PHONE = 'web/api/control/get-emergency-phone/';
 
   static auth() {
     var credentials = base64Encode(
