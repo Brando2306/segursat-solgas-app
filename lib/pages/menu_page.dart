@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -183,6 +184,8 @@ class _MenuPageState extends State<MenuPage> {
       "Content-Type": "application/json",
       'Authorization': ENDPOINTS.auth(),
     });
+
+    log('url menu_page response.body ${response.body}');
 
     if (response.statusCode != STATUSCODE.OK) {
       return false;

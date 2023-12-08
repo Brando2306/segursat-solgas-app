@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:geolocator/geolocator.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/utils/constants.dart';
@@ -104,12 +105,25 @@ Future<Map<String, dynamic>> finishRouteProvider() async {
     "time": readStorage('root.cronometer') ?? 0
   });
 
-  print('finishRouteProvider.body: $body');
+  log('finishRouteProvider.body: $body');
 
   var response = await http.post(urlAuth, body: body, headers: {
     "Content-Type": "application/json",
     "Authorization": ENDPOINTS.auth()
   });
+
+  return formatResponse(response);
+}
+
+Future<Map<String, dynamic>> getEmergencyNumber() async {
+  Uri urlAuth = Uri.http(ENDPOINTS.HOST, ENDPOINTS.EMERGENCY_PHONE);
+
+  var response = await http.get(urlAuth, headers: {
+    "Content-Type": "application/json",
+    "Authorization": ENDPOINTS.auth()
+  });
+
+  log(response.toString());
 
   return formatResponse(response);
 }
