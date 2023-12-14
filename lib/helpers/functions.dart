@@ -256,24 +256,50 @@ void notificationInfoWithoutWillPopScope({
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context, rootNavigator: true).pop();
-                    callBack();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    primary: Colors.orange, // Color de aviso
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context, rootNavigator: true).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Padding(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Text(
+                          'No',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Text(
-                      'Aceptar',
-                      style: TextStyle(fontSize: 16),
+                    SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context, rootNavigator: true).pop();
+                        callBack();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange, // Color de aviso
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Padding(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Text(
+                          'Sí, recuperar',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),

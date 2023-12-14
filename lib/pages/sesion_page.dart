@@ -430,7 +430,7 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
               onWillPop: true,
               barrierDismissible: true,
               content:
-                  'Tienes una ruta activa en curso.\nPor favor, completa la ruta antes de iniciar una nueva.',
+                  'Tienes una ruta activa en curso.\n¿Deseas recuperar la ruta?',
               callBack: () async {
                 print('validation $validation');
 
