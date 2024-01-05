@@ -1,11 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
-import 'package:safe_driving_app/helpers/gps.dart';
-import 'package:safe_driving_app/providers/index.dart';
-import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/inspection/index.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/style.dart';

@@ -206,29 +206,37 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
     return Container(
       margin: EdgeInsets.fromLTRB(getWidth(context, 5), getHeight(context, 2),
           getWidth(context, 5), getHeight(context, 2)),
-      child: Column(children: [
-        Row(mainAxisAlignment: MainAxisAlignment.start, children: const [
-          Expanded(child: Text(SESION.LABEL_DOCUMENTINPUT, maxLines: 3))
-        ]),
-        SizedBox(height: getHeight(context, 1)),
-        documentInput(context),
-        SizedBox(height: getHeight(context, 2)),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: const [Text(SESION.LABEL_LICENSEPLATE)],
-        ),
-        SizedBox(height: getHeight(context, 1)),
-        licensePlateInput(context),
-        SizedBox(height: getHeight(context, 2)),
-        ElevatedButton(
-          onPressed: () async {
-            if (_submitValidation) {
-              await submit(context);
-            }
-          },
-          child: const Text('Validar información'),
-        )
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(mainAxisAlignment: MainAxisAlignment.start, children: const [
+            Expanded(child: Text(SESION.LABEL_DOCUMENTINPUT, maxLines: 3))
+          ]),
+          SizedBox(height: getHeight(context, 1)),
+          documentInput(context),
+          SizedBox(height: getHeight(context, 2)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: const [Text(SESION.LABEL_LICENSEPLATE)],
+          ),
+          SizedBox(height: getHeight(context, 1)),
+          licensePlateInput(context),
+          SizedBox(height: getHeight(context, 1)),
+          Text('*Ingresar la placa con guión, por ejemplo: ABC-123',
+              style: TextStyle(color: Colors.black87)),
+          SizedBox(height: getHeight(context, 2)),
+          Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                if (_submitValidation) {
+                  await submit(context);
+                }
+              },
+              child: const Text('Validar información'),
+            ),
+          )
+        ],
+      ),
     );
   }
 
