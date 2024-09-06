@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
-import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/endpoints.dart';
 import 'package:http/http.dart' as http;
 import 'package:safe_driving_app/utils/root/index.dart';
@@ -124,6 +124,27 @@ Future<Map<String, dynamic>> getEmergencyNumber() async {
   });
 
   log(response.toString());
+
+  return formatResponse(response);
+}
+
+Future<Map<String, dynamic>> postInsertRouteSos() async {
+  Uri urlAuth = Uri.http(ENDPOINTS.HOST, ENDPOINTS.INSERT_ROUTE_SOS);
+
+  Position position = await Geolocator.getCurrentPosition();
+
+  String body = json.encode([{
+    "routeid": readStorage('root.createRoute.id'),
+    "unitid": readStorage('personal.unitId'),
+    "timestamp": getDate(),
+    "latitude": position.latitude,
+    "longitude": position.longitude,
+  }]);
+
+  Response response = await http.post(urlAuth, body: body, headers: {
+    "Content-Type": "application/json",
+    "Authorization": ENDPOINTS.auth()
+  });
 
   return formatResponse(response);
 }

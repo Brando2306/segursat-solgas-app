@@ -31,6 +31,7 @@ class _SeatbeltPageState extends State<SeatbeltPage> {
 
   @override
   Widget build(BuildContext context) {
+    Size size = MediaQuery.of(context).size;
     return WillPopScope(
       onWillPop: (() async => false),
       child: Scaffold(
@@ -48,9 +49,10 @@ class _SeatbeltPageState extends State<SeatbeltPage> {
                 padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
                 height: getHeight(context, 55),
                 child: FadeInImage(
-                    placeholder: AssetImage('assets/images/seatbelt.png'),
+                    width: size.width * 0.8,
+                    placeholder: AssetImage('assets/images/seatbelt2.png'),
                     image:
-                        fileImage ?? AssetImage('assets/images/seatbelt.png')),
+                        fileImage ?? AssetImage('assets/images/seatbelt2.png')),
               ),
               SizedBox(
                 height: getHeight(context, 2),

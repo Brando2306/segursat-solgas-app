@@ -359,9 +359,7 @@ console(String e) {
 }
 
 int getDate() {
-  DateTime fechaHoraActual =
-      DateTime.now().toUtc().add(const Duration(hours: -5));
-
+  DateTime fechaHoraActual = DateTime.now().toUtc();
   double result = fechaHoraActual.millisecondsSinceEpoch / 1000;
   return result.toInt();
 }

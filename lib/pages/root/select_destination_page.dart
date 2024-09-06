@@ -36,7 +36,9 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
       altitude: 0,
       heading: 0,
       speed: 0,
-      speedAccuracy: 0);
+      speedAccuracy: 0,
+      altitudeAccuracy: 0,
+      headingAccuracy: 0);
 
   bool blockIconMovePosition = false;
   bool blockNextButton = false;
@@ -242,7 +244,9 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
           altitude: 0,
           heading: 0,
           speed: 0,
-          speedAccuracy: 0);
+          speedAccuracy: 0,
+          altitudeAccuracy: 0,
+          headingAccuracy: 0);
 
       blockNextButton = true;
       blockIconMovePosition = true;
@@ -319,14 +323,17 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
                     }
 
                     position = Position(
-                        longitude: double.parse(raw[1].trim()),
-                        latitude: double.parse(raw[0].trim()),
-                        timestamp: null,
-                        accuracy: 0,
-                        altitude: 0,
-                        heading: 0,
-                        speed: 0,
-                        speedAccuracy: 0);
+                      longitude: double.parse(raw[1].trim()),
+                      latitude: double.parse(raw[0].trim()),
+                      timestamp: null,
+                      accuracy: 0,
+                      altitude: 0,
+                      heading: 0,
+                      speed: 0,
+                      speedAccuracy: 0,
+                      altitudeAccuracy: 0,
+                      headingAccuracy: 0,
+                    );
 
                     setState(() {
                       map.move(
@@ -420,7 +427,9 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
                   altitude: 0,
                   heading: 0,
                   speed: 0,
-                  speedAccuracy: 0);
+                  speedAccuracy: 0,
+                  altitudeAccuracy: 0,
+                  headingAccuracy: 0);
 
               setState(() {
                 map.move(LatLng(position.latitude, position.longitude), 18);

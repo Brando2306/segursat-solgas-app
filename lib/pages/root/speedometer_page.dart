@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:floating/floating.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +16,7 @@ import 'package:safe_driving_app/providers/index.dart';
 import 'package:safe_driving_app/providers/route.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/endpoints.dart';
+import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/style.dart';
 import 'package:safe_driving_app/widgets/next_button.dart';
@@ -45,6 +48,10 @@ class _SpeedometerPageState extends State<SpeedometerPage>
   // Cromometer
   Duration _currentTime = Duration.zero;
   late Timer _timer;
+
+  late Timer _dataSendTimer;
+
+  late Timer _timerForInternetCheck;
 
   bool buttonFinish = true;
   @override
@@ -95,28 +102,27 @@ class _SpeedometerPageState extends State<SpeedometerPage>
             'longitude': position.longitude
           }));
 
-      if (readStorage('root.createRoute.id') != null) {
-        // var finalPosition = json.decode(readStorage('root.finalPosition'));
+      // if (readStorage('root.createRoute.id') != null) {
+      //   // var finalPosition = json.decode(readStorage('root.finalPosition'));
+      //   final object = {
+      //     "routeid": readStorage('root.createRoute.id'),
+      //     "timestamp": getDate(),
+      //     "latitude": position.latitude,
+      //     "longitude": position.longitude,
+      //     "altitude": position.altitude,
+      //     "speed": position.speed.round(),
+      //     "angle": _currentTime.inSeconds,
+      //     // "attributes": json.encode({
+      //     //   'rootFinalPosition': {
+      //     //     'latitude': finalPosition['latitude'],
+      //     //     'longitude': finalPosition['longitude']
+      //     //   }
+      //     // }),
+      //     "unitid": readStorage('personal.unitId')
+      //   };
 
-        await registerPositions([
-          {
-            "routeid": readStorage('root.createRoute.id'),
-            "timestamp": getDate(),
-            "latitude": position.latitude,
-            "longitude": position.longitude,
-            "altitude": position.altitude,
-            "speed": position.speed.round(),
-            "angle": _currentTime.inSeconds,
-            // "attributes": json.encode({
-            //   'rootFinalPosition': {
-            //     'latitude': finalPosition['latitude'],
-            //     'longitude': finalPosition['longitude']
-            //   }
-            // }),
-            "unitid": readStorage('personal.unitId')
-          }
-        ]);
-      }
+      //   await registerPositions(object);
+      // }
 
       setState(() => _value = position.speed * 3.6);
 
@@ -127,6 +133,101 @@ class _SpeedometerPageState extends State<SpeedometerPage>
     _initialize();
 
     printStorage();
+
+    attemptToSendPosition();
+    _dataSendTimer = Timer.periodic(
+        Duration(seconds: 10), (Timer timer) => attemptToSendPosition());
+
+    // checkConnectivity();
+    // handleConnectivityCheck(); // Comprobación inicial
+    checkConnectivity();
+    _timerForInternetCheck =
+        Timer.periodic(Duration(seconds: 10), (Timer timer) {
+      checkConnectivity(); // Comprobaciones periódicas
+    });
+  }
+
+  // Método para verificar la conectividad y reintentar el envío
+  void checkConnectivity() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult != ConnectivityResult.none) {
+      log('=== CONNECTION SUCCESS ===');
+      retrySendingStoredPositions();
+    } else {
+      log('=== CONNECTION FAILED ===');
+    }
+
+    // Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+    //   if (result != ConnectivityResult.none) {
+    //     retrySendingStoredPositions();
+    //     log('LISTEN === hay conexion');
+    //   } else {
+    //     log('LISTEN === NO HAY conexion');
+    //   }
+    // });
+  }
+
+  // void handleConnectivityCheck() async {
+  //   bool isConnected = await checkInternetConnection();
+  //   if (isConnected) {
+  //     retrySendingStoredPositions();
+  //     log('Hay conexión a Internet');
+  //   } else {
+  //     log('No hay conexión a Internet');
+  //   }
+  // }
+
+  // Future<bool> checkInternetConnection() async {
+  //   try {
+  //     final result =
+  //         await http.get(Uri.parse('https://www.google.com')).timeout(
+  //               Duration(seconds: 5),
+  //             );
+  //     return result.statusCode == 200;
+  //   } catch (e) {
+  //     return false;
+  //   }
+  // }
+
+  void attemptToSendPosition() async {
+    Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
+
+    Map<String, dynamic> positionData = {
+      // "id": 17312,
+      // "datetime": "11/12/2023 10:00:38",
+      "unitid": readStorage('personal.unitId'),
+      "routeid": readStorage('root.createRoute.id'),
+      // "unit_name": "APO-988",
+      "timestamp": getDate(),
+      "latitude": position.latitude,
+      "longitude": position.longitude,
+      "altitude": position.altitude,
+      "speed": position.speed.round(),
+      "angle": _currentTime.inSeconds,
+      // "atributes": {},
+      // "address": ""
+    };
+
+    try {
+      await createRoutePositions([positionData]);
+    } catch (e) {
+      savePositionLocally(positionData);
+    }
+  }
+
+  void savePositionLocally(Map<String, dynamic> positionData) async {
+    log(' === REQUEST FAILED === ');
+
+    List<String>? savedPositions =
+        readStorage('savedPositions')?.cast<String>();
+
+    if (savedPositions == null || savedPositions.isEmpty) {
+      savedPositions = [];
+    }
+    savedPositions.add(json.encode(positionData));
+    writeStorage('savedPositions', savedPositions);
+    log('length === ${savedPositions.length}');
   }
 
   void createOrResumeRoute() async {
@@ -188,6 +289,132 @@ class _SpeedometerPageState extends State<SpeedometerPage>
 
   @override
   Widget build(BuildContext context) {
+    if (Platform.isIOS) {
+      return WillPopScope(
+          onWillPop: () async => false,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text('Velocímetro',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  )),
+              centerTitle: true,
+              elevation: 0.0,
+              backgroundColor: Colors.white,
+              leading: Container(),
+            ),
+            body: Column(
+              children: [
+                SizedBox(
+                  height: getHeight(context, 3),
+                ),
+                Row(children: [
+                  Expanded(child: Container()),
+                  alertButton(context),
+                  Expanded(child: Container()),
+                  stopButton(),
+                  Expanded(child: Container()),
+                ]),
+                Expanded(child: Container()),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                        // '${time.day}/${time.month}/${time.year} ${time.hour}:${time.minute}:${time.second}',
+                        DateFormat('dd/MM/yyyy HH:mm:ss').format(time),
+                        style: TextStyle(
+                            fontSize: 25,
+                            fontFamily: 'Roboto',
+                            fontWeight: FontWeight.bold))
+                  ],
+                ),
+                Expanded(child: Container()),
+                sfRadialGauge(),
+                Expanded(child: Container()),
+                nextButton(
+                    context, 'Realizar parada', '/root/controlStop', true, () {
+                  stopLocationUpdates();
+                }, 11),
+                SizedBox(
+                  height: getHeight(context, 3),
+                ),
+                // nextButton(context, 'Finalizar ruta', '/root/finish', true,
+                //     () async {
+                //   stopLocationUpdates();
+                //   try {
+                //     Map<String, dynamic> currentPosition =
+                //         json.decode(readStorage('root.currentPosition'));
+                //     Map<String, dynamic> finalPosition =
+                //         json.decode(readStorage('root.finalPosition'));
+
+                //     int metros = calcularDistanciaEnMetros(
+                //         currentPosition['latitude'],
+                //         currentPosition['longitude'],
+                //         finalPosition['latitude'],
+                //         finalPosition['longitude']);
+
+                //     if (metros < 100) {
+                //       await finishRoute(context);
+                //     } else {
+                //       showConfirmationDialog(context);
+                //     }
+                //   } catch (e) {
+                //     notificationError(context, e.toString());
+                //   }
+                // }, null),
+                MaterialButton(
+                  onPressed: () async {
+                    try {
+                      Map<String, dynamic> currentPosition =
+                          json.decode(readStorage('root.currentPosition'));
+                      Map<String, dynamic> finalPosition =
+                          json.decode(readStorage('root.finalPosition'));
+
+                      int metros = calcularDistanciaEnMetros(
+                          currentPosition['latitude'],
+                          currentPosition['longitude'],
+                          finalPosition['latitude'],
+                          finalPosition['longitude']);
+
+                      if (metros < 100) {
+                        await finishRoute(context);
+                      } else {
+                        showConfirmationDialog(context);
+                      }
+                    } catch (e) {
+                      notificationError(context, e.toString());
+                    }
+                    // if (validation) {
+                    //   function();
+                    //   if (route != null) {
+                    //     Navigator.pushNamed(context, route);
+                    //   }
+                    // }
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  color: buttonFinish
+                      ? CustomColors.primary
+                      : CustomColors.primaryOff,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: getHeight(context, 12), vertical: 16),
+                    child: Text(
+                      'Finalizar ruta',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: getHeight(context, 3),
+                )
+              ],
+            ),
+          ));
+    }
     return PiPSwitcher(
         childWhenEnabled: sfRadialGaugeMin(),
         childWhenDisabled: WillPopScope(
@@ -455,6 +682,10 @@ class _SpeedometerPageState extends State<SpeedometerPage>
     _timer.cancel();
 
     _timerDateNow.cancel();
+
+    _dataSendTimer.cancel();
+
+    _timerForInternetCheck.cancel();
   }
 
   setLocationSettings() {
@@ -503,11 +734,20 @@ class _SpeedometerPageState extends State<SpeedometerPage>
               color: Color.fromARGB(255, 9, 43, 145),
             ),
           ),
-          content: Text('¿Desea comunicarse con el área de Emergencia y terminar su ruta?'),
+          content: Text(
+              '¿Desea comunicarse con el área de Emergencia y terminar su ruta?'),
           actions: <Widget>[
             ElevatedButton(
               onPressed: () async {
                 Navigator.of(contextDialog, rootNavigator: true).pop();
+
+                // Intentar enviar la notificación SOS con un tiempo de espera de 5 segundos.
+                try {
+                  await sendCallNotification().timeout(Duration(seconds: 5));
+                } catch (e) {
+                  log('Error al enviar notificación SOS: $e');
+                }
+
                 await callEmergecyPhone();
                 await finishRoute(context);
               },
@@ -525,6 +765,24 @@ class _SpeedometerPageState extends State<SpeedometerPage>
         );
       },
     );
+  }
+
+  Future<void> sendCallNotification() async {
+    EasyLoading.show(status: 'Enviando notificación del evento...');
+
+    try {
+      final response = await postInsertRouteSos().timeout(Duration(seconds: 5));
+
+      if (response['status'] == STATUSCODE.OK) {
+        // Manejo exitoso
+      } else {
+        Snackbars.showSnackbarError('No se pudo notificar el evento');
+      }
+    } catch (e) {
+      Snackbars.showSnackbarError('Error al enviar notificación SOS: $e');
+    }
+
+    EasyLoading.dismiss();
   }
 
   Future<void> callEmergecyPhone() async {
@@ -800,30 +1058,84 @@ class _SpeedometerPageState extends State<SpeedometerPage>
     ]);
   }
 
-  registerPositions(List<Map<String, dynamic>> body) async {
-    try {
-      print('registerPositions.body ==> $body');
-      var register = await createRoutePositions(body);
+  // registerPositions(Map<String, dynamic> body) async {
+  //   try {
+  //     print('registerPositions.body ==> $body');
+  //     var register = await createRoutePositions(body);
 
-      print('registerPositions ==> $register');
-    } catch (e) {
-      print('registerPositions.error: $e');
-    }
-  }
+  //     print('registerPositions ==> $register');
+  //   } catch (e) {
+  //     print('registerPositions.error: $e');
+  //   }
+  // }
 
   Future<Map<String, dynamic>> createRoutePositions(
-      List<Map<String, dynamic>> body) async {
-    var url = Uri.http(ENDPOINTS.HOST, ENDPOINTS.CREATE_ROUTE_POSITIONS);
+      List<Map<String, dynamic>> positionsList) async {
+    Uri url = Uri.parse(
+        'http://sfdev.segursat.com/web/api/control/insert-route-positions-batch/');
 
-    var response = await http.post(url,
-        headers: {
-          "Content-Type": "application/json",
-          'Authorization': ENDPOINTS.auth(),
-        },
-        body: json.encode(body));
+    final body = jsonEncode(positionsList);
 
-    if (response.statusCode == STATUSCODE.OK) return json.decode(response.body);
+    var response = await http.post(
+      url,
+      body: body,
+      headers: {
+        "Content-Type": "application/json",
+        'Authorization': ENDPOINTS.auth(),
+      },
+    );
+
+    if (response.statusCode == STATUSCODE.OK) {
+      log(' === REQUEST OK === ');
+      return json.decode(response.body);
+    }
 
     return {};
+  }
+
+  Future<void> retrySendingStoredPositions() async {
+    List<String>? savedPositions =
+        readStorage('savedPositions')?.cast<String>();
+
+    const int batchSize = 25;
+
+    if (savedPositions != null && savedPositions.isNotEmpty) {
+      try {
+        log(' === REENVIANDO POSICIONES AL REQUEST === ${savedPositions.length}');
+        // Divide las posiciones guardadas en lotes
+        for (int i = 0; i < savedPositions.length; i += batchSize) {
+          int end = (i + batchSize < savedPositions.length)
+              ? i + batchSize
+              : savedPositions.length;
+          List<Map<String, dynamic>> positionsList = savedPositions
+              .sublist(i, end)
+              .map((position) => json.decode(position) as Map<String, dynamic>)
+              .toList();
+
+          log(' === ENVIANDO POR LOTES AL REQUEST === ${positionsList.length}');
+
+          // Intenta enviar este lote de posiciones
+          await createRoutePositions(positionsList);
+        }
+        log(' === LIMPIANDO POSICIONES === ');
+        // Si todos los lotes se han enviado con éxito, limpia el almacenamiento local
+        writeStorage('savedPositions', []);
+      } catch (e) {
+        // Si hay un error, mantén los datos en el almacenamiento para reintentar más tarde
+        log(' === ERROR AL ENVIAR LISTA DE POSICIONES AL REQUEST === ');
+
+        // Hacemos un cast explícito después de decodificar el JSON
+        List<Map<String, dynamic>> positionsList = savedPositions
+            .map((position) => json.decode(position) as Map<String, dynamic>)
+            .toList();
+
+        // Convierte cada posición a una cadena JSON y vuelve a guardar la lista
+        List<String> failedPositions =
+            positionsList.map((position) => json.encode(position)).toList();
+
+        writeStorage('savedPositions', failedPositions);
+        log(' === POSICIONES GUARDADAS NUEVAMENTE EN EL STORAGE === ');
+      }
+    }
   }
 }
