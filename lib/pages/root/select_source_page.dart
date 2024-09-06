@@ -31,7 +31,9 @@ class _SelectSourcePageState extends State<SelectSourcePage> {
       altitude: 0,
       heading: 0,
       speed: 0,
-      speedAccuracy: 0);
+      speedAccuracy: 0,
+      altitudeAccuracy: 0,
+      headingAccuracy: 0);
 
   bool blockIconMovePosition = false;
   bool blockNextButton = false;

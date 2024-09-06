@@ -24,6 +24,7 @@ import 'package:safe_driving_app/pages/sesion_page.dart';
 import 'package:safe_driving_app/pages/start_page.dart';
 import 'package:safe_driving_app/pages/statement_page.dart';
 import 'package:safe_driving_app/services/notification_services.dart';
+import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
@@ -114,6 +115,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         '/maintance/finish': (context) => FinishMaintancePage(),
       },
       builder: EasyLoading.init(),
+      scaffoldMessengerKey: Snackbars.messengerKey,
     );
   }
 }

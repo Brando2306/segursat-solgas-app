@@ -16,6 +16,7 @@ import 'package:safe_driving_app/providers/index.dart';
 import 'package:safe_driving_app/providers/route.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/endpoints.dart';
+import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/style.dart';
 import 'package:safe_driving_app/widgets/next_button.dart';
@@ -191,7 +192,7 @@ class _SpeedometerPageState extends State<SpeedometerPage>
   void attemptToSendPosition() async {
     Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high);
-        
+
     Map<String, dynamic> positionData = {
       // "id": 17312,
       // "datetime": "11/12/2023 10:00:38",
@@ -739,6 +740,14 @@ class _SpeedometerPageState extends State<SpeedometerPage>
             ElevatedButton(
               onPressed: () async {
                 Navigator.of(contextDialog, rootNavigator: true).pop();
+
+                // Intentar enviar la notificación SOS con un tiempo de espera de 5 segundos.
+                try {
+                  await sendCallNotification().timeout(Duration(seconds: 5));
+                } catch (e) {
+                  log('Error al enviar notificación SOS: $e');
+                }
+
                 await callEmergecyPhone();
                 await finishRoute(context);
               },
@@ -756,6 +765,24 @@ class _SpeedometerPageState extends State<SpeedometerPage>
         );
       },
     );
+  }
+
+  Future<void> sendCallNotification() async {
+    EasyLoading.show(status: 'Enviando notificación del evento...');
+
+    try {
+      final response = await postInsertRouteSos().timeout(Duration(seconds: 5));
+
+      if (response['status'] == STATUSCODE.OK) {
+        // Manejo exitoso
+      } else {
+        Snackbars.showSnackbarError('No se pudo notificar el evento');
+      }
+    } catch (e) {
+      Snackbars.showSnackbarError('Error al enviar notificación SOS: $e');
+    }
+
+    EasyLoading.dismiss();
   }
 
   Future<void> callEmergecyPhone() async {
