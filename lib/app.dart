@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:safe_driving_app/pages/inspection/accessories_page.dart';
@@ -25,7 +26,6 @@ import 'package:safe_driving_app/pages/start_page.dart';
 import 'package:safe_driving_app/pages/statement_page.dart';
 import 'package:safe_driving_app/services/notification_services.dart';
 import 'package:safe_driving_app/utils/snackbars.dart';
-import 'package:safe_driving_app/utils/storage.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 class MyApp extends StatefulWidget {
@@ -41,8 +41,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.initState();
 
     WidgetsBinding.instance.addObserver(this);
-
-    cleanAll();
   }
 
   @override
@@ -57,9 +55,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
     await initNotifications();
 
-    runApp(MaterialApp(
-      home: LoadPage(),
-    ));
+    runApp(
+      MaterialApp(
+        home: LoadPage(),
+      ),
+    );
   }
 
   @override
@@ -67,18 +67,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
     switch (state) {
       case AppLifecycleState.paused:
-        debugPrint('app paused');
+        log('==> MyApp: ${AppLifecycleState.paused}');
         break;
       case AppLifecycleState.resumed:
-        print('==> MyApp: ${AppLifecycleState.resumed}');
-
+        log('==> MyApp: ${AppLifecycleState.resumed}');
         break;
       case AppLifecycleState.inactive:
-        debugPrint('app inactive');
-        // cleanAll();
+        log('==> MyApp: ${AppLifecycleState.inactive}');
         break;
       case AppLifecycleState.detached:
-        debugPrint('app detached');
+        log('==> MyApp: ${AppLifecycleState.detached}');
         break;
     }
   }
@@ -88,7 +86,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Safe Driving App',
-      initialRoute: '/', //Ruta inicial
+      initialRoute: '/',
       routes: {
         '/': (context) => LoadPage(),
         '/startPage': (context) => StartPage(),

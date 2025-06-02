@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:safe_driving_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/style.dart';
@@ -12,7 +14,6 @@ class StatementPage extends StatefulWidget {
 }
 
 class _StatementPageState extends State<StatementPage> {
-  bool _checkSelected = false;
   @override
   void initState() {
     super.initState();
@@ -20,19 +21,25 @@ class _StatementPageState extends State<StatementPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
     return WillPopScope(
       onWillPop: () async => false,
       child: Scaffold(
-        // extendBodyBehindAppBar: true,
-        // backgroundColor: Colors.white,
+        backgroundColor: Colors.white,
         appBar: header(context),
         body: Column(children: [
           statement(context),
           selected(context),
           Expanded(child: Container()),
           Expanded(child: Container()),
-          nextButton(context, STATEMENT.TEXT_BUTTON, '/sesion', _checkSelected,
-              () {}, null),
+          nextButton(
+            context,
+            STATEMENT.TEXT_BUTTON,
+            '/sesion',
+            authProvider.checkSelected,
+            () {},
+            null,
+          ),
           SizedBox(
             height: getHeight(context, 3),
           )
@@ -68,6 +75,7 @@ class _StatementPageState extends State<StatementPage> {
   }
 
   Container selected(context) {
+    final authProvider = Provider.of<AuthProvider>(context);
     return Container(
       padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
       child: Row(
@@ -79,11 +87,14 @@ class _StatementPageState extends State<StatementPage> {
             ),
             child: Checkbox(
               checkColor: Colors.white,
-              activeColor: Colors.blue[500],
-              value: _checkSelected,
+              activeColor: CustomColors.primary,
+              value: authProvider.checkSelected,
               side: BorderSide(color: CustomColors.primary),
-              onChanged: (bool? value) =>
-                  setState(() => _checkSelected = value!),
+              onChanged: (bool? value) {
+                if (value != null) {
+                  authProvider.setCheckSelected(value);
+                }
+              },
             ),
           ),
           Text(STATEMENT.TEXT_CHECKBOX,

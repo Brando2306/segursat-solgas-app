@@ -3,6 +3,8 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:provider/provider.dart';
+import 'package:safe_driving_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/endpoints.dart';
@@ -38,6 +40,7 @@ class _MenuPageState extends State<MenuPage> {
     return WillPopScope(
       onWillPop: () async => false,
       child: Scaffold(
+        backgroundColor: Colors.white,
         appBar: header(context),
         body: Column(children: [
           Expanded(child: Container()),
@@ -81,7 +84,10 @@ class _MenuPageState extends State<MenuPage> {
       backgroundColor: Colors.white,
       leading: Builder(
         builder: (context) => IconButton(
-            onPressed: () {
+            onPressed: () async {
+              final authProvider =
+                  Provider.of<AuthProvider>(context, listen: false);
+              await authProvider.logout();
               cleanAll();
               Navigator.pushNamed(context, '/sesion');
             },

@@ -1,16 +1,150 @@
-import 'package:flutter/cupertino.dart';
-
+import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:flutter_phoenix/flutter_phoenix.dart';
+import 'package:provider/provider.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:safe_driving_app/app.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:http/http.dart' as http;
+
+// Auth
+import 'package:safe_driving_app/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:safe_driving_app/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:safe_driving_app/features/auth/presentation/providers/auth_provider.dart';
+
+// Driver
+import 'package:safe_driving_app/features/driver/data/datasources/driver_remote_datasource.dart';
+import 'package:safe_driving_app/features/driver/data/repositories/driver_repository_impl.dart';
+import 'package:safe_driving_app/features/driver/presentation/providers/driver_provider.dart';
+
+// Unit
+import 'package:safe_driving_app/features/unit/data/datasources/unit_remote_datasource.dart';
+import 'package:safe_driving_app/features/unit/data/repositories/unit_repository_impl.dart';
+import 'package:safe_driving_app/features/unit/presentation/providers/unit_provider.dart';
+
+// Route y Offline Operations
+import 'package:safe_driving_app/features/route/data/datasources/route_local_data_source.dart';
+import 'package:safe_driving_app/features/route/data/datasources/route_remote_data_source.dart';
+import 'package:safe_driving_app/features/route/data/repositories/route_repository_impl.dart';
+import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
+import 'package:safe_driving_app/features/route/presentation/providers/route_provider.dart';
+import 'package:safe_driving_app/features/offline_operations/data/repositories/offline_operation_repository_impl.dart';
+
+// Función para inicializar la base de datos
+Future<Database> initializeDatabase() async {
+  final dbPath = await getDatabasesPath();
+  final path = join(dbPath, 'segursat.db');
+  return openDatabase(
+    path,
+    version: 1,
+    onCreate: (db, version) async {
+      // Tablas para rutas (se crean también en RouteLocalDataSource.init())
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS routes (
+          id INTEGER PRIMARY KEY,
+          unitName TEXT NOT NULL,
+          status TEXT NOT NULL,
+          timestamp TEXT NOT NULL,
+          sourceLat REAL NOT NULL,
+          sourceLng REAL NOT NULL,
+          destLat REAL NOT NULL,
+          destLng REAL NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS route_positions (
+          id TEXT PRIMARY KEY,
+          routeId INTEGER NOT NULL,
+          timestamp TEXT NOT NULL,
+          latitude REAL NOT NULL,
+          longitude REAL NOT NULL,
+          altitude REAL NOT NULL,
+          speed REAL NOT NULL,
+          angle INTEGER NOT NULL,
+          FOREIGN KEY (routeId) REFERENCES routes (id) ON DELETE CASCADE
+        )
+      ''');
+      // Tabla para operaciones offline
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS offline_operations (
+          id TEXT PRIMARY KEY,
+          type TEXT NOT NULL,
+          createdAt TEXT NOT NULL,
+          data TEXT NOT NULL,
+          retryCount INTEGER NOT NULL,
+          lastError TEXT
+        )
+      ''');
+    },
+  );
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await GetStorage.init();
+  try {
+    await GetStorage.init();
+  } catch (e) {
+    log('Error initializing GetStorage: $e');
+  }
 
-  return runApp(Phoenix(
-    child: MyApp(),
-  ));
+  // Inicializar base de datos
+  final database = await initializeDatabase();
+
+  // Dependencias de Auth
+  final authLocalDataSource = AuthLocalDataSourceImpl();
+  final authRepository =
+      AuthRepositoryImpl(localDataSource: authLocalDataSource);
+
+  // Dependencias de Unit
+  final unitRemoteDataSource = UnitRemoteDataSourceImpl();
+  final unitRepository =
+      UnitRepositoryImpl(remoteDataSource: unitRemoteDataSource);
+
+  // Dependencias de Driver
+  final driverRemoteDataSource = DriverRemoteDataSourceImpl();
+  final driverRepository =
+      DriverRepositoryImpl(remoteDataSource: driverRemoteDataSource);
+
+  // Dependencias de Route
+  final routeLocalDataSource = RouteLocalDataSource(database: database);
+  // Importante: inicializar las tablas locales de rutas
+  await routeLocalDataSource.init();
+
+  final routeRemoteDataSource =
+      RouteRemoteDataSourceImpl(client: http.Client());
+  final offlineOperationRepo =
+      OfflineOperationsRepositoryImpl(database: database);
+  final RouteRepository routeRepository = RouteRepositoryImpl(
+    localDataSource: routeLocalDataSource,
+    remoteDataSource: routeRemoteDataSource,
+    offlineRepo: offlineOperationRepo,
+  );
+
+  final connectivity = Connectivity();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authRepository: authRepository),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => UnitProvider(unitRepository: unitRepository),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DriverProvider(driverRepository: driverRepository),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => RouteProvider(
+            routeRepository: routeRepository,
+            offlineRepo: offlineOperationRepo,
+            connectivity: connectivity,
+          ),
+        ),
+      ],
+      child: MyApp(),
+    ),
+  );
 }

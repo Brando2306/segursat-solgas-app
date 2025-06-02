@@ -9,6 +9,7 @@ class ENDPOINTS {
   static const String INSPECTION_UPLOAD = 'control/inspections/upload/';
   static const String CREATE_ROUTE = 'web/api/control/create-route/';
   static const String GET_ROUTE = 'web/api/routes/get-route/<int:id>/';
+  static const String SAVE_POSITION = 'web/api/control/insert-route-positions/';
   static const String CREATE_ROUTE_POSITIONS =
       'web/api/control/insert-route-positions/';
   static const String CREATE_ROUTE_STOPS =

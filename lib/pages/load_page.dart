@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:safe_driving_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
+import 'package:safe_driving_app/features/route/presentation/providers/route_provider.dart';
+import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/widgets/background.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 
@@ -10,68 +17,105 @@ class LoadPage extends StatefulWidget {
 }
 
 class _LoadPageState extends State<LoadPage> {
-  bool _visible = false;
   @override
   void initState() {
     super.initState();
+    _init();
+  }
 
+  Future<void> _init() async {
     FocusManager.instance.primaryFocus?.unfocus();
 
-    Future.delayed(
-        Duration(seconds: 4), () => Navigator.pushNamed(context, '/startPage'));
-    Future.delayed(Duration(milliseconds: 100),
-        () => setState(() => _visible = !_visible));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(
+        Duration(milliseconds: 100),
+        () => Provider.of<AuthProvider>(context, listen: false)
+            .toggleVisibility(),
+      );
+    });
+
+    await _determineInitialRoute();
+  }
+
+  Future<void> _determineInitialRoute() async {
+    final authProvider = context.read<AuthProvider>();
+    final routeProvider = context.read<RouteProvider>();
+
+    await authProvider.checkAuthStatus();
+
+    if (!authProvider.isAuthenticated) {
+      _navigateTo('/startPage');
+      return;
+    }
+
+    final hasPendingRoute = await routeProvider.checkPendingRoute();
+    _navigateTo(hasPendingRoute ? '/root/speedometer' : '/menu');
+  }
+
+  void _navigateTo(String route) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.pushReplacementNamed(context, route);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    return _buildLoadingScreen();
+  }
+
+  Widget _buildLoadingScreen() {
+    final visible = Provider.of<AuthProvider>(context).visible;
+
     return Scaffold(
       body: customBackground(
-          context,
-          Align(
-              alignment: Alignment.center,
-              child: Column(
-                children: <Widget>[
-                  Expanded(child: Container()),
-                  centerLogo(context),
-                  Expanded(child: Container()),
-                  footer(context),
-                ],
-              ))),
+        context,
+        Align(
+          alignment: Alignment.center,
+          child: Column(
+            children: <Widget>[
+              Expanded(child: SizedBox()),
+              _buildLogo(visible),
+              Expanded(child: SizedBox()),
+              _buildFooter(visible),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Container centerLogo(context) {
+  Widget _buildLogo(bool visible) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 5),
       width: MediaQuery.of(context).size.width,
       child: AnimatedOpacity(
-          opacity: _visible ? 1.0 : 0.0,
-          duration: Duration(seconds: 2),
-          child: Image.asset(LOAD.LOGO)),
+        opacity: visible ? 1.0 : 0.0,
+        duration: Duration(seconds: 2),
+        child: Image.asset(LOAD.LOGO),
+      ),
     );
   }
 
-  Column footer(context) {
+  Widget _buildFooter(bool visible) {
     return Column(
       children: <Widget>[
         AnimatedOpacity(
-            opacity: _visible ? 1.0 : 0.0,
-            duration: Duration(seconds: 2),
-            child: Text(
-              LOAD.TITLE,
-              style: TextStyle(color: Colors.white),
-            )),
+          opacity: visible ? 1.0 : 0.0,
+          duration: Duration(seconds: 2),
+          child: Text(
+            LOAD.TITLE,
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
         AnimatedOpacity(
-            opacity: _visible ? 1.0 : 0.0,
-            duration: Duration(seconds: 2),
-            child: Text(
-              LOAD.SUBTITLE,
-              style: TextStyle(color: Colors.white),
-            )),
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.05,
-        )
+          opacity: visible ? 1.0 : 0.0,
+          duration: Duration(seconds: 2),
+          child: Text(
+            LOAD.SUBTITLE,
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.05),
       ],
     );
   }
