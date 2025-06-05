@@ -1,8 +1,16 @@
 import 'dart:developer';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:safe_driving_app/app.dart';
+import 'package:safe_driving_app/features/inspection/data/datasources/inspection_remote_datasource.dart';
+import 'package:safe_driving_app/features/inspection/data/repositories/inspection_repository_impl.dart';
+import 'package:safe_driving_app/features/inspection/presentation/providers/inspection_provider.dart';
+import 'package:safe_driving_app/features/maintenance/data/datasources/maintenance_remote_datasource.dart';
+import 'package:safe_driving_app/features/maintenance/data/repositories/maintenance_repository_impl.dart';
+import 'package:safe_driving_app/features/maintenance/presentation/providers/maintenance_provider.dart';
+import 'package:safe_driving_app/features/offline_operations/presentation/providers/offline_operations_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -141,6 +149,29 @@ void main() async {
             routeRepository: routeRepository,
             offlineRepo: offlineOperationRepo,
             connectivity: connectivity,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => OfflineOperationsProvider(
+            repository: OfflineOperationsRepositoryImpl(
+              database: database,
+            ),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => MaintenanceProvider(
+            repository: MaintenanceRepositoryImpl(
+              remoteDataSource: MaintenanceRemoteDataSourceImpl(dio: Dio()),
+              offlineOperationsRepository: offlineOperationRepo,
+            ),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => InspectionProvider(
+            repository: InspectionRepositoryImpl(
+              remoteDataSource: InspectionRemoteDataSourceImpl(dio: Dio()),
+              offlineOperationsRepository: offlineOperationRepo,
+            ),
           ),
         ),
       ],

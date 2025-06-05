@@ -2,7 +2,10 @@ enum OfflineOperationType {
   routeRecovery,
   maintenance,
   inspection,
-  incidentReport;
+  incidentReport,
+  routeCreation,
+  routePositions,
+  routeEvent;
 
   String get displayName {
     switch (this) {
@@ -14,6 +17,14 @@ enum OfflineOperationType {
         return 'Inspección';
       case OfflineOperationType.incidentReport:
         return 'Reporte de Incidente';
+      case OfflineOperationType.routeCreation:
+        return 'Creación de Ruta';
+      case OfflineOperationType.routePositions:
+        return 'Posiciones de Ruta';
+      case OfflineOperationType.routeEvent:
+        return 'Evento de Ruta';
+      default:
+        return 'Operación Desconocida';
     }
   }
 }

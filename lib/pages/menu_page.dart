@@ -95,6 +95,16 @@ class _MenuPageState extends State<MenuPage> {
             color: Colors.black,
             tooltip: 'Salir de la sesión'),
       ),
+      actions: [
+        IconButton(
+          onPressed: () {
+           Navigator.pushNamed(context, '/offlineOperations');
+          },
+          icon: Icon(Icons.wifi_off_outlined),
+          color: Colors.black,
+          tooltip: 'Operaciones Offline',
+        ),
+      ],
     );
   }
 
@@ -142,25 +152,6 @@ class _MenuPageState extends State<MenuPage> {
       buttonRootValidation = Future.value(responseValidation);
     });
   }
-
-  // bool validateTimeInspection(String dateString) {
-  //   // String dateString = '04/08/2023 12:38:39';
-  //   DateTime dateToCompare =
-  //       DateFormat('dd/MM/yyyy HH:mm:ss').parse(dateString);
-  //   dateToCompare =
-  //       DateTime(dateToCompare.year, dateToCompare.month, dateToCompare.day);
-
-  //   DateTime currentDate = DateTime.now();
-  //   DateTime currentDateInPeru = currentDate.toUtc();
-  //   // .subtract(Duration(hours: 5)); // Ajuste para UTC-5 (horario de Perú)
-  //   DateTime currentDateOnly = DateTime(
-  //       currentDateInPeru.year, currentDateInPeru.month, currentDateInPeru.day);
-
-  //   print('dateToCompare $dateToCompare');
-  //   print('currentDateOnly $currentDateOnly');
-
-  //   return dateToCompare.isAtSameMomentAs(currentDateOnly);
-  // }
 
   init() async {
     EasyLoading.show(status: 'Validando...');

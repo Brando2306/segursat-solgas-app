@@ -18,6 +18,7 @@ class ButtonWidget extends StatelessWidget {
     this.style,
     this.boxShadow,
     this.icon = "",
+    this.width,
   }) : super(key: key);
 
   final String text;
@@ -33,6 +34,7 @@ class ButtonWidget extends StatelessWidget {
   final TextStyle? style;
   final List<BoxShadow>? boxShadow;
   final String icon;
+  final double? width;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +44,7 @@ class ButtonWidget extends StatelessWidget {
       padding: EdgeInsets.zero,
       onPressed: disabled == true ? null : onPressed,
       child: Container(
+        width: width,
         constraints: constraints,
         padding: padding ?? const EdgeInsets.all(15),
         margin: margin ?? EdgeInsets.zero,

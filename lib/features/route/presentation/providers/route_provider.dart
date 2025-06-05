@@ -12,17 +12,15 @@ import 'package:safe_driving_app/features/route/domain/repositories/route_reposi
 import 'package:safe_driving_app/utils/storage.dart';
 
 class RouteProvider with ChangeNotifier {
-  final RouteRepository _routeRepository;
-  final OfflineOperationsRepository _offlineRepo;
-  final Connectivity _connectivity;
+  final RouteRepository routeRepository;
+  final OfflineOperationsRepository offlineRepo;
+  final Connectivity connectivity;
 
   RouteProvider({
-    required RouteRepository routeRepository,
-    required OfflineOperationsRepository offlineRepo,
-    required Connectivity connectivity,
-  })  : _routeRepository = routeRepository,
-        _offlineRepo = offlineRepo,
-        _connectivity = connectivity;
+    required this.routeRepository,
+    required this.offlineRepo,
+    required this.connectivity,
+  });
 
   Future<bool> checkPendingRoute() async {
     // 1. Verificar marca de recuperación en storage
@@ -39,14 +37,14 @@ class RouteProvider with ChangeNotifier {
     // 3. Verificar online
     try {
       final hasInternet =
-          await _connectivity.checkConnectivity() != ConnectivityResult.none;
+          await connectivity.checkConnectivity() != ConnectivityResult.none;
       if (hasInternet) {
-        final lastRoute = await _routeRepository.getLastActiveRoute();
+        final lastRoute = await routeRepository.getLastActiveRoute();
         return lastRoute.status == entity.RouteStatus.running;
       }
     } catch (e) {
       // 4. Verificar offline
-      return await _offlineRepo.hasPendingRouteOperation();
+      return await offlineRepo.hasPendingRouteOperation();
     }
 
     return false;
@@ -54,7 +52,7 @@ class RouteProvider with ChangeNotifier {
 
   Future<entity.Route> resumeRoute(int routeId) async {
     try {
-      final route = await _routeRepository.resumeRoute(routeId);
+      final route = await routeRepository.resumeRoute(routeId);
 
       // Guardar datos necesarios para el speedometer
       await writeStorage('personal.pushRouteSpeedometer', true);
@@ -63,7 +61,7 @@ class RouteProvider with ChangeNotifier {
       return route;
     } catch (e) {
       // Guardar operación pendiente
-      await _offlineRepo.saveOperation(
+      await offlineRepo.saveOperation(
         OfflineOperation(
           type: OfflineOperationType.routeRecovery,
           data: {
@@ -82,19 +80,19 @@ class RouteProvider with ChangeNotifier {
     if (lastRouteId == null) return;
 
     final hasInternet =
-        await _connectivity.checkConnectivity() != ConnectivityResult.none;
+        await connectivity.checkConnectivity() != ConnectivityResult.none;
 
     try {
       EasyLoading.show(status: 'Recuperando ruta...');
 
       if (hasInternet) {
-        await _routeRepository.resumeRoute(int.parse(lastRouteId.toString()));
+        await routeRepository.resumeRoute(int.parse(lastRouteId.toString()));
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacementNamed(context, '/root/speedometer');
         });
       } else {
         // Obtener datos de caché local para continuar offline
-        final cachedRoute = await _routeRepository.getLastActiveRoute();
+        final cachedRoute = await routeRepository.getLastActiveRoute();
         await writeStorage(
             'root.finalPosition',
             json.encode({
@@ -125,5 +123,151 @@ class RouteProvider with ChangeNotifier {
     }
   }
 
-  // ... otros métodos para manejo de rutas
+  Future<int> createRoute(Map<String, dynamic> routeData) async {
+    try {
+      final hasConnection =
+          await connectivity.checkConnectivity() != ConnectivityResult.none;
+      if (!hasConnection) {
+        await offlineRepo.saveOperation(OfflineOperation(
+          type: OfflineOperationType.routeRecovery,
+          data: {
+            'action': 'create',
+            'data': routeData,
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        ));
+        throw 'No hay conexión. La ruta se guardó para intentar más tarde.';
+      }
+
+      return await routeRepository.createRoute(routeData);
+    } catch (e) {
+      await offlineRepo.saveOperation(OfflineOperation(
+        type: OfflineOperationType.routeRecovery,
+        data: {
+          'action': 'create',
+          'data': routeData,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      ));
+      rethrow;
+    }
+  }
+
+  Future<void> saveRoutePositions(List<Map<String, dynamic>> positions) async {
+    try {
+      final hasConnection =
+          await connectivity.checkConnectivity() != ConnectivityResult.none;
+      if (!hasConnection) {
+        await offlineRepo.saveOperation(OfflineOperation(
+          type: OfflineOperationType.routePositions,
+          data: {
+            'positions': positions,
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        ));
+        return;
+      }
+
+      await routeRepository.saveRoutePositionsBatch(positions);
+    } catch (e) {
+      await offlineRepo.saveOperation(OfflineOperation(
+        type: OfflineOperationType.routePositions,
+        data: {
+          'positions': positions,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      ));
+      rethrow;
+    }
+  }
+
+  Future<void> finishRoute(int routeId) async {
+    try {
+      final hasConnection =
+          await connectivity.checkConnectivity() != ConnectivityResult.none;
+      if (!hasConnection) {
+        await offlineRepo.saveOperation(OfflineOperation(
+          type: OfflineOperationType.routeEvent,
+          data: {
+            'routeId': routeId,
+            'eventType': 'finish',
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        ));
+        throw 'No hay conexión. El evento se guardó para intentar más tarde.';
+      }
+
+      await routeRepository.finishRoute(routeId);
+    } catch (e) {
+      await offlineRepo.saveOperation(OfflineOperation(
+        type: OfflineOperationType.routeEvent,
+        data: {
+          'routeId': routeId,
+          'eventType': 'finish',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      ));
+      rethrow;
+    }
+  }
+
+  Future<void> cancelRoute(int routeId) async {
+    try {
+      final hasConnection =
+          await connectivity.checkConnectivity() != ConnectivityResult.none;
+      if (!hasConnection) {
+        await offlineRepo.saveOperation(OfflineOperation(
+          type: OfflineOperationType.routeEvent,
+          data: {
+            'routeId': routeId,
+            'eventType': 'cancel',
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        ));
+        throw 'No hay conexión. El evento se guardó para intentar más tarde.';
+      }
+
+      await routeRepository.cancelRoute(routeId);
+    } catch (e) {
+      await offlineRepo.saveOperation(OfflineOperation(
+        type: OfflineOperationType.routeEvent,
+        data: {
+          'routeId': routeId,
+          'eventType': 'cancel',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      ));
+      rethrow;
+    }
+  }
+
+  Future<void> reportSos(int routeId) async {
+    try {
+      final hasConnection =
+          await connectivity.checkConnectivity() != ConnectivityResult.none;
+      if (!hasConnection) {
+        await offlineRepo.saveOperation(OfflineOperation(
+          type: OfflineOperationType.routeEvent,
+          data: {
+            'routeId': routeId,
+            'eventType': 'sos',
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        ));
+        throw 'No hay conexión. El evento SOS se guardó para intentar más tarde.';
+      }
+
+      await routeRepository.reportSos(routeId);
+    } catch (e) {
+      await offlineRepo.saveOperation(OfflineOperation(
+        type: OfflineOperationType.routeEvent,
+        data: {
+          'routeId': routeId,
+          'eventType': 'sos',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      ));
+      rethrow;
+    }
+  }
 }

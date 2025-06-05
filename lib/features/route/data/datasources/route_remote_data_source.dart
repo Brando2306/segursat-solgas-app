@@ -9,9 +9,12 @@ import 'package:safe_driving_app/utils/storage.dart';
 abstract class RouteRemoteDataSource {
   Future<Route> getRoute(int id);
   Future<List<Route>> getActiveRoutes();
-  Future<int> createRoute(Route route);
+  Future<int> createRoute(Map<String, dynamic> routeData);
   Future<void> saveRoutePosition(RoutePosition position);
+  Future<void> saveRoutePositionsBatch(List<Map<String, dynamic>> positions);
+  Future<void> cancelRoute(int routeId);
   Future<void> finishRoute(int routeId);
+  Future<void> reportSos(int routeId);
 }
 
 class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
@@ -42,7 +45,7 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
   }
 
   @override
-  Future<int> createRoute(Route route) async {
+  Future<int> createRoute(Map<String, dynamic> route) async {
     final response = await _makeRequest(
       ENDPOINTS.CREATE_ROUTE,
       method: 'POST',
@@ -75,6 +78,32 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
   Future<void> finishRoute(int routeId) async {
     await _makeRequest(
       ENDPOINTS.FINISH_ROUTE.replaceAll('<int:id>', '$routeId'),
+      method: 'POST',
+    );
+  }
+
+  @override
+  Future<void> saveRoutePositionsBatch(
+      List<Map<String, dynamic>> positions) async {
+    await _makeRequest(
+      ENDPOINTS.SAVE_POSITIONS_BATCH,
+      method: 'POST',
+      body: {'positions': positions},
+    );
+  }
+
+  @override
+  Future<void> cancelRoute(int routeId) async {
+    await _makeRequest(
+      ENDPOINTS.CANCEL_ROUTE.replaceAll('<int:id>', '$routeId'),
+      method: 'POST',
+    );
+  }
+
+  @override
+  Future<void> reportSos(int routeId) async {
+    await _makeRequest(
+      ENDPOINTS.INSERT_ROUTE_SOS.replaceAll('<int:id>', '$routeId'),
       method: 'POST',
     );
   }

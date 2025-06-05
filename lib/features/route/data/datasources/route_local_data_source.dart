@@ -163,6 +163,19 @@ class RouteLocalDataSource {
     );
   }
 
+  Future<void> savePendingPositions(
+      List<Map<String, dynamic>> positions) async {
+    final batch = database.batch();
+    for (final pos in positions) {
+      batch.insert(
+        'route_positions',
+        pos,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
   Future<void> cleanRouteData(int routeId) async {
     await database.delete(
       'routes',

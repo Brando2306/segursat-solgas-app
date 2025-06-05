@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 
 class OfflineOperation {
@@ -21,6 +23,15 @@ class OfflineOperation {
         createdAt = createdAt ?? DateTime.now();
 
   factory OfflineOperation.fromJson(Map<String, dynamic> json) {
+    Map<String, dynamic> dataField;
+    if (json['data'] is String) {
+      dataField = jsonDecode(json['data']);
+    } else if (json['data'] is Map) {
+      dataField = Map<String, dynamic>.from(json['data']);
+    } else {
+      dataField = {};
+    }
+
     return OfflineOperation(
       id: json['id'],
       type: OfflineOperationType.values.firstWhere(
@@ -28,7 +39,7 @@ class OfflineOperation {
         orElse: () => OfflineOperationType.routeRecovery,
       ),
       createdAt: DateTime.parse(json['createdAt']),
-      data: json['data'],
+      data: dataField,
       retryCount: json['retryCount'] ?? 0,
       lastError: json['lastError'],
     );
@@ -39,7 +50,7 @@ class OfflineOperation {
       'id': id,
       'type': type.toString(),
       'createdAt': createdAt.toIso8601String(),
-      'data': data,
+      'data': jsonEncode(data),
       'retryCount': retryCount,
       'lastError': lastError,
     };

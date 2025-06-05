@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -261,24 +262,35 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
 
   Future<void> _validateUserCredentials(
       DriverProvider driverProvider, UnitProvider unitProvider) async {
-    await driverProvider.fetchDriver(_documentController.text);
-    await unitProvider.fetchUnit(_licensePlateController.text);
+    try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult == ConnectivityResult.none) {
+        throw 'No hay conexión a internet. Por favor, conectate para iniciar sesión.';
+      }
 
-    if (driverProvider.error != null) {
-      throw driverProvider.error!;
-    }
+      await driverProvider.fetchDriver(_documentController.text);
+      await unitProvider.fetchUnit(_licensePlateController.text);
 
-    if (unitProvider.error != null) {
-      throw unitProvider.error!;
-    }
+      if (driverProvider.error != null) {
+        throw driverProvider.error!;
+      }
 
-    if (driverProvider.driver == null || unitProvider.unit == null) {
-      throw 'No se pudo obtener la información del usuario o vehículo';
+      if (unitProvider.error != null) {
+        throw unitProvider.error!;
+      }
+
+      if (driverProvider.driver == null || unitProvider.unit == null) {
+        throw 'No se pudo obtener la información del usuario o vehículo';
+      }
+    } catch (e) {
+      throw 'Error de conexión: $e';
     }
   }
 
   Future<void> _saveUserSession(
       AuthProvider authProvider, DriverEntity driver, UnitEntity unit) async {
+    authProvider.setNextButtonValidation(true);
+
     await authProvider.login(
       name: driver.firstName,
       lastName: driver.lastName,

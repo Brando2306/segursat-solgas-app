@@ -23,6 +23,10 @@ class ENDPOINTS {
   static const String EMERGENCY_PHONE = 'web/api/control/get-emergency-phone/';
   static const String INSERT_ROUTE_SOS = 'web/api/control/insert-route-soss/';
 
+  static const String SAVE_POSITIONS_BATCH =
+      'web/api/control/insert-route-positions-batch/';
+  // http://sfdev.segursat.com/web/api/control/insert-route-positions-batch/
+
   static auth() {
     var credentials = base64Encode(
         utf8.encode('${ENDPOINTS.USERNAME}:${ENDPOINTS.PASSWORD}'));

@@ -102,31 +102,7 @@ class _SpeedometerPageState extends State<SpeedometerPage>
             'longitude': position.longitude
           }));
 
-      // if (readStorage('root.createRoute.id') != null) {
-      //   // var finalPosition = json.decode(readStorage('root.finalPosition'));
-      //   final object = {
-      //     "routeid": readStorage('root.createRoute.id'),
-      //     "timestamp": getDate(),
-      //     "latitude": position.latitude,
-      //     "longitude": position.longitude,
-      //     "altitude": position.altitude,
-      //     "speed": position.speed.round(),
-      //     "angle": _currentTime.inSeconds,
-      //     // "attributes": json.encode({
-      //     //   'rootFinalPosition': {
-      //     //     'latitude': finalPosition['latitude'],
-      //     //     'longitude': finalPosition['longitude']
-      //     //   }
-      //     // }),
-      //     "unitid": readStorage('personal.unitId')
-      //   };
-
-      //   await registerPositions(object);
-      // }
-
       setState(() => _value = position.speed * 3.6);
-
-      // if ((_value).round() > 100) await showNotification();
     });
 
     dateNow();
@@ -157,37 +133,9 @@ class _SpeedometerPageState extends State<SpeedometerPage>
       log('=== CONNECTION FAILED ===');
     }
 
-    // Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-    //   if (result != ConnectivityResult.none) {
-    //     retrySendingStoredPositions();
-    //     log('LISTEN === hay conexion');
-    //   } else {
-    //     log('LISTEN === NO HAY conexion');
-    //   }
-    // });
   }
 
-  // void handleConnectivityCheck() async {
-  //   bool isConnected = await checkInternetConnection();
-  //   if (isConnected) {
-  //     retrySendingStoredPositions();
-  //     log('Hay conexión a Internet');
-  //   } else {
-  //     log('No hay conexión a Internet');
-  //   }
-  // }
 
-  // Future<bool> checkInternetConnection() async {
-  //   try {
-  //     final result =
-  //         await http.get(Uri.parse('https://www.google.com')).timeout(
-  //               Duration(seconds: 5),
-  //             );
-  //     return result.statusCode == 200;
-  //   } catch (e) {
-  //     return false;
-  //   }
-  // }
 
   void attemptToSendPosition() async {
     Position position = await Geolocator.getCurrentPosition(
@@ -231,22 +179,18 @@ class _SpeedometerPageState extends State<SpeedometerPage>
   }
 
   void createOrResumeRoute() async {
-    print('==> createOrResumeRoute');
     try {
       if (isNotEmptyString(readStorage('root.cronometer')) &&
           isNotEmptyString(readStorage('root.finalPosition'))) {
         if (isNotEmptyString(readStorage('personal.lastRoute'))) {
           writeStorage(
               'root.createRoute.id', readStorage('personal.lastRoute'));
-          print('RESUME ROUTE: ${readStorage('root.createRoute.id')}');
         }
       } else {
-        print('createOrResumeRoute: New route');
         Map<String, dynamic> route = await createRoute();
         writeStorage('root.createRoute.id', route['id']);
       }
 
-      print('root.createRoute.id ${readStorage('root.createRoute.id')}');
     } catch (e) {
       print(e);
     }
@@ -294,7 +238,7 @@ class _SpeedometerPageState extends State<SpeedometerPage>
           onWillPop: () async => false,
           child: Scaffold(
             appBar: AppBar(
-              title: Text('Velocímetro',
+              title: Text('Velocímetroyyy',
                   style: TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
@@ -340,30 +284,6 @@ class _SpeedometerPageState extends State<SpeedometerPage>
                 SizedBox(
                   height: getHeight(context, 3),
                 ),
-                // nextButton(context, 'Finalizar ruta', '/root/finish', true,
-                //     () async {
-                //   stopLocationUpdates();
-                //   try {
-                //     Map<String, dynamic> currentPosition =
-                //         json.decode(readStorage('root.currentPosition'));
-                //     Map<String, dynamic> finalPosition =
-                //         json.decode(readStorage('root.finalPosition'));
-
-                //     int metros = calcularDistanciaEnMetros(
-                //         currentPosition['latitude'],
-                //         currentPosition['longitude'],
-                //         finalPosition['latitude'],
-                //         finalPosition['longitude']);
-
-                //     if (metros < 100) {
-                //       await finishRoute(context);
-                //     } else {
-                //       showConfirmationDialog(context);
-                //     }
-                //   } catch (e) {
-                //     notificationError(context, e.toString());
-                //   }
-                // }, null),
                 MaterialButton(
                   onPressed: () async {
                     try {
@@ -386,12 +306,6 @@ class _SpeedometerPageState extends State<SpeedometerPage>
                     } catch (e) {
                       notificationError(context, e.toString());
                     }
-                    // if (validation) {
-                    //   function();
-                    //   if (route != null) {
-                    //     Navigator.pushNamed(context, route);
-                    //   }
-                    // }
                   },
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -421,7 +335,7 @@ class _SpeedometerPageState extends State<SpeedometerPage>
             onWillPop: () async => false,
             child: Scaffold(
               appBar: AppBar(
-                title: Text('Velocímetro',
+                title: Text('Velocímetroxx',
                     style: TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
@@ -486,30 +400,6 @@ class _SpeedometerPageState extends State<SpeedometerPage>
                   SizedBox(
                     height: getHeight(context, 3),
                   ),
-                  // nextButton(context, 'Finalizar ruta', '/root/finish', true,
-                  //     () async {
-                  //   stopLocationUpdates();
-                  //   try {
-                  //     Map<String, dynamic> currentPosition =
-                  //         json.decode(readStorage('root.currentPosition'));
-                  //     Map<String, dynamic> finalPosition =
-                  //         json.decode(readStorage('root.finalPosition'));
-
-                  //     int metros = calcularDistanciaEnMetros(
-                  //         currentPosition['latitude'],
-                  //         currentPosition['longitude'],
-                  //         finalPosition['latitude'],
-                  //         finalPosition['longitude']);
-
-                  //     if (metros < 100) {
-                  //       await finishRoute(context);
-                  //     } else {
-                  //       showConfirmationDialog(context);
-                  //     }
-                  //   } catch (e) {
-                  //     notificationError(context, e.toString());
-                  //   }
-                  // }, null),
                   MaterialButton(
                     onPressed: () async {
                       try {
@@ -530,6 +420,7 @@ class _SpeedometerPageState extends State<SpeedometerPage>
                           showConfirmationDialog(context);
                         }
                       } catch (e) {
+                        log('error message: ${e.toString()}');
                         notificationError(context, e.toString());
                       }
                       // if (validation) {
@@ -549,7 +440,7 @@ class _SpeedometerPageState extends State<SpeedometerPage>
                       padding: EdgeInsets.symmetric(
                           horizontal: getHeight(context, 12), vertical: 16),
                       child: Text(
-                        'Finalizar ruta',
+                        'Finalizar rutayyy',
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
@@ -636,10 +527,8 @@ class _SpeedometerPageState extends State<SpeedometerPage>
 
       if (rootType == null) {
         response = await finishRouteProvider();
-        log('finishRouteProvider.response: $response');
       } else {
         response = await cancelRouteProvider();
-        log('cancelRouteProvider.response: $response');
       }
 
       if (response['status'] == STATUSCODE.OK) {
@@ -667,14 +556,6 @@ class _SpeedometerPageState extends State<SpeedometerPage>
 
     EasyLoading.dismiss();
   }
-
-  // Future<void> _showArrivedDialog(BuildContext context) async {
-  //   notificationInfo(context, 'La unidad ha llegado a su destino.', () {
-  //     setState(() {
-  //       Navigator.pushNamed(context, '/menu');
-  //     });
-  //   });
-  // }
 
   void stopLocationUpdates() {
     positionStream?.cancel();
@@ -968,33 +849,6 @@ class _SpeedometerPageState extends State<SpeedometerPage>
               positionFactor: 1.75)
         ],
       ),
-      // RadialAxis(
-      //     startAngle: 270,
-      //     endAngle: 270,
-      //     minimum: 0,
-      //     maximum: 80,
-      //     interval: 10,
-      //     radiusFactor: 0.4,
-      //     onLabelCreated: labelCreated),
-      // RadialAxis(
-      //     startAngle: 270,
-      //     endAngle: 270,
-      //     minimum: 0,
-      //     maximum: 80,
-      //     interval: 10,
-      //     radiusFactor: 0.4,
-      //     showAxisLine: false,
-      //     showLastLabel: false,
-      //     minorTicksPerInterval: 4,
-      //     majorTickStyle: MajorTickStyle(
-      //         length: 8, thickness: 3, color: Colors.black),
-      //     minorTickStyle: MinorTickStyle(
-      //         length: 3, thickness: 1.5, color: Colors.black),
-      //     axisLabelStyle: GaugeTextStyle(
-      //         color: Colors.black,
-      //         fontWeight: FontWeight.bold,
-      //         fontSize: 14),
-      //     onLabelCreated: labelCreated),
     ]);
   }
 
@@ -1057,17 +911,6 @@ class _SpeedometerPageState extends State<SpeedometerPage>
       ),
     ]);
   }
-
-  // registerPositions(Map<String, dynamic> body) async {
-  //   try {
-  //     print('registerPositions.body ==> $body');
-  //     var register = await createRoutePositions(body);
-
-  //     print('registerPositions ==> $register');
-  //   } catch (e) {
-  //     print('registerPositions.error: $e');
-  //   }
-  // }
 
   Future<Map<String, dynamic>> createRoutePositions(
       List<Map<String, dynamic>> positionsList) async {

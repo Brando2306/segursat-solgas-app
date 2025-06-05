@@ -6,4 +6,9 @@ abstract class RouteRepository {
   Future<void> saveRoutePosition(RoutePosition position);
   Future<List<RoutePosition>> getPendingPositions();
   Future<void> finishRoute(int routeId);
+
+  Future<int> createRoute(Map<String, dynamic> routeData);
+  Future<void> saveRoutePositionsBatch(List<Map<String, dynamic>> positions);
+  Future<void> cancelRoute(int routeId);
+  Future<void> reportSos(int routeId);
 }
