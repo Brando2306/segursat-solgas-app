@@ -1,105 +1,96 @@
-import 'dart:convert';
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:provider/provider.dart';
 import 'package:safe_driving_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:safe_driving_app/features/speedometer/presentation/providers/menu_provider.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
+import 'package:safe_driving_app/shared/button_widget.dart';
+import 'package:safe_driving_app/shared/loading_item_widget.dart';
 import 'package:safe_driving_app/utils/constants.dart';
-import 'package:safe_driving_app/utils/endpoints.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/style.dart';
-import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
 
-class MenuPage extends StatefulWidget {
+class MenuPage extends StatelessWidget {
   const MenuPage({super.key});
 
   @override
-  State<StatefulWidget> createState() => _MenuPageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => MenuProvider(),
+      child: _MenuPageContent(),
+    );
+  }
 }
 
-class _MenuPageState extends State<MenuPage> {
-  // bool buttonInspection = true;
-  // bool buttonRoot = true;
-  late Future<bool> buttonInspectionValidation = Future.value(true);
-  late Future<bool> buttonRootValidation = Future.value(true);
-
-  @override
-  void initState() {
-    super.initState();
-
-    init();
-
-    printStorage();
-  }
-
+class _MenuPageContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final menuProvider = Provider.of<MenuProvider>(context);
+
+    final inspectionEnabled = menuProvider.buttonInspectionEnabled;
+    final rootEnabled = menuProvider.buttonRootEnabled;
+
+    final isLoading = inspectionEnabled == null || rootEnabled == null;
+
     return WillPopScope(
       onWillPop: () async => false,
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: header(context),
-        body: Column(children: [
-          Expanded(child: Container()),
-          FutureBuilder<bool>(
-            future: buttonInspectionValidation,
-            builder: (context, snapshot) {
-              return snapshot.hasData
-                  ? menuBottons(context, 'inspección de unidad',
-                      '/inspection/question', snapshot.data!)
-                  : CircularProgressIndicator(); // Mostrar un indicador de carga mientras se obtiene la validación
-            },
+        appBar: _buildAppBar(context),
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 30),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              isLoading
+                  ? LoadingItem(height: getHeight(context, 7))
+                  : _buildMenuButton(
+                      context,
+                      'Inspección de unidad',
+                      '/inspection/question',
+                      inspectionEnabled,
+                    ),
+              SizedBox(height: getHeight(context, 3)),
+              isLoading
+                  ? LoadingItem(height: getHeight(context, 7))
+                  : _buildMenuButton(
+                      context,
+                      'Iniciar una ruta',
+                      '/root/selectSource',
+                      rootEnabled,
+                    ),
+              SizedBox(height: getHeight(context, 3)),
+              isLoading
+                  ? LoadingItem(height: getHeight(context, 7))
+                  : _buildMenuButton(
+                      context,
+                      'Registrar mantenimiento',
+                      '/maintance/odometer',
+                      true,
+                    ),
+            ],
           ),
-          SizedBox(
-            height: getHeight(context, 3),
-          ),
-          FutureBuilder<bool>(
-            future: buttonRootValidation,
-            builder: (context, snapshot) {
-              return snapshot.hasData
-                  ? menuBottons(context, 'Iniciar una ruta',
-                      '/root/selectSource', snapshot.data!)
-                  : CircularProgressIndicator(); // Mostrar un indicador de carga mientras se obtiene la validación
-            },
-          ),
-          SizedBox(
-            height: getHeight(context, 3),
-          ),
-          menuBottons(
-              context, 'Registrar mantenimiento', '/maintance/odometer', true),
-          Expanded(child: Container()),
-        ]),
+        ),
       ),
     );
   }
 
-  AppBar header(context) {
+  AppBar _buildAppBar(BuildContext context) {
     return AppBar(
       title: Text(MENU.TEXT_HEADER, style: TextStyle(color: Colors.black)),
       centerTitle: true,
       elevation: 0.0,
       backgroundColor: Colors.white,
-      leading: Builder(
-        builder: (context) => IconButton(
-            onPressed: () async {
-              final authProvider =
-                  Provider.of<AuthProvider>(context, listen: false);
-              await authProvider.logout();
-              cleanAll();
-              Navigator.pushNamed(context, '/sesion');
-            },
-            icon: Icon(Icons.logout),
-            color: Colors.black,
-            tooltip: 'Salir de la sesión'),
+      leading: IconButton(
+        onPressed: () => _logout(context),
+        icon: Icon(Icons.logout),
+        color: Colors.black,
+        tooltip: 'Salir de la sesión',
       ),
       actions: [
         IconButton(
-          onPressed: () {
-           Navigator.pushNamed(context, '/offlineOperations');
-          },
+          onPressed: () => Navigator.pushNamed(context, '/offlineOperations'),
           icon: Icon(Icons.wifi_off_outlined),
           color: Colors.black,
           tooltip: 'Operaciones Offline',
@@ -108,93 +99,32 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
-  SizedBox menuBottons(context, String text, String route, bool validation) {
-    return SizedBox(
-      width: getWidth(context, 80),
-      height: getHeight(context, 7),
-      child: MaterialButton(
-        onPressed: () {
-          if (validation) {
-            Navigator.pushNamed(context, route);
-          }
-        },
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        color: validation ? CustomColors.primary : CustomColors.primaryOff,
-        child: Text(
-          text,
-          style: TextStyle(color: Colors.white, fontSize: 16),
+  void _logout(BuildContext context) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.logout();
+    cleanAll();
+    Navigator.pushNamed(context, '/sesion');
+  }
+
+  Widget _buildMenuButton(
+    BuildContext context,
+    String text,
+    String route,
+    bool enabled,
+  ) {
+    return Center(
+      child: SizedBox(
+        child: ButtonWidget(
+          width: double.infinity,
+          onPressed: enabled ? () => Navigator.pushNamed(context, route) : null,
+          color: enabled ? CustomColors.primary : CustomColors.primaryOff,
+          text: text,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+          ),
         ),
       ),
     );
-  }
-
-  void buttonsValidation() {
-    String? lastInitialInspection =
-        readStorage('personal.lastInitialInpectionDate');
-
-    setState(() {
-      bool responseValidation = isNotEmptyString(lastInitialInspection);
-
-      if (responseValidation) {
-        DateTime now = DateTime.now();
-        String formattedDate = DateFormat('yyyy-MM-dd').format(now);
-
-        bool validationDate = formattedDate == lastInitialInspection;
-        print('validationDate: $validationDate');
-
-        responseValidation = validationDate;
-      }
-
-      print('responseValidation $responseValidation');
-      buttonInspectionValidation = Future.value(!responseValidation);
-      buttonRootValidation = Future.value(responseValidation);
-    });
-  }
-
-  init() async {
-    EasyLoading.show(status: 'Validando...');
-
-    try {
-      var unit = await getUnit();
-
-      await writeStorage('personal.lastInitialInpectionDate',
-          unit['last_initial_inspection_date']);
-      await writeStorage('inspection.lastOdometer', unit['last_odometer']);
-
-      buttonsValidation();
-    } catch (e) {
-      print(e);
-    }
-
-    EasyLoading.dismiss();
-  }
-
-  getUnit() async {
-    var url = Uri.http(
-        ENDPOINTS.HOST,
-        ENDPOINTS.GET_UNIT
-            .replaceAll('<name>', readStorage('personal.licensePlate')));
-
-    var response = await http.get(url, headers: {
-      "Content-Type": "application/json",
-      'Authorization': ENDPOINTS.auth(),
-    });
-
-    log('url menu_page response.body ${response.body}');
-
-    if (response.statusCode != STATUSCODE.OK) {
-      return false;
-    }
-
-    var obj = json.decode(response.body);
-    print('getUnit: $obj');
-
-    if (obj['detail'] != null) {
-      return false;
-    }
-
-    return obj;
   }
 }

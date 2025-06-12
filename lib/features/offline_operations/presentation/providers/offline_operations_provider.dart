@@ -9,6 +9,7 @@ import 'package:safe_driving_app/features/maintenance/domain/entities/maintenanc
 import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_recovery_entity.dart';
 import 'package:safe_driving_app/features/route/presentation/providers/route_provider.dart';
 import 'package:safe_driving_app/features/maintenance/presentation/providers/maintenance_provider.dart';
 
@@ -254,5 +255,29 @@ class OfflineOperationsProvider with ChangeNotifier {
           opId, (operation.retryCount + 1), e.toString());
       rethrow;
     }
+  }
+
+  Future<void> retryLatestRouteRecovery(BuildContext context) async {
+    final operations = await repository.getRouteRecoveryOperations();
+    if (operations.isEmpty) return;
+
+    // Ordenar por fecha (más reciente primero)
+    operations.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    await retryRouteRecovery(
+        operations.first.id, context.read<RouteProvider>(), context);
+  }
+
+  Future<void> saveRouteRecoveryAttempt(
+      int routeId, Map<String, dynamic> routeData) async {
+    final operation = OfflineOperation(
+      type: OfflineOperationType.routeRecovery,
+      data: RouteRecoveryEntity(
+        routeId: routeId,
+        timestamp: DateTime.now(),
+        routeData: routeData,
+      ).toJson(),
+    );
+    await saveOperation(operation);
   }
 }
