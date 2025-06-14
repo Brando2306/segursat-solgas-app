@@ -168,10 +168,9 @@ class SpeedometerProvider with ChangeNotifier {
             json.decode(readStorage('root.initialPosition'));
         final finalPosition = json.decode(readStorage('root.finalPosition'));
 
-        final route = RouteEntity(
-          id: '', // Se generará en el servidor
+        final route = CreateRouteEntity(
           unitName: readStorage('personal.licensePlate'),
-          timestamp: DateTime.now(),
+          timestamp: getDate(),
           sourceLatitude: initialPosition['latitude'],
           sourceLongitude: initialPosition['longitude'],
           destinationLatitude: finalPosition['latitude'],

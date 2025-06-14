@@ -20,7 +20,7 @@ abstract class RouteRemoteDataSource {
   // Future<void> finishRoute(int routeId);
   // Future<void> reportSos(int routeId);
 
-  Future<RouteEntity> createRoute(RouteEntity route);
+  Future<RouteEntity> createRoute(CreateRouteEntity route);
   Future<RouteEntity> getRoute(String routeId);
   Future<void> finishRoute(FinishRouteEntity route);
   Future<void> cancelRoute(RouteEntity route);
@@ -198,7 +198,7 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
   }
 
   @override
-  Future<RouteEntity> createRoute(RouteEntity route) async {
+  Future<RouteEntity> createRoute(CreateRouteEntity route) async {
     final response = await _dio.post(
       'http://${ENDPOINTS.HOST}/${ENDPOINTS.CREATE_ROUTE}',
       data: route.toJson(),

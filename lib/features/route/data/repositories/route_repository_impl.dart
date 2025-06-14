@@ -235,7 +235,7 @@ class RouteRepositoryImpl implements RouteRepository {
   // }
 
    @override
-  Future<RouteEntity> createRoute(RouteEntity route) async {
+  Future<RouteEntity> createRoute(CreateRouteEntity route) async {
     try {
       final createdRoute = await remoteDataSource.createRoute(route);
       return createdRoute;

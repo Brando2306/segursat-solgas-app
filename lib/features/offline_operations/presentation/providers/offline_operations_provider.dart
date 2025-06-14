@@ -132,7 +132,7 @@ class OfflineOperationsProvider with ChangeNotifier {
         operation.type != OfflineOperationType.routeCreation) return;
 
     try {
-      final route = RouteEntity.fromJson(operation.data);
+      final route = CreateRouteEntity.fromJson(operation.data);
       await context.read<RouteRepository>().createRoute(route);
       await repository.removeOperation(id);
       await loadOperations();

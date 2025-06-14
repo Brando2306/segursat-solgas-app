@@ -15,7 +15,7 @@ abstract class RouteRepository {
   // Future<void> cancelRoute(int routeId);
   // Future<void> reportSos(int routeId);
 
-  Future<RouteEntity> createRoute(RouteEntity route);
+  Future<RouteEntity> createRoute(CreateRouteEntity route);
   Future<RouteEntity> getRoute(String routeId);
   Future<void> finishRoute(FinishRouteEntity route);
   Future<void> cancelRoute(RouteEntity route);
