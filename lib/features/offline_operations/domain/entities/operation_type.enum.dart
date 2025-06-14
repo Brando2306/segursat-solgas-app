@@ -1,3 +1,4 @@
+// features/offline_operations/domain/entities/operation_type.enum.dart
 enum OfflineOperationType {
   routeRecovery,
   maintenance,
@@ -5,7 +6,10 @@ enum OfflineOperationType {
   incidentReport,
   routeCreation,
   routePositions,
-  routeEvent;
+  routeEvent,
+  routeFinish,
+  routeCancel,
+  routeSos;
 
   String get displayName {
     switch (this) {
@@ -23,6 +27,12 @@ enum OfflineOperationType {
         return 'Posiciones de Ruta';
       case OfflineOperationType.routeEvent:
         return 'Evento de Ruta';
+      case OfflineOperationType.routeFinish:
+        return 'Finalización de Ruta';
+      case OfflineOperationType.routeCancel:
+        return 'Cancelación de Ruta';
+      case OfflineOperationType.routeSos:
+        return 'Emergencia SOS';
       default:
         return 'Operación Desconocida';
     }

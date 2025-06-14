@@ -1,169 +1,132 @@
-enum RouteStatus { pending, running, completed, cancelled }
+import 'package:safe_driving_app/features/route/domain/entities/route.dart';
 
-class Position {
-  final double latitude;
-  final double longitude;
+class RouteEntity {
+  final dynamic id;
+  final dynamic unitName;
+  final dynamic timestamp;
+  final dynamic sourceLatitude;
+  final dynamic sourceLongitude;
+  final dynamic destinationLatitude;
+  final dynamic destinationLongitude;
+  final dynamic isFinished;
+  final dynamic isCancelled;
+  final dynamic duration;
 
-  Position({required this.latitude, required this.longitude});
-
-  factory Position.fromJson(Map<String, dynamic> json) {
-    return Position(
-      latitude: json['latitude']?.toDouble() ?? 0.0,
-      longitude: json['longitude']?.toDouble() ?? 0.0,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'latitude': latitude,
-        'longitude': longitude,
-      };
-
-  Position copyWith({
-    double? latitude,
-    double? longitude,
-  }) {
-    return Position(
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
-    );
-  }
-}
-
-class RoutePosition {
-  final String id;
-  final int routeId;
-  final DateTime timestamp;
-  final double latitude;
-  final double longitude;
-  final double altitude;
-  final double speed;
-  final int angle;
-
-  RoutePosition({
-    required this.routeId,
-    required this.timestamp,
-    required this.latitude,
-    required this.longitude,
-    required this.altitude,
-    required this.speed,
-    required this.angle,
-    String? id,
-  }) : id = (id == null || id.isEmpty)
-            ? DateTime.now().millisecondsSinceEpoch.toString()
-            : id;
-
-  factory RoutePosition.fromJson(Map<String, dynamic> json) {
-    return RoutePosition(
-      id: json['id'],
-      routeId: json['routeId'],
-      timestamp: DateTime.parse(json['timestamp']),
-      latitude: json['latitude']?.toDouble() ?? 0.0,
-      longitude: json['longitude']?.toDouble() ?? 0.0,
-      altitude: json['altitude']?.toDouble() ?? 0.0,
-      speed: json['speed']?.toDouble() ?? 0.0,
-      angle: json['angle'] ?? 0,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'routeId': routeId,
-        'timestamp': timestamp.toIso8601String(),
-        'latitude': latitude,
-        'longitude': longitude,
-        'altitude': altitude,
-        'speed': speed,
-        'angle': angle,
-      };
-
-  RoutePosition copyWith({
-    String? id,
-    int? routeId,
-    DateTime? timestamp,
-    double? latitude,
-    double? longitude,
-    double? altitude,
-    double? speed,
-    int? angle,
-  }) {
-    return RoutePosition(
-      id: id ?? this.id,
-      routeId: routeId ?? this.routeId,
-      timestamp: timestamp ?? this.timestamp,
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
-      altitude: altitude ?? this.altitude,
-      speed: speed ?? this.speed,
-      angle: angle ?? this.angle,
-    );
-  }
-}
-
-class Route {
-  final int id;
-  final String unitName;
-  final RouteStatus status;
-  final DateTime timestamp;
-  final Position source;
-  final Position destination;
-  final List<RoutePosition>? positions;
-
-  Route({
+  RouteEntity({
     required this.id,
     required this.unitName,
-    required this.status,
     required this.timestamp,
-    required this.source,
-    required this.destination,
-    this.positions,
+    required this.sourceLatitude,
+    required this.sourceLongitude,
+    required this.destinationLatitude,
+    required this.destinationLongitude,
+    this.isFinished = false,
+    this.isCancelled = false,
+    this.duration,
   });
 
-  factory Route.fromJson(Map<String, dynamic> json) {
-    return Route(
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'unit_name': unitName,
+      'timestamp': timestamp,
+      'source_latitude': sourceLatitude,
+      'source_longitude': sourceLongitude,
+      'destination_latitude': destinationLatitude,
+      'destination_longitude': destinationLongitude,
+      'is_finished': isFinished,
+      'is_cancelled': isCancelled,
+      'duration': duration,
+    };
+  }
+
+  factory RouteEntity.fromJson(Map<String, dynamic> json) {
+    return RouteEntity(
       id: json['id'],
-      unitName: json['unitName'],
-      status: RouteStatus.values.firstWhere(
-        (e) => e.toString().split('.').last == json['status'],
-        orElse: () => RouteStatus.pending,
-      ),
-      timestamp: DateTime.parse(json['timestamp']),
-      source: Position.fromJson(json['source']),
-      destination: Position.fromJson(json['destination']),
-      positions: json['positions'] != null
-          ? (json['positions'] as List)
-              .map((e) => RoutePosition.fromJson(e))
-              .toList()
-          : null,
+      unitName: json['unit_name'],
+      timestamp: json['timestamp'],
+      sourceLatitude: json['source_latitude'],
+      sourceLongitude: json['source_longitude'],
+      destinationLatitude: json['destination_latitude'],
+      destinationLongitude: json['destination_longitude'],
+      isFinished: json['is_finished'] ?? false,
+      isCancelled: json['is_cancelled'] ?? false,
+      duration: json['duration'],
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'unitName': unitName,
-        'status': status.toString().split('.').last,
-        'timestamp': timestamp.toIso8601String(),
-        'source': source.toJson(),
-        'destination': destination.toJson(),
-        'positions': positions?.map((e) => e.toJson()).toList(),
-      };
-
-  Route copyWith({
-    int? id,
-    String? unitName,
-    RouteStatus? status,
-    DateTime? timestamp,
-    Position? source,
-    Position? destination,
-    List<RoutePosition>? positions,
-  }) {
+  Route toRoute() {
     return Route(
-      id: id ?? this.id,
-      unitName: unitName ?? this.unitName,
-      status: status ?? this.status,
-      timestamp: timestamp ?? this.timestamp,
-      source: source ?? this.source,
-      destination: destination ?? this.destination,
-      positions: positions ?? this.positions,
+      id: int.tryParse(this.id) ?? 0,
+      unitName: this.unitName,
+      status: RouteStatus.running, // You'll need to handle status properly
+      timestamp: this.timestamp,
+      source: Position(latitude: sourceLatitude, longitude: sourceLongitude),
+      destination: Position(
+          latitude: destinationLatitude, longitude: destinationLongitude),
+      positions: null, // You'll need to handle positions if needed
+    );
+  }
+}
+
+class CancelRouteEntity {
+  final dynamic routeId;
+  final dynamic cancelTimestamp;
+  final dynamic cancelLatitude;
+  final dynamic cancelLongitude;
+  final dynamic time;
+
+  CancelRouteEntity({
+    required this.routeId,
+    required this.cancelTimestamp,
+    required this.cancelLatitude,
+    required this.cancelLongitude,
+    required this.time,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'routeid': routeId,
+      'cancel_timestamp': cancelTimestamp,
+      'cancel_latitude': cancelLatitude,
+      'cancel_longitude': cancelLongitude,
+      'time': time,
+    };
+  }
+}
+
+class FinishRouteEntity {
+  final dynamic routeId;
+  final dynamic finishTimestamp;
+  final dynamic finishLatitude;
+  final dynamic finishLongitude;
+  final dynamic time;
+
+  FinishRouteEntity({
+    required this.routeId,
+    required this.finishTimestamp,
+    required this.finishLatitude,
+    required this.finishLongitude,
+    required this.time,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'routeid': routeId,
+      'finish_timestamp': finishTimestamp,
+      'finish_latitude': finishLatitude,
+      'finish_longitude': finishLongitude,
+      'time': time,
+    };
+  }
+
+  factory FinishRouteEntity.fromJson(Map<String, dynamic> json) {
+    return FinishRouteEntity(
+      routeId: json['routeid'],
+      finishTimestamp: json['finish_timestamp'],
+      finishLatitude: json['finish_latitude'],
+      finishLongitude: json['finish_longitude'],
+      time: json['time'],
     );
   }
 }

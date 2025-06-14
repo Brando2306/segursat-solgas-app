@@ -124,13 +124,13 @@ void main() async {
   await routeLocalDataSource.init();
 
   final routeRemoteDataSource =
-      RouteRemoteDataSourceImpl(client: http.Client());
+      RouteRemoteDataSourceImpl(client: http.Client(), dio: Dio());
   final offlineOperationRepo =
       OfflineOperationsRepositoryImpl(database: database);
   final RouteRepository routeRepository = RouteRepositoryImpl(
     localDataSource: routeLocalDataSource,
     remoteDataSource: routeRemoteDataSource,
-    offlineRepo: offlineOperationRepo,
+    offlineOperationsRepository: offlineOperationRepo,
   );
 
   final connectivity = Connectivity();
@@ -184,7 +184,9 @@ void main() async {
           create: (_) => SelectDestinationProvider(),
         ),
         ChangeNotifierProvider(
-          create: (_) => SpeedometerProvider(),
+          create: (_) => SpeedometerProvider(
+              offlineOperationsRepository: offlineOperationRepo,
+              routeRepository: routeRepository),
         ),
       ],
       child: MyApp(),

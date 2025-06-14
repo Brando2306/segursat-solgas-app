@@ -1,42 +1,56 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
+import 'package:safe_driving_app/features/route/domain/entities/route.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_event_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/utils/endpoints.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 
 abstract class RouteRemoteDataSource {
-  Future<Route> getRoute(int id);
+  // Future<Route> getRoute(int id);
   Future<List<Route>> getActiveRoutes();
-  Future<int> createRoute(Map<String, dynamic> routeData);
+  // Future<int> createRoute(Map<String, dynamic> routeData);
   Future<void> saveRoutePosition(RoutePosition position);
   Future<void> saveRoutePositionsBatch(List<Map<String, dynamic>> positions);
-  Future<void> cancelRoute(int routeId);
-  Future<void> finishRoute(int routeId);
-  Future<void> reportSos(int routeId);
+  // Future<void> cancelRoute(int routeId);
+  // Future<void> finishRoute(int routeId);
+  // Future<void> reportSos(int routeId);
+
+  Future<RouteEntity> createRoute(RouteEntity route);
+  Future<RouteEntity> getRoute(String routeId);
+  Future<void> finishRoute(FinishRouteEntity route);
+  Future<void> cancelRoute(RouteEntity route);
+  Future<void> sendSos(RouteEventEntity event);
+  Future<void> sendRoutePositions(List<RoutePositionEntity> positions);
 }
 
 class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
   final http.Client _client;
+  final Dio _dio;
 
-  RouteRemoteDataSourceImpl({required http.Client client}) : _client = client;
+  RouteRemoteDataSourceImpl({required http.Client client, required Dio dio})
+      : _client = client,
+        _dio = dio;
 
-  @override
-  Future<Route> getRoute(int id) async {
-    final response = await _makeRequest(
-      ENDPOINTS.GET_ROUTE.replaceAll('<int:id>', '$id'),
-    );
-    return mapResponseToRoute(response);
-  }
+  // @override
+  // Future<Route> getRoute(int id) async {
+  //   final response = await _makeRequest(
+  //     ENDPOINTS.GET_ROUTE.replaceAll('<int:id>', '$id'),
+  //   );
+  //   return mapResponseToRoute(response);
+  // }
 
   @override
   Future<List<Route>> getActiveRoutes() async {
     try {
       final currentRouteId = readStorage('personal.lastRoute');
       if (currentRouteId != null) {
-        final route = await getRoute(currentRouteId as int);
-        return [route];
+        final route = await getRoute(currentRouteId);
+        return [route.toRoute()];
       }
       return [];
     } catch (e) {
@@ -44,26 +58,26 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
     }
   }
 
-  @override
-  Future<int> createRoute(Map<String, dynamic> route) async {
-    final response = await _makeRequest(
-      ENDPOINTS.CREATE_ROUTE,
-      method: 'POST',
-      body: {
-        'unit_name': readStorage('personal.licensePlate'),
-        'timestamp': getDate(),
-        'source_latitude':
-            json.decode(readStorage('root.initialPosition'))['latitude'],
-        'source_longitude':
-            json.decode(readStorage('root.initialPosition'))['longitude'],
-        'destination_latitude':
-            json.decode(readStorage('root.finalPosition'))['latitude'],
-        'destination_longitude':
-            json.decode(readStorage('root.finalPosition'))['longitude'],
-      },
-    );
-    return response['id'];
-  }
+  // @override
+  // Future<int> createRoute(Map<String, dynamic> route) async {
+  //   final response = await _makeRequest(
+  //     ENDPOINTS.CREATE_ROUTE,
+  //     method: 'POST',
+  //     body: {
+  //       'unit_name': readStorage('personal.licensePlate'),
+  //       'timestamp': getDate(),
+  //       'source_latitude':
+  //           json.decode(readStorage('root.initialPosition'))['latitude'],
+  //       'source_longitude':
+  //           json.decode(readStorage('root.initialPosition'))['longitude'],
+  //       'destination_latitude':
+  //           json.decode(readStorage('root.finalPosition'))['latitude'],
+  //       'destination_longitude':
+  //           json.decode(readStorage('root.finalPosition'))['longitude'],
+  //     },
+  //   );
+  //   return response['id'];
+  // }
 
   @override
   Future<void> saveRoutePosition(RoutePosition position) async {
@@ -74,13 +88,13 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
     );
   }
 
-  @override
-  Future<void> finishRoute(int routeId) async {
-    await _makeRequest(
-      ENDPOINTS.FINISH_ROUTE.replaceAll('<int:id>', '$routeId'),
-      method: 'POST',
-    );
-  }
+  // @override
+  // Future<void> finishRoute(int routeId) async {
+  //   await _makeRequest(
+  //     ENDPOINTS.FINISH_ROUTE.replaceAll('<int:id>', '$routeId'),
+  //     method: 'POST',
+  //   );
+  // }
 
   @override
   Future<void> saveRoutePositionsBatch(
@@ -92,21 +106,21 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
     );
   }
 
-  @override
-  Future<void> cancelRoute(int routeId) async {
-    await _makeRequest(
-      ENDPOINTS.CANCEL_ROUTE.replaceAll('<int:id>', '$routeId'),
-      method: 'POST',
-    );
-  }
+  // @override
+  // Future<void> cancelRoute(int routeId) async {
+  //   await _makeRequest(
+  //     ENDPOINTS.CANCEL_ROUTE.replaceAll('<int:id>', '$routeId'),
+  //     method: 'POST',
+  //   );
+  // }
 
-  @override
-  Future<void> reportSos(int routeId) async {
-    await _makeRequest(
-      ENDPOINTS.INSERT_ROUTE_SOS.replaceAll('<int:id>', '$routeId'),
-      method: 'POST',
-    );
-  }
+  // @override
+  // Future<void> reportSos(int routeId) async {
+  //   await _makeRequest(
+  //     ENDPOINTS.INSERT_ROUTE_SOS.replaceAll('<int:id>', '$routeId'),
+  //     method: 'POST',
+  //   );
+  // }
 
   Future<Map<String, dynamic>> _makeRequest(
     String endpoint, {
@@ -181,5 +195,98 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
               ))
           .toList(),
     );
+  }
+
+  @override
+  Future<RouteEntity> createRoute(RouteEntity route) async {
+    final response = await _dio.post(
+      'http://${ENDPOINTS.HOST}/${ENDPOINTS.CREATE_ROUTE}',
+      data: route.toJson(),
+      options: Options(headers: {
+        'Authorization': ENDPOINTS.auth(),
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to create route');
+    }
+
+    return RouteEntity.fromJson(response.data);
+  }
+
+  @override
+  Future<RouteEntity> getRoute(String routeId) async {
+    final response = await _dio.get(
+      'http://${ENDPOINTS.HOST}/${ENDPOINTS.GET_ROUTE.replaceAll('<int:id>', routeId)}',
+      options: Options(headers: {
+        'Authorization': ENDPOINTS.auth(),
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to get route');
+    }
+
+    return RouteEntity.fromJson(response.data);
+  }
+
+  @override
+  Future<void> finishRoute(FinishRouteEntity route) async {
+    final response = await _dio.post(
+      'http://${ENDPOINTS.HOST}/${ENDPOINTS.FINISH_ROUTE}',
+      data: route.toJson(),
+      options: Options(headers: {
+        'Authorization': ENDPOINTS.auth(),
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to finish route');
+    }
+  }
+
+  @override
+  Future<void> cancelRoute(RouteEntity route) async {
+    final response = await _dio.post(
+      'http://${ENDPOINTS.HOST}/${ENDPOINTS.CANCEL_ROUTE}',
+      data: route.toJson(),
+      options: Options(headers: {
+        'Authorization': ENDPOINTS.auth(),
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to cancel route');
+    }
+  }
+
+  @override
+  Future<void> sendSos(RouteEventEntity event) async {
+    final response = await _dio.post(
+      'http://${ENDPOINTS.HOST}/${ENDPOINTS.INSERT_ROUTE_SOS}',
+      data: [event.toJson()],
+      options: Options(headers: {
+        'Authorization': ENDPOINTS.auth(),
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to send SOS');
+    }
+  }
+
+  @override
+  Future<void> sendRoutePositions(List<RoutePositionEntity> positions) async {
+    final response = await _dio.post(
+      'http://${ENDPOINTS.HOST}/${ENDPOINTS.INSERT_ROUTE_POSITIONS_BATCH}',
+      data: positions.map((p) => p.toJson()).toList(),
+      options: Options(headers: {
+        'Authorization': ENDPOINTS.auth(),
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to send route positions');
+    }
   }
 }

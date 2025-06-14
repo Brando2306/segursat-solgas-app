@@ -9,6 +9,13 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
+import 'package:safe_driving_app/features/offline_operations/presentation/providers/offline_operations_provider.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_event_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
+import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/providers/index.dart';
 import 'package:safe_driving_app/providers/route.dart';
@@ -16,8 +23,17 @@ import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/endpoints.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:collection/collection.dart';
 
 class SpeedometerProvider with ChangeNotifier {
+  late final RouteRepository routeRepository;
+  late final OfflineOperationsRepository offlineOperationsRepository;
+
+  SpeedometerProvider({
+    required this.routeRepository,
+    required this.offlineOperationsRepository,
+  });
+
   // Stream subscriptions
   StreamSubscription<Position>? _positionStream;
   late LocationSettings _locationSettings;
@@ -108,19 +124,82 @@ class SpeedometerProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Future<void> createOrResumeRoute() async {
+  //   try {
+  //     if (isNotEmptyString(readStorage('root.cronometer'))) {
+  //       if (isNotEmptyString(readStorage('personal.lastRoute'))) {
+  //         writeStorage(
+  //             'root.createRoute.id', readStorage('personal.lastRoute'));
+  //       }
+  //     } else {
+  //       final route = await createRoute();
+  //       writeStorage('root.createRoute.id', route['id']);
+  //     }
+  //   } catch (e) {
+  //     log('Error creating/resuming route: $e');
+  //   }
+  // }
+
   Future<void> createOrResumeRoute() async {
     try {
       if (isNotEmptyString(readStorage('root.cronometer'))) {
+        // Si ya hay una ruta en progreso
         if (isNotEmptyString(readStorage('personal.lastRoute'))) {
           writeStorage(
               'root.createRoute.id', readStorage('personal.lastRoute'));
+
+          final pendingCreation = await offlineOperationsRepository
+              .getOperationsByType(OfflineOperationType.routeCreation)
+              .then((ops) => ops.firstWhereOrNull(
+                    (op) =>
+                        RouteEntity.fromJson(op.data).id ==
+                        readStorage('personal.lastRoute'),
+                  ));
+
+          if (pendingCreation != null) {
+            // Necesitarías acceder al OfflineOperationsProvider aquí
+            // Esto debería hacerse en el método que llama a createOrResumeRoute
+            // o pasar el provider como parámetro
+          }
         }
       } else {
-        final route = await createRoute();
-        writeStorage('root.createRoute.id', route['id']);
+        // Crear nueva ruta
+        final initialPosition =
+            json.decode(readStorage('root.initialPosition'));
+        final finalPosition = json.decode(readStorage('root.finalPosition'));
+
+        final route = RouteEntity(
+          id: '', // Se generará en el servidor
+          unitName: readStorage('personal.licensePlate'),
+          timestamp: DateTime.now(),
+          sourceLatitude: initialPosition['latitude'],
+          sourceLongitude: initialPosition['longitude'],
+          destinationLatitude: finalPosition['latitude'],
+          destinationLongitude: finalPosition['longitude'],
+        );
+
+        final createdRoute = await routeRepository.createRoute(route);
+        writeStorage('root.createRoute.id', createdRoute.id);
       }
     } catch (e) {
       log('Error creating/resuming route: $e');
+
+      // Si falla, verificar si hay una ruta pendiente en offline
+      final pendingRoutes = await offlineOperationsRepository
+          .getOperationsByType(OfflineOperationType.routeCreation);
+
+      if (pendingRoutes.isNotEmpty) {
+        // Usar la ruta pendiente más reciente
+        final latestRouteOp = pendingRoutes.reduce(
+          (a, b) => a.createdAt.isAfter(b.createdAt) ? a : b,
+        );
+
+        final pendingRoute = RouteEntity.fromJson(latestRouteOp.data);
+        writeStorage('root.createRoute.id', pendingRoute.id);
+      } else {
+        // No hay ruta pendiente y no se pudo crear una nueva
+        throw Exception('No se pudo crear o reanudar la ruta');
+      }
     }
   }
 
@@ -167,26 +246,72 @@ class SpeedometerProvider with ChangeNotifier {
     }
   }
 
+  // Future<void> _attemptToSendPosition() async {
+  //   try {
+  //     final position = await Geolocator.getCurrentPosition(
+  //       desiredAccuracy: LocationAccuracy.high,
+  //     );
+
+  //     final positionData = {
+  //       "unitid": readStorage('personal.unitId'),
+  //       "routeid": readStorage('root.createRoute.id'),
+  //       "timestamp": getDate(),
+  //       "latitude": position.latitude,
+  //       "longitude": position.longitude,
+  //       "altitude": position.altitude,
+  //       "speed": position.speed.round(),
+  //       "angle": _currentDuration.inSeconds,
+  //     };
+
+  //     await _createRoutePositions([positionData]);
+  //   } catch (e) {
+  //     log('Error sending position: $e');
+  //   }
+  // }
+
   Future<void> _attemptToSendPosition() async {
     try {
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      final positionData = {
-        "unitid": readStorage('personal.unitId'),
-        "routeid": readStorage('root.createRoute.id'),
-        "timestamp": getDate(),
-        "latitude": position.latitude,
-        "longitude": position.longitude,
-        "altitude": position.altitude,
-        "speed": position.speed.round(),
-        "angle": _currentDuration.inSeconds,
-      };
+      final positionData = RoutePositionEntity(
+        routeId: readStorage('root.createRoute.id'),
+        unitId: readStorage('personal.unitId'),
+        timestamp: DateTime.now(),
+        latitude: position.latitude,
+        longitude: position.longitude,
+        altitude: position.altitude,
+        speed: position.speed,
+        angle: _currentDuration.inSeconds,
+      );
 
-      await _createRoutePositions([positionData]);
+      // Intentamos enviar la posición actual y cualquier posición pendiente
+      await _sendPositions([positionData]);
     } catch (e) {
       log('Error sending position: $e');
+    }
+  }
+
+  int get pendingPositionsCount {
+    final savedPositions = readStorage('savedPositions')?.cast<String>() ?? [];
+    return savedPositions.length;
+  }
+
+  Future<void> _sendPositions(List<RoutePositionEntity> positions) async {
+    try {
+      await routeRepository.sendRoutePositions(positions);
+      // Si se enviaron correctamente, eliminamos cualquier posición pendiente del almacenamiento local
+      writeStorage('savedPositions', []);
+      notifyListeners();
+    } catch (e) {
+      // En caso de error, guardamos las posiciones localmente
+      List<String> savedPositions =
+          readStorage('savedPositions')?.cast<String>() ?? [];
+      savedPositions.addAll(positions.map((p) => json.encode(p.toJson())));
+      writeStorage('savedPositions', savedPositions);
+      notifyListeners();
+      log('Positions saved locally: ${savedPositions.length}');
     }
   }
 
@@ -264,28 +389,88 @@ class SpeedometerProvider with ChangeNotifier {
     }
   }
 
+  // Future<void> finishRoute({bool isEmergency = false}) async {
+  //   _buttonFinishEnabled = false;
+  //   notifyListeners();
+
+  //   try {
+  //     Map<String, dynamic> response;
+
+  //     if (isEmergency || readStorage('root.type') == ROOT_TYPE.SOS) {
+  //       response = await cancelRouteProvider();
+  //     } else {
+  //       response = await finishRouteProvider();
+  //     }
+
+  //     if (response['status'] == STATUSCODE.OK) {
+  //       _cleanup();
+  //     } else {
+  //       throw Exception(handleApiError(response));
+  //     }
+  //   } catch (e) {
+  //     _buttonFinishEnabled = true;
+  //     notifyListeners();
+  //     rethrow;
+  //   }
+  // }
   Future<void> finishRoute({bool isEmergency = false}) async {
     _buttonFinishEnabled = false;
     notifyListeners();
 
     try {
-      Map<String, dynamic> response;
+      final currentPosition = await Geolocator.getCurrentPosition();
 
       if (isEmergency || readStorage('root.type') == ROOT_TYPE.SOS) {
-        response = await cancelRouteProvider();
+        final route = RouteEntity(
+          id: readStorage('root.createRoute.id'),
+          unitName: readStorage('personal.licensePlate'),
+          timestamp: DateTime.now(),
+          sourceLatitude:
+              json.decode(readStorage('root.initialPosition'))['latitude'],
+          sourceLongitude:
+              json.decode(readStorage('root.initialPosition'))['longitude'],
+          destinationLatitude:
+              json.decode(readStorage('root.finalPosition'))['latitude'],
+          destinationLongitude:
+              json.decode(readStorage('root.finalPosition'))['longitude'],
+          duration: _currentDuration.inSeconds,
+        );
+        await routeRepository.cancelRoute(route);
       } else {
-        response = await finishRouteProvider();
+        final route = FinishRouteEntity(
+          routeId: readStorage('root.createRoute.id'),
+          finishTimestamp: getDate(),
+          finishLatitude: currentPosition.latitude,
+          finishLongitude: currentPosition.longitude,
+          time: readStorage('root.cronometer') ?? 0,
+        );
+        await routeRepository.finishRoute(route);
       }
 
-      if (response['status'] == STATUSCODE.OK) {
-        _cleanup();
-      } else {
-        throw Exception(handleApiError(response));
-      }
+      // Enviar cualquier posición pendiente antes de limpiar
+      await _sendPendingPositions();
+
+      _cleanup();
     } catch (e) {
       _buttonFinishEnabled = true;
       notifyListeners();
       rethrow;
+    }
+  }
+
+  Future<void> _sendPendingPositions() async {
+    final savedPositions = readStorage('savedPositions')?.cast<String>() ?? [];
+    if (savedPositions.isEmpty) return;
+
+    try {
+      final positions = savedPositions
+          .map((p) => RoutePositionEntity.fromJson(json.decode(p)))
+          .toList();
+
+      await routeRepository.sendRoutePositions(positions);
+      writeStorage('savedPositions', []);
+    } catch (e) {
+      log('Failed to send pending positions: $e');
     }
   }
 
@@ -302,9 +487,30 @@ class SpeedometerProvider with ChangeNotifier {
     cleanRootRecurringStop();
   }
 
+  // Future<void> triggerEmergency() async {
+  //   try {
+  //     await sendEmergencyNotification();
+  //     await callEmergencyPhone();
+  //     await finishRoute(isEmergency: true);
+  //   } catch (e) {
+  //     log('Emergency trigger failed: $e');
+  //     rethrow;
+  //   }
+  // }
+
   Future<void> triggerEmergency() async {
     try {
-      await sendEmergencyNotification();
+      final currentPosition = await Geolocator.getCurrentPosition();
+      final event = RouteEventEntity(
+        routeId: readStorage('root.createRoute.id'),
+        unitId: readStorage('personal.unitId'),
+        timestamp: DateTime.now(),
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
+        eventType: 'SOS',
+      );
+
+      await routeRepository.sendSos(event);
       await callEmergencyPhone();
       await finishRoute(isEmergency: true);
     } catch (e) {

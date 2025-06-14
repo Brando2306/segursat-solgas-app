@@ -5,19 +5,22 @@ import 'package:safe_driving_app/features/offline_operations/domain/entities/ope
 import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
 import 'package:safe_driving_app/features/route/data/datasources/route_local_data_source.dart';
 import 'package:safe_driving_app/features/route/data/datasources/route_remote_data_source.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_event_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
 import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 
 class RouteRepositoryImpl implements RouteRepository {
   final RouteRemoteDataSource remoteDataSource;
   final RouteLocalDataSource localDataSource;
-  final OfflineOperationsRepository offlineRepo;
+  final OfflineOperationsRepository offlineOperationsRepository;
 
   RouteRepositoryImpl({
     required this.remoteDataSource,
     required this.localDataSource,
-    required this.offlineRepo,
+    required this.offlineOperationsRepository,
   });
 
   @override
@@ -34,10 +37,10 @@ class RouteRepositoryImpl implements RouteRepository {
       // 2. Si no hay rutas activas, verificar si hay una en almacenamiento local
       final lastRouteId = readStorage('personal.lastRoute');
       if (lastRouteId != null) {
-        final route = await remoteDataSource.getRoute(lastRouteId as int);
-        if (route.status == RouteStatus.running) {
-          await localDataSource.cacheRoute(route);
-          return route;
+        final route = await remoteDataSource.getRoute(lastRouteId);
+        if (route.toRoute().status == RouteStatus.running) {
+          await localDataSource.cacheRoute(route.toRoute());
+          return route.toRoute();
         }
       }
 
@@ -60,7 +63,7 @@ class RouteRepositoryImpl implements RouteRepository {
   Future<Route> resumeRoute(int routeId) async {
     try {
       // 1. Obtener la ruta del servidor
-      final route = await remoteDataSource.getRoute(routeId);
+      final route = await remoteDataSource.getRoute(routeId.toString());
 
       // 2. Actualizar almacenamiento local
       await writeStorage('personal.lastRoute', routeId);
@@ -68,21 +71,21 @@ class RouteRepositoryImpl implements RouteRepository {
       await writeStorage('personal.lastRouteStatus', 'running');
 
       // 3. Guardar en caché local
-      await localDataSource.cacheRoute(route);
+      await localDataSource.cacheRoute(route.toRoute());
 
       // 4. Guardar posición final en storage
       await writeStorage(
         'root.finalPosition',
         json.encode({
-          'latitude': route.destination.latitude,
-          'longitude': route.destination.longitude,
+          'latitude': route.toRoute().destination.latitude,
+          'longitude': route.toRoute().destination.longitude,
         }),
       );
 
-      return route;
+      return route.toRoute();
     } catch (e) {
       // En caso de error, guardar como operación pendiente
-      await offlineRepo.saveOperation(
+      await offlineOperationsRepository.saveOperation(
         OfflineOperation(
           type: OfflineOperationType.routeRecovery,
           data: {
@@ -109,7 +112,7 @@ class RouteRepositoryImpl implements RouteRepository {
       await remoteDataSource.saveRoutePosition(position);
     } catch (e) {
       await localDataSource.savePendingPosition(position);
-      await offlineRepo.saveOperation(
+      await offlineOperationsRepository.saveOperation(
         OfflineOperation(
           type: OfflineOperationType.routeRecovery,
           data: {
@@ -141,25 +144,25 @@ class RouteRepositoryImpl implements RouteRepository {
     }
   }
 
-  @override
-  Future<void> finishRoute(int routeId) async {
-    try {
-      await remoteDataSource.finishRoute(routeId);
-      await localDataSource.cleanRouteData(routeId);
-    } catch (e) {
-      await offlineRepo.saveOperation(
-        OfflineOperation(
-          type: OfflineOperationType.routeRecovery,
-          data: {
-            'routeId': routeId,
-            'action': 'finish',
-            'timestamp': DateTime.now().toIso8601String(),
-          },
-        ),
-      );
-      rethrow;
-    }
-  }
+  // @override
+  // Future<void> finishRoute(int routeId) async {
+  //   try {
+  //     await remoteDataSource.finishRoute(routeId);
+  //     await localDataSource.cleanRouteData(routeId);
+  //   } catch (e) {
+  //     await offlineRepo.saveOperation(
+  //       OfflineOperation(
+  //         type: OfflineOperationType.routeRecovery,
+  //         data: {
+  //           'routeId': routeId,
+  //           'action': 'finish',
+  //           'timestamp': DateTime.now().toIso8601String(),
+  //         },
+  //       ),
+  //     );
+  //     rethrow;
+  //   }
+  // }
 
   @override
   Future<void> saveRoutePositionsBatch(
@@ -173,19 +176,75 @@ class RouteRepositoryImpl implements RouteRepository {
     }
   }
 
-  @override
-  Future<void> cancelRoute(int routeId) async {
+  // @override
+  // Future<void> cancelRoute(int routeId) async {
+  //   try {
+  //     await remoteDataSource.cancelRoute(routeId);
+  //   } catch (e) {
+  //     await offlineRepo.saveOperation(
+  //       OfflineOperation(
+  //         type: OfflineOperationType.routeEvent,
+  //         data: {
+  //           'routeId': routeId,
+  //           'eventType': 'cancel',
+  //           'timestamp': DateTime.now().toIso8601String(),
+  //         },
+  //       ),
+  //     );
+  //     rethrow;
+  //   }
+  // }
+
+  // @override
+  // Future<void> reportSos(int routeId) async {
+  //   try {
+  //     await remoteDataSource.reportSos(routeId);
+  //   } catch (e) {
+  //     // Guardar operación pendiente
+  //     await offlineOperationsRepository.saveOperation(
+  //       OfflineOperation(
+  //         type: OfflineOperationType.routeEvent,
+  //         data: {
+  //           'routeId': routeId,
+  //           'eventType': 'sos',
+  //           'timestamp': DateTime.now().toIso8601String(),
+  //         },
+  //       ),
+  //     );
+  //     rethrow;
+  //   }
+  // }
+
+  // @override
+  // Future<int> createRoute(Map<String, dynamic> routeData) async {
+  //   try {
+  //     return await remoteDataSource.createRoute(routeData);
+  //   } catch (e) {
+  //     await offlineRepo.saveOperation(
+  //       OfflineOperation(
+  //         type: OfflineOperationType.routeRecovery,
+  //         data: {
+  //           'action': 'create',
+  //           'data': routeData,
+  //           'timestamp': DateTime.now().toIso8601String(),
+  //         },
+  //       ),
+  //     );
+  //     rethrow;
+  //   }
+  // }
+
+   @override
+  Future<RouteEntity> createRoute(RouteEntity route) async {
     try {
-      await remoteDataSource.cancelRoute(routeId);
+      final createdRoute = await remoteDataSource.createRoute(route);
+      return createdRoute;
     } catch (e) {
-      await offlineRepo.saveOperation(
+      // Guardar en operaciones offline
+      await offlineOperationsRepository.saveOperation(
         OfflineOperation(
-          type: OfflineOperationType.routeEvent,
-          data: {
-            'routeId': routeId,
-            'eventType': 'cancel',
-            'timestamp': DateTime.now().toIso8601String(),
-          },
+          type: OfflineOperationType.routeCreation,
+          data: route.toJson(),
         ),
       );
       rethrow;
@@ -193,19 +252,20 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  Future<void> reportSos(int routeId) async {
+  Future<RouteEntity> getRoute(String routeId) async {
+    return await remoteDataSource.getRoute(routeId);
+  }
+
+  @override
+  Future<void> finishRoute(FinishRouteEntity route) async {
     try {
-      await remoteDataSource.reportSos(routeId);
+      await remoteDataSource.finishRoute(route);
     } catch (e) {
-      // Guardar operación pendiente
-      await offlineRepo.saveOperation(
+      // Guardar en operaciones offline
+      await offlineOperationsRepository.saveOperation(
         OfflineOperation(
-          type: OfflineOperationType.routeEvent,
-          data: {
-            'routeId': routeId,
-            'eventType': 'sos',
-            'timestamp': DateTime.now().toIso8601String(),
-          },
+          type: OfflineOperationType.routeFinish,
+          data: route.toJson(),
         ),
       );
       rethrow;
@@ -213,20 +273,51 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  Future<int> createRoute(Map<String, dynamic> routeData) async {
+  Future<void> cancelRoute(RouteEntity route) async {
     try {
-      return await remoteDataSource.createRoute(routeData);
+      await remoteDataSource.cancelRoute(route);
     } catch (e) {
-      await offlineRepo.saveOperation(
+      // Guardar en operaciones offline
+      await offlineOperationsRepository.saveOperation(
         OfflineOperation(
-          type: OfflineOperationType.routeRecovery,
-          data: {
-            'action': 'create',
-            'data': routeData,
-            'timestamp': DateTime.now().toIso8601String(),
-          },
+          type: OfflineOperationType.routeCancel,
+          data: route.toJson(),
         ),
       );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> sendSos(RouteEventEntity event) async {
+    try {
+      await remoteDataSource.sendSos(event);
+    } catch (e) {
+      // Guardar en operaciones offline
+      await offlineOperationsRepository.saveOperation(
+        OfflineOperation(
+          type: OfflineOperationType.routeSos,
+          data: event.toJson(),
+        ),
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> sendRoutePositions(List<RoutePositionEntity> positions) async {
+    try {
+      await remoteDataSource.sendRoutePositions(positions);
+    } catch (e) {
+      // Guardar en operaciones offline
+      for (final position in positions) {
+        await offlineOperationsRepository.saveOperation(
+          OfflineOperation(
+            type: OfflineOperationType.routePositions,
+            data: position.toJson(),
+          ),
+        );
+      }
       rethrow;
     }
   }

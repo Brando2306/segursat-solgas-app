@@ -93,7 +93,9 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                   context,
                   title: 'Recuperaciones de Ruta',
                   operations: provider.routeRecoveryOperations,
-                  onRetry: provider.retryRouteCreation,
+                  onRetry: (String id) async {
+                    await provider.retryRouteCreation(context, id);
+                  },
                   icon: Icons.route,
                   color: Colors.blue,
                 ),
@@ -107,13 +109,53 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                   icon: Icons.build,
                   color: Colors.orange,
                 ),
+                // _buildSection(
+                //   context,
+                //   title: 'Posiciones de Ruta',
+                //   operations: provider.routePositionsOperations,
+                //   onRetry: provider.retryRoutePositions,
+                //   icon: Icons.location_on,
+                //   color: Colors.green,
+                // ),
                 _buildSection(
                   context,
                   title: 'Posiciones de Ruta',
                   operations: provider.routePositionsOperations,
-                  onRetry: provider.retryRoutePositions,
+                  onRetry: (String id) async {
+                    await provider.retryRoutePositions(context, id);
+                  },
                   icon: Icons.location_on,
                   color: Colors.green,
+                ),
+                _buildSection(
+                  context,
+                  title: 'Finalizaciones de Ruta',
+                  operations: provider.routeFinishOperations,
+                  onRetry: (String id) async {
+                    await provider.retryRouteFinish(context, id);
+                  },
+                  icon: Icons.flag,
+                  color: Colors.blue,
+                ),
+                _buildSection(
+                  context,
+                  title: 'Cancelaciones de Ruta',
+                  operations: provider.routeCancelOperations,
+                  onRetry: (String id) async {
+                    await provider.retryRouteCancel(context, id);
+                  },
+                  icon: Icons.cancel,
+                  color: Colors.orange,
+                ),
+                _buildSection(
+                  context,
+                  title: 'Emergencias SOS',
+                  operations: provider.routeSosOperations,
+                  onRetry: (String id) async {
+                    await provider.retryRouteSos(context, id);
+                  },
+                  icon: Icons.warning,
+                  color: Colors.red,
                 ),
                 _buildSection(
                   context,

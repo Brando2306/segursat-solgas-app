@@ -25,6 +25,9 @@ class ENDPOINTS {
 
   static const String SAVE_POSITIONS_BATCH =
       'web/api/control/insert-route-positions-batch/';
+
+  static const String INSERT_ROUTE_POSITIONS_BATCH =
+      'web/api/control/insert-route-positions-batch/';
   // http://sfdev.segursat.com/web/api/control/insert-route-positions-batch/
 
   static auth() {

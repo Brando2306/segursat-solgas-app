@@ -1,4 +1,4 @@
-import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route.dart';
 import 'package:sqflite/sqflite.dart';
 
 class RouteLocalDataSource {

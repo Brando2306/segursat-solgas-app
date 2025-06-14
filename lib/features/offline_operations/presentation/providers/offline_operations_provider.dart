@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +11,11 @@ import 'package:safe_driving_app/features/maintenance/domain/entities/maintenanc
 import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_event_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_recovery_entity.dart';
+import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
 import 'package:safe_driving_app/features/route/presentation/providers/route_provider.dart';
 import 'package:safe_driving_app/features/maintenance/presentation/providers/maintenance_provider.dart';
 
@@ -46,6 +52,18 @@ class OfflineOperationsProvider with ChangeNotifier {
 
   List<OfflineOperation> get routeEventOperations => _operations
       .where((op) => op.type == OfflineOperationType.routeEvent)
+      .toList();
+
+  List<OfflineOperation> get routeFinishOperations => _operations
+      .where((op) => op.type == OfflineOperationType.routeFinish)
+      .toList();
+
+  List<OfflineOperation> get routeCancelOperations => _operations
+      .where((op) => op.type == OfflineOperationType.routeCancel)
+      .toList();
+
+  List<OfflineOperation> get routeSosOperations => _operations
+      .where((op) => op.type == OfflineOperationType.routeSos)
       .toList();
 
   Future<void> loadOperations() async {
@@ -91,15 +109,31 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
   }
 
-  // Métodos específicos para tipos de operaciones
-  Future<void> retryRouteCreation(String id) async {
+  // // Métodos específicos para tipos de operaciones
+  // Future<void> retryRouteCreation(String id) async {
+  //   final operation = await repository.getOperationById(id);
+  //   if (operation == null ||
+  //       operation.type != OfflineOperationType.routeRecovery) return;
+
+  //   try {
+  //     // Aquí deberías llamar al RouteProvider para reintentar la creación de ruta
+  //     // Ejemplo: await context.read<RouteProvider>().retryRouteCreation(operation.data['routeId']);
+  //     await repository.removeOperation(id);
+  //     await loadOperations();
+  //   } catch (e) {
+  //     await repository.updateRetryCount(
+  //         id, operation.retryCount + 1, e.toString());
+  //     rethrow;
+  //   }
+  // }
+  Future<void> retryRouteCreation(BuildContext context, String id) async {
     final operation = await repository.getOperationById(id);
     if (operation == null ||
-        operation.type != OfflineOperationType.routeRecovery) return;
+        operation.type != OfflineOperationType.routeCreation) return;
 
     try {
-      // Aquí deberías llamar al RouteProvider para reintentar la creación de ruta
-      // Ejemplo: await context.read<RouteProvider>().retryRouteCreation(operation.data['routeId']);
+      final route = RouteEntity.fromJson(operation.data);
+      await context.read<RouteRepository>().createRoute(route);
       await repository.removeOperation(id);
       await loadOperations();
     } catch (e) {
@@ -107,6 +141,106 @@ class OfflineOperationsProvider with ChangeNotifier {
           id, operation.retryCount + 1, e.toString());
       rethrow;
     }
+  }
+
+  Future<void> retryRouteFinish(BuildContext context, String id) async {
+    final operation = await repository.getOperationById(id);
+    if (operation == null || operation.type != OfflineOperationType.routeFinish)
+      return;
+
+    try {
+      final route = FinishRouteEntity.fromJson(operation.data);
+      await context.read<RouteRepository>().finishRoute(route);
+      await repository.removeOperation(id);
+      await loadOperations();
+    } catch (e) {
+      await repository.updateRetryCount(
+          id, operation.retryCount + 1, e.toString());
+      rethrow;
+    }
+  }
+
+  Future<void> retryRouteCancel(BuildContext context, String id) async {
+    final operation = await repository.getOperationById(id);
+    if (operation == null || operation.type != OfflineOperationType.routeCancel)
+      return;
+
+    try {
+      final route = RouteEntity.fromJson(operation.data);
+      await context.read<RouteRepository>().cancelRoute(route);
+      await repository.removeOperation(id);
+      await loadOperations();
+    } catch (e) {
+      await repository.updateRetryCount(
+          id, operation.retryCount + 1, e.toString());
+      rethrow;
+    }
+  }
+
+  Future<void> retryRouteSos(BuildContext context, String id) async {
+    final operation = await repository.getOperationById(id);
+    if (operation == null || operation.type != OfflineOperationType.routeSos)
+      return;
+
+    try {
+      final event = RouteEventEntity.fromJson(operation.data);
+      await context.read<RouteRepository>().sendSos(event);
+      await repository.removeOperation(id);
+      await loadOperations();
+    } catch (e) {
+      await repository.updateRetryCount(
+          id, operation.retryCount + 1, e.toString());
+      rethrow;
+    }
+  }
+
+  Future<void> retryRoutePositions(BuildContext context, String id) async {
+    final operation = await repository.getOperationById(id);
+    if (operation == null ||
+        operation.type != OfflineOperationType.routePositions) return;
+
+    try {
+      final position = RoutePositionEntity.fromJson(operation.data);
+      await context.read<RouteRepository>().sendRoutePositions([position]);
+      await repository.removeOperation(id);
+      await loadOperations();
+    } catch (e) {
+      await repository.updateRetryCount(
+          id, operation.retryCount + 1, e.toString());
+      rethrow;
+    }
+  }
+
+  // Método para manejar el reintento de todas las posiciones pendientes
+  Future<void> retryAllRoutePositions(BuildContext context) async {
+    final operations = await repository
+        .getOperationsByType(OfflineOperationType.routePositions);
+
+    // Agrupar por ruta para enviar en lotes
+    final positionsByRoute = <String, List<RoutePositionEntity>>{};
+
+    for (final op in operations) {
+      final position = RoutePositionEntity.fromJson(op.data);
+      positionsByRoute.putIfAbsent(position.routeId, () => []).add(position);
+    }
+
+    // Enviar cada lote
+    for (final routeId in positionsByRoute.keys) {
+      try {
+        await context
+            .read<RouteRepository>()
+            .sendRoutePositions(positionsByRoute[routeId]!);
+        // Eliminar las operaciones exitosas
+        for (final op in operations.where(
+            (o) => RoutePositionEntity.fromJson(o.data).routeId == routeId)) {
+          await repository.removeOperation(op.id);
+        }
+      } catch (e) {
+        log('Failed to retry positions for route $routeId: $e');
+      }
+    }
+
+    await loadOperations();
   }
 
   Future<void> retryMaintenance(BuildContext context, String id) async {
@@ -187,22 +321,22 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
   }
 
-  Future<void> retryRoutePositions(String id) async {
-    final operation = await repository.getOperationById(id);
-    if (operation == null ||
-        operation.type != OfflineOperationType.routePositions) return;
+  // Future<void> retryRoutePositions(String id) async {
+  //   final operation = await repository.getOperationById(id);
+  //   if (operation == null ||
+  //       operation.type != OfflineOperationType.routePositions) return;
 
-    try {
-      // Aquí deberías llamar al RouteProvider para reintentar el envío de posiciones
-      // Ejemplo: await context.read<RouteProvider>().retryRoutePositions(operation.data['positions']);
-      await repository.removeOperation(id);
-      await loadOperations();
-    } catch (e) {
-      await repository.updateRetryCount(
-          id, operation.retryCount + 1, e.toString());
-      rethrow;
-    }
-  }
+  //   try {
+  //     // Aquí deberías llamar al RouteProvider para reintentar el envío de posiciones
+  //     // Ejemplo: await context.read<RouteProvider>().retryRoutePositions(operation.data['positions']);
+  //     await repository.removeOperation(id);
+  //     await loadOperations();
+  //   } catch (e) {
+  //     await repository.updateRetryCount(
+  //         id, operation.retryCount + 1, e.toString());
+  //     rethrow;
+  //   }
+  // }
 
   Future<void> retryRouteEvent(String id) async {
     final operation = await repository.getOperationById(id);

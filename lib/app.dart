@@ -118,6 +118,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         '/maintance/form': (context) => FormPage(),
         '/maintance/upload': (context) => UploadPage(),
         '/maintance/finish': (context) => FinishMaintancePage(),
+        '/offline-operations': (context) => OfflineOperationsPage(),
       },
       builder: EasyLoading.init(),
       scaffoldMessengerKey: Snackbars.messengerKey,

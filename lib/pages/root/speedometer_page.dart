@@ -86,6 +86,37 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
   Widget _buildBody(BuildContext context, SpeedometerProvider provider) {
     return Column(
       children: [
+        if (provider.pendingPositionsCount > 0)
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: GestureDetector(
+              onTap: () {
+                // Navegar a la pantalla de operaciones offline
+                Navigator.pushNamed(context, '/offline-operations');
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.orange[100],
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.orange),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.warning, color: Colors.orange[800], size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${provider.pendingPositionsCount} posiciones pendientes',
+                      style: TextStyle(color: Colors.orange[800]),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        // Resto
         const SizedBox(height: 20),
         _topActionButtons(context, provider),
         const Spacer(),
