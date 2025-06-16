@@ -23,7 +23,7 @@ class _FinishRootPageState extends State<FinishRootPage> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: (() async => true),
+      onWillPop: (() async => false),
       child: Scaffold(
           body: Column(children: [
         Expanded(child: Container()),
@@ -31,7 +31,7 @@ class _FinishRootPageState extends State<FinishRootPage> {
         SizedBox(
           width: getWidth(context, 80),
           child: Text(
-            'La unidad llego a su destino',
+            'La unidad llegó a su destino',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),

@@ -145,8 +145,9 @@ class OfflineOperationsProvider with ChangeNotifier {
 
   Future<void> retryRouteFinish(BuildContext context, String id) async {
     final operation = await repository.getOperationById(id);
-    if (operation == null || operation.type != OfflineOperationType.routeFinish)
+    if (operation == null || operation.type != OfflineOperationType.routeFinish) {
       return;
+    }
 
     try {
       final route = FinishRouteEntity.fromJson(operation.data);
@@ -162,11 +163,12 @@ class OfflineOperationsProvider with ChangeNotifier {
 
   Future<void> retryRouteCancel(BuildContext context, String id) async {
     final operation = await repository.getOperationById(id);
-    if (operation == null || operation.type != OfflineOperationType.routeCancel)
+    if (operation == null || operation.type != OfflineOperationType.routeCancel) {
       return;
+    }
 
     try {
-      final route = RouteEntity.fromJson(operation.data);
+      final route = CancelRouteEntity.fromJson(operation.data);
       await context.read<RouteRepository>().cancelRoute(route);
       await repository.removeOperation(id);
       await loadOperations();
@@ -179,8 +181,9 @@ class OfflineOperationsProvider with ChangeNotifier {
 
   Future<void> retryRouteSos(BuildContext context, String id) async {
     final operation = await repository.getOperationById(id);
-    if (operation == null || operation.type != OfflineOperationType.routeSos)
+    if (operation == null || operation.type != OfflineOperationType.routeSos) {
       return;
+    }
 
     try {
       final event = RouteEventEntity.fromJson(operation.data);
@@ -340,8 +343,9 @@ class OfflineOperationsProvider with ChangeNotifier {
 
   Future<void> retryRouteEvent(String id) async {
     final operation = await repository.getOperationById(id);
-    if (operation == null || operation.type != OfflineOperationType.routeEvent)
+    if (operation == null || operation.type != OfflineOperationType.routeEvent) {
       return;
+    }
 
     try {
       // Aquí deberías llamar al RouteProvider para reintentar el evento de ruta

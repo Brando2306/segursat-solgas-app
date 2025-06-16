@@ -69,6 +69,7 @@ class SpeedometerProvider with ChangeNotifier {
 
   // Initialization
   Future<void> initialize() async {
+    _buttonFinishEnabled = true;
     await _setupLocationStream();
     await createOrResumeRoute();
     _initializeTimers();
@@ -388,30 +389,6 @@ class SpeedometerProvider with ChangeNotifier {
     }
   }
 
-  // Future<void> finishRoute({bool isEmergency = false}) async {
-  //   _buttonFinishEnabled = false;
-  //   notifyListeners();
-
-  //   try {
-  //     Map<String, dynamic> response;
-
-  //     if (isEmergency || readStorage('root.type') == ROOT_TYPE.SOS) {
-  //       response = await cancelRouteProvider();
-  //     } else {
-  //       response = await finishRouteProvider();
-  //     }
-
-  //     if (response['status'] == STATUSCODE.OK) {
-  //       _cleanup();
-  //     } else {
-  //       throw Exception(handleApiError(response));
-  //     }
-  //   } catch (e) {
-  //     _buttonFinishEnabled = true;
-  //     notifyListeners();
-  //     rethrow;
-  //   }
-  // }
   Future<void> finishRoute({bool isEmergency = false}) async {
     _buttonFinishEnabled = false;
     notifyListeners();
@@ -420,19 +397,12 @@ class SpeedometerProvider with ChangeNotifier {
       final currentPosition = await Geolocator.getCurrentPosition();
 
       if (isEmergency || readStorage('root.type') == ROOT_TYPE.SOS) {
-        final route = RouteEntity(
-          id: readStorage('root.createRoute.id'),
-          unitName: readStorage('personal.licensePlate'),
-          timestamp: DateTime.now(),
-          sourceLatitude:
-              json.decode(readStorage('root.initialPosition'))['latitude'],
-          sourceLongitude:
-              json.decode(readStorage('root.initialPosition'))['longitude'],
-          destinationLatitude:
-              json.decode(readStorage('root.finalPosition'))['latitude'],
-          destinationLongitude:
-              json.decode(readStorage('root.finalPosition'))['longitude'],
-          duration: _currentDuration.inSeconds,
+        final route = CancelRouteEntity(
+          routeId: readStorage('root.createRoute.id'),
+          cancelTimestamp: getDate(),
+          cancelLatitude: currentPosition.latitude,
+          cancelLongitude: currentPosition.longitude,
+          time: readStorage('root.cronometer') ?? 0,
         );
         await routeRepository.cancelRoute(route);
       } else {

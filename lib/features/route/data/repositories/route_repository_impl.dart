@@ -273,7 +273,7 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  Future<void> cancelRoute(RouteEntity route) async {
+  Future<void> cancelRoute(CancelRouteEntity route) async {
     try {
       await remoteDataSource.cancelRoute(route);
     } catch (e) {

@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:latlong2/latlong.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route.dart';
 
 class OfflineOperation {
   final String id;

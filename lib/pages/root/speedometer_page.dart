@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:safe_driving_app/pages/root/finish_root_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:safe_driving_app/helpers/gps.dart';
@@ -29,10 +30,12 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
   @override
   void initState() {
     super.initState();
+    EasyLoading.show(status: 'Iniciando ruta...');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<SpeedometerProvider>();
       provider.initialize();
     });
+    EasyLoading.dismiss();
   }
 
   @override
@@ -289,10 +292,13 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
           11,
         ),
         const SizedBox(height: 20),
+           Text('provider.buttonFinishEnabled ${provider.buttonFinishEnabled}'),
         MaterialButton(
           onPressed: provider.buttonFinishEnabled
               ? () => _handleFinishRoute(context, provider)
               : null,
+
+          // onPressed: () => _handleFinishRoute(context, provider),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -362,6 +368,7 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
               EasyLoading.show(status: 'Procesando...');
               try {
                 await provider.triggerEmergency();
+                if (!mounted) return;
                 Navigator.pushNamed(context, '/root/finish');
               } catch (e) {
                 notificationError(context, 'Error en emergencia: $e');
@@ -417,15 +424,31 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.of(context, rootNavigator: true).pop();
+              // Navigator.of(context, rootNavigator: true).pop();
               EasyLoading.show(status: 'Finalizando ruta...');
               try {
+                // Intenta finalizar la ruta
                 await provider.finishRoute();
-                Navigator.pushNamed(context, '/root/finish');
+
+                // Navega a '/root/finish' usando Navigator.pushNamed
+                // **¡Importante!** Usamos `if (mounted)` para evitar el error.
+                if (mounted) {
+                  Navigator.pop(context); 
+                  Navigator.pushNamed(context, '/root/finish');
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(builder: (_) => FinishRootPage()),
+                  // );
+                }
               } catch (e) {
-                notificationError(context, e.toString());
+                // Si hay error, lo mostramos (solo si el widget sigue activo)
+                if (mounted) {
+                  // notificationError(context, 'Error al finalizar: $e');
+                }
+              } finally {
+                // Cerramos el loading
+                EasyLoading.dismiss();
               }
-              EasyLoading.dismiss();
             },
             child: const Text(
               'Aceptar',

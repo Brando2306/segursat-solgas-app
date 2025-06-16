@@ -94,6 +94,7 @@ class SelectSourceProvider with ChangeNotifier {
   Future<void> initialize(BuildContext context) async {
     // GUARDAR REFERENCIA AL CONTEXT
     _currentContext = context;
+    _blockNextButton = false;
     _isContextValid = true;
 
     // Verificar que el context sigue siendo válido antes de cada operación
@@ -237,28 +238,39 @@ class SelectSourceProvider with ChangeNotifier {
   void _handleSuccessfulLocation() {
     if (!_isValidContext()) return;
 
-    mapController.move(LatLng(_position.latitude, _position.longitude), 18);
-    writeStorage(
-      'root.initialPosition',
-      json.encode({
-        'latitude': _position.latitude,
-        'longitude': _position.longitude,
-        'accuracy': _position.accuracy,
-        'timestamp': DateTime.now().toIso8601String(),
-        'hasInternet': _hasInternet,
-      }),
-    );
+    try {
+      _position = position;
 
-    _blockIconMovePosition = true;
-    _blockNextButton = true;
-    _noSignalMode = false;
+      writeStorage(
+        'root.initialPosition',
+        json.encode({
+          'latitude': _position.latitude,
+          'longitude': _position.longitude,
+          'accuracy': _position.accuracy,
+          'timestamp': DateTime.now().toIso8601String(),
+          'hasInternet': _hasInternet,
+        }),
+      );
+      log('Datos guardados: ${readStorage('root.initialPosition')}');
+
+      mapController.move(LatLng(_position.latitude, _position.longitude), 18);
+
+      _blockIconMovePosition = true;
+      _blockNextButton = true; // Habilitar botón SOLO después de guardar
+      _noSignalMode = false;
+
+      notifyListeners();
+    } catch (e) {
+      log('Error al guardar posición: $e');
+      _blockNextButton = false; // Mantener deshabilitado si hay error
+      log('Error en select_source_provider.dart + $e');
+      notifyListeners();
+    }
 
     // Mostrar diálogo con coordenadas si no hay internet
     if (!_hasInternet && _isValidContext()) {
       _showOfflineLocationConfirmation();
     }
-
-    notifyListeners();
   }
 
   // DIÁLOGOS ACTUALIZADOS CON MÉTODO SEGURO

@@ -93,6 +93,16 @@ class CancelRouteEntity {
       'time': time,
     };
   }
+
+  factory CancelRouteEntity.fromJson(Map<String, dynamic> json) {
+    return CancelRouteEntity(
+      routeId: json['routeid'],
+      cancelTimestamp: json['cancel_timestamp'],
+      cancelLatitude: json['cancel_latitude'],
+      cancelLongitude: json['cancel_longitude'],
+      time: json['time'],
+    );
+  }
 }
 
 class FinishRouteEntity {
