@@ -1,19 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
+import 'package:floating/floating.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
-import 'package:safe_driving_app/pages/root/finish_root_page.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:safe_driving_app/helpers/gps.dart';
 import 'package:safe_driving_app/utils/style.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/constants.dart';
-import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/widgets/next_button.dart';
@@ -292,7 +289,7 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
           11,
         ),
         const SizedBox(height: 20),
-           Text('provider.buttonFinishEnabled ${provider.buttonFinishEnabled}'),
+        // Text('provider.buttonFinishEnabled ${provider.buttonFinishEnabled}'),
         MaterialButton(
           onPressed: provider.buttonFinishEnabled
               ? () => _handleFinishRoute(context, provider)
@@ -433,7 +430,7 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
                 // Navega a '/root/finish' usando Navigator.pushNamed
                 // **¡Importante!** Usamos `if (mounted)` para evitar el error.
                 if (mounted) {
-                  Navigator.pop(context); 
+                  Navigator.pop(context);
                   Navigator.pushNamed(context, '/root/finish');
                   // Navigator.push(
                   //   context,

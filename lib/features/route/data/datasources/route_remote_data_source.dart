@@ -11,14 +11,9 @@ import 'package:safe_driving_app/utils/endpoints.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 
 abstract class RouteRemoteDataSource {
-  // Future<Route> getRoute(int id);
   Future<List<Route>> getActiveRoutes();
-  // Future<int> createRoute(Map<String, dynamic> routeData);
   Future<void> saveRoutePosition(RoutePosition position);
   Future<void> saveRoutePositionsBatch(List<Map<String, dynamic>> positions);
-  // Future<void> cancelRoute(int routeId);
-  // Future<void> finishRoute(int routeId);
-  // Future<void> reportSos(int routeId);
 
   Future<RouteEntity> createRoute(CreateRouteEntity route);
   Future<RouteEntity> getRoute(String routeId);
@@ -58,27 +53,6 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
     }
   }
 
-  // @override
-  // Future<int> createRoute(Map<String, dynamic> route) async {
-  //   final response = await _makeRequest(
-  //     ENDPOINTS.CREATE_ROUTE,
-  //     method: 'POST',
-  //     body: {
-  //       'unit_name': readStorage('personal.licensePlate'),
-  //       'timestamp': getDate(),
-  //       'source_latitude':
-  //           json.decode(readStorage('root.initialPosition'))['latitude'],
-  //       'source_longitude':
-  //           json.decode(readStorage('root.initialPosition'))['longitude'],
-  //       'destination_latitude':
-  //           json.decode(readStorage('root.finalPosition'))['latitude'],
-  //       'destination_longitude':
-  //           json.decode(readStorage('root.finalPosition'))['longitude'],
-  //     },
-  //   );
-  //   return response['id'];
-  // }
-
   @override
   Future<void> saveRoutePosition(RoutePosition position) async {
     await _makeRequest(
@@ -87,14 +61,6 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
       body: position.toJson(),
     );
   }
-
-  // @override
-  // Future<void> finishRoute(int routeId) async {
-  //   await _makeRequest(
-  //     ENDPOINTS.FINISH_ROUTE.replaceAll('<int:id>', '$routeId'),
-  //     method: 'POST',
-  //   );
-  // }
 
   @override
   Future<void> saveRoutePositionsBatch(
@@ -105,22 +71,6 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
       body: {'positions': positions},
     );
   }
-
-  // @override
-  // Future<void> cancelRoute(int routeId) async {
-  //   await _makeRequest(
-  //     ENDPOINTS.CANCEL_ROUTE.replaceAll('<int:id>', '$routeId'),
-  //     method: 'POST',
-  //   );
-  // }
-
-  // @override
-  // Future<void> reportSos(int routeId) async {
-  //   await _makeRequest(
-  //     ENDPOINTS.INSERT_ROUTE_SOS.replaceAll('<int:id>', '$routeId'),
-  //     method: 'POST',
-  //   );
-  // }
 
   Future<Map<String, dynamic>> _makeRequest(
     String endpoint, {
@@ -199,9 +149,10 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
 
   @override
   Future<RouteEntity> createRoute(CreateRouteEntity route) async {
+    final data = route.toJson();
     final response = await _dio.post(
       'http://${ENDPOINTS.HOST}/${ENDPOINTS.CREATE_ROUTE}',
-      data: route.toJson(),
+      data: data,
       options: Options(headers: {
         'Authorization': ENDPOINTS.auth(),
       }),

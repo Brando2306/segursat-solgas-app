@@ -1,6 +1,4 @@
-// 3. WIDGET DE PÁGINA ACTUALIZADO
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -420,7 +418,7 @@ class _SelectSourcePageState extends State<SelectSourcePage> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          Text('provider.blockNextButton ${provider.blockNextButton}'),
+          // Text('provider.blockNextButton ${provider.blockNextButton}'),
           if (provider.blockNextButton)
             nextButton(
               context,

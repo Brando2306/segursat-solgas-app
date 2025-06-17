@@ -82,9 +82,11 @@ Future<Database> initializeDatabase() async {
           id TEXT PRIMARY KEY,
           type TEXT NOT NULL,
           createdAt TEXT NOT NULL,
+          updatedAt TEXT,
           data TEXT NOT NULL,
           retryCount INTEGER NOT NULL,
-          lastError TEXT
+          lastError TEXT,
+          routeId TEXT
         )
       ''');
     },
@@ -156,10 +158,10 @@ void main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => OfflineOperationsProvider(
-            repository: OfflineOperationsRepositoryImpl(
-              database: database,
-            ),
-          ),
+              repository: OfflineOperationsRepositoryImpl(
+                database: database,
+              ),
+              routeRepository: routeRepository),
         ),
         ChangeNotifierProvider(
           create: (_) => MaintenanceProvider(
@@ -184,9 +186,7 @@ void main() async {
           create: (_) => SelectDestinationProvider(),
         ),
         ChangeNotifierProvider(
-          create: (_) => SpeedometerProvider(
-              offlineOperationsRepository: offlineOperationRepo,
-              routeRepository: routeRepository),
+          create: (_) => SpeedometerProvider(routeRepository: routeRepository),
         ),
       ],
       child: MyApp(),

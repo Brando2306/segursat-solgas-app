@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -160,13 +161,15 @@ class SelectDestinationProvider with ChangeNotifier {
         headingAccuracy: 0,
       );
 
-      mapController.move(LatLng(_position.latitude, _position.longitude), 18);
+      if (_hasInternetConnection) {
+        mapController.move(LatLng(_position.latitude, _position.longitude), 18);
+      }
       blockIconMovePosition = true;
       blockNextButton = true;
 
       FocusManager.instance.primaryFocus?.unfocus();
     } catch (e) {
-      print('search coordinate Text: $e');
+      log('search coordinate Text: $e');
       notificationError(
           context, 'Coordenadas incorrectas. Ejemplo: -12.1234, -77.1234');
     }
@@ -267,7 +270,7 @@ class SelectDestinationProvider with ChangeNotifier {
   }
 
   Future<void> confirmDestination(BuildContext context) async {
-    if (!_blockNextButton) return;
+    // if (!_blockNextButton) return;
 
     await writeStorage(
       'root.finalPosition',

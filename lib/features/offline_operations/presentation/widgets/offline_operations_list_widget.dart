@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/offline_operations/presentation/providers/offline_operations_provider.dart';
+import 'package:safe_driving_app/utils/snackbars.dart';
 
 class OfflineOperationsListPage extends StatefulWidget {
   final String title;
@@ -526,19 +527,10 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
               Navigator.pop(context);
               try {
                 await provider.removeOperation(id);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Operación eliminada correctamente'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                Snackbars.showSnackbarSuccess(
+                    'Operación eliminada correctamente');
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error al eliminar: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                Snackbars.showSnackbarError('Error al eliminar: $e');
               }
             },
             child: Text('Eliminar', style: TextStyle(color: Colors.red)),
@@ -563,8 +555,6 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
         return provider.maintenanceOperations;
       case 'Posiciones de Ruta':
         return provider.routePositionsOperations;
-      case 'Eventos de Ruta':
-        return provider.routeEventOperations;
       case 'Inspecciones':
         return provider.inspectionOperations;
       default:

@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
+import 'package:safe_driving_app/features/offline_operations/presentation/pages/RouteOperationsDetailPage.dart';
 import 'package:safe_driving_app/features/offline_operations/presentation/providers/offline_operations_provider.dart';
 import 'package:safe_driving_app/features/offline_operations/presentation/widgets/offline_operations_list_widget.dart';
+import 'package:safe_driving_app/utils/snackbars.dart';
 
 class OfflineOperationsPage extends StatefulWidget {
   const OfflineOperationsPage({super.key});
@@ -42,6 +44,8 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
       ),
       body: Consumer<OfflineOperationsProvider>(
         builder: (context, provider, _) {
+          final routeGroups = provider.groupedRouteOperations;
+
           if (provider.isLoading && provider.operations.isEmpty) {
             return Center(
               child: Column(
@@ -89,16 +93,9 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _buildSection(
-                  context,
-                  title: 'Recuperaciones de Ruta',
-                  operations: provider.routeRecoveryOperations,
-                  onRetry: (String id) async {
-                    await provider.retryRouteCreation(context, id);
-                  },
-                  icon: Icons.route,
-                  color: Colors.blue,
-                ),
+                if (routeGroups.isNotEmpty)
+                  _buildRouteOperationsSection(context, routeGroups),
+                SizedBox(height: 16),
                 _buildSection(
                   context,
                   title: 'Mantenimientos',
@@ -107,44 +104,6 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                     await provider.retryMaintenance(context, id);
                   },
                   icon: Icons.build,
-                  color: Colors.orange,
-                ),
-                // _buildSection(
-                //   context,
-                //   title: 'Posiciones de Ruta',
-                //   operations: provider.routePositionsOperations,
-                //   onRetry: provider.retryRoutePositions,
-                //   icon: Icons.location_on,
-                //   color: Colors.green,
-                // ),
-                _buildSection(
-                  context,
-                  title: 'Posiciones de Ruta',
-                  operations: provider.routePositionsOperations,
-                  onRetry: (String id) async {
-                    await provider.retryRoutePositions(context, id);
-                  },
-                  icon: Icons.location_on,
-                  color: Colors.green,
-                ),
-                _buildSection(
-                  context,
-                  title: 'Finalizaciones de Ruta',
-                  operations: provider.routeFinishOperations,
-                  onRetry: (String id) async {
-                    await provider.retryRouteFinish(context, id);
-                  },
-                  icon: Icons.flag,
-                  color: Colors.blue,
-                ),
-                _buildSection(
-                  context,
-                  title: 'Cancelaciones de Ruta',
-                  operations: provider.routeCancelOperations,
-                  onRetry: (String id) async {
-                    await provider.retryRouteCancel(context, id);
-                  },
-                  icon: Icons.cancel,
                   color: Colors.orange,
                 ),
                 _buildSection(
@@ -156,14 +115,6 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                   },
                   icon: Icons.warning,
                   color: Colors.red,
-                ),
-                _buildSection(
-                  context,
-                  title: 'Eventos de Ruta',
-                  operations: provider.routeEventOperations,
-                  onRetry: provider.retryRouteEvent,
-                  icon: Icons.event,
-                  color: Colors.purple,
                 ),
                 _buildSection(
                   context,
@@ -181,6 +132,117 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
         },
       ),
     );
+  }
+
+  Widget _buildRouteOperationsSection(
+      BuildContext context, Map<String, List<OfflineOperation>> routeGroups) {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Rutas Pendientes',
+              style: Theme.of(context).textTheme.headline6,
+            ),
+            SizedBox(height: 8),
+            ...routeGroups.entries.map((entry) {
+              final routeId = entry.key;
+              final operations = entry.value;
+
+              return _buildRouteGroup(context, routeId, operations);
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRouteGroup(
+      BuildContext context, String routeId, List<OfflineOperation> operations) {
+    if (operations.isEmpty) {
+      return SizedBox.shrink(); // O algún widget vacío
+    }
+
+    // Buscamos las operaciones (pueden no existir)
+    final hasCreation =
+        operations.any((op) => op.type == OfflineOperationType.routeCreation);
+    final positionsOps = operations
+        .where((op) => op.type == OfflineOperationType.routePositions)
+        .toList();
+    final hasFinish =
+        operations.any((op) => op.type == OfflineOperationType.routeFinish);
+
+    // Obtenemos el nombre de la unidad de la primera operación que lo tenga
+    String routeName = routeId;
+    for (var op in operations) {
+      if (op.data['unit_name'] != null) {
+        routeName = op.data['unit_name'];
+        break;
+      }
+    }
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RouteOperationsDetailPage(
+              routeId: routeId,
+              operations: operations,
+            ),
+          ),
+        );
+      },
+      child: ExpansionTile(
+        title: Text('Ruta: $routeName'),
+        subtitle: Text('${operations.length} operaciones pendientes'),
+        children: [
+          if (hasCreation)
+            _buildOperationItemRoute(
+              context: context,
+              operation: operations.firstWhere(
+                  (op) => op.type == OfflineOperationType.routeCreation),
+              title: 'Creación de ruta',
+              icon: Icons.route,
+              color: Colors.blue,
+              onRetry: () => _retryRouteOperations(context, routeId),
+            ),
+          if (positionsOps.isNotEmpty)
+            _buildOperationItemRoute(
+              context: context,
+              operation: positionsOps.first,
+              title: '${positionsOps.length} posiciones pendientes',
+              icon: Icons.location_on,
+              color: Colors.green,
+              onRetry: () => _retryRouteOperations(context, routeId),
+            ),
+          if (hasFinish)
+            _buildOperationItemRoute(
+              context: context,
+              operation: operations.firstWhere(
+                  (op) => op.type == OfflineOperationType.routeFinish),
+              title: 'Finalización de ruta',
+              icon: Icons.flag,
+              color: Colors.orange,
+              onRetry: () => _retryRouteOperations(context, routeId),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _retryOperation(
+    BuildContext context,
+    OfflineOperation operation,
+  ) async {
+    final provider = context.read<OfflineOperationsProvider>();
+    try {
+      await provider.retryRouteOperations(operation.associatedRouteId ?? '');
+    } catch (e) {
+      Snackbars.showSnackbarError('Error al reintentar: ${e.toString()}');
+    }
   }
 
   Widget _buildSection(
@@ -274,6 +336,58 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildOperationItemRoute({
+    required BuildContext context,
+    required OfflineOperation operation,
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onRetry,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(title),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Intentos: ${operation.retryCount}'),
+          if (operation.lastError != null)
+            Text(
+              'Último error: ${operation.lastError}',
+              style: TextStyle(color: Colors.red),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+        ],
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: onRetry,
+          ),
+          IconButton(
+            icon: Icon(Icons.delete, color: Colors.red),
+            onPressed: () => _showDeleteConfirmation(context, operation.id),
+          ),
+        ],
+      ),
+      onTap: () => _showOperationDetails(context, operation),
+    );
+  }
+
+  Future<void> _retryRouteOperations(
+      BuildContext context, String routeId) async {
+    final provider = context.read<OfflineOperationsProvider>();
+    try {
+      await provider.retryRouteOperations(routeId);
+      Snackbars.showSnackbarSuccess('Operaciones de ruta reintentadas');
+    } catch (e) {
+      Snackbars.showSnackbarError('Error: ${e.toString()}');
+    }
   }
 
   Widget _buildOperationItem(
@@ -501,8 +615,6 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
         return 'Registro de Mantenimiento';
       case OfflineOperationType.routePositions:
         return 'Posiciones de Ruta';
-      case OfflineOperationType.routeEvent:
-        return 'Evento de Ruta';
       case OfflineOperationType.inspection:
         return 'Inspección';
       case OfflineOperationType.incidentReport:
@@ -609,19 +721,11 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                 await context
                     .read<OfflineOperationsProvider>()
                     .removeOperation(id);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Operación eliminada correctamente'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+
+                Snackbars.showSnackbarSuccess(
+                    'Operación eliminada correctamente');
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error al eliminar: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                Snackbars.showSnackbarError('Error al eliminar: $e');
               }
             },
             child: const Text('Eliminar', style: TextStyle(color: Colors.red)),

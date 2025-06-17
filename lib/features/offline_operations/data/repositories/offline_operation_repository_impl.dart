@@ -1,33 +1,22 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
 import 'package:sqflite/sqflite.dart';
 
 class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
   final Database database;
   static const String tableName = 'offline_operations';
 
-  OfflineOperationsRepositoryImpl({required this.database}) {
-    _initDatabase();
-  }
-
-  Future<void> _initDatabase() async {
-    await database.execute('''
-      CREATE TABLE IF NOT EXISTS $tableName (
-        id TEXT PRIMARY KEY,
-        type TEXT NOT NULL,
-        createdAt TEXT NOT NULL,
-        data TEXT NOT NULL,
-        retryCount INTEGER NOT NULL,
-        lastError TEXT
-      )
-    ''');
-  }
+  OfflineOperationsRepositoryImpl({required this.database});
 
   @override
   Future<void> saveOperation(OfflineOperation operation) async {
+    log('[DEBUG] Guardando operación offline: ${operation.type} offlineRouteId=${operation.offlineRouteId}');
     await database.insert(
       tableName,
       operation.toJson(),
@@ -36,18 +25,70 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
   }
 
   @override
+  Future<void> saveFailedRouteCreation(
+      CreateRouteEntity route, String offlineRouteId) async {
+    final operation = OfflineOperation.routeCreation(route, offlineRouteId);
+    await saveOperation(operation);
+  }
+
+  @override
+  Future<void> saveFailedPositions(
+      List<RoutePositionEntity> positions, String offlineRouteId) async {
+    if (positions.isEmpty) return;
+
+    final operation =
+        OfflineOperation.routePositions(positions, offlineRouteId);
+    await saveOperation(operation);
+  }
+
+  @override
+  Future<void> saveFailedRouteFinish(
+      FinishRouteEntity route, String offlineRouteId) async {
+    final operation = OfflineOperation.routeFinish(route, offlineRouteId);
+    await saveOperation(operation);
+  }
+
+  @override
+  Future<Map<String, List<OfflineOperation>>>
+      getGroupedRouteOperations() async {
+    final operations = await database.query('offline_operations');
+    final offlineOps =
+        operations.map((e) => OfflineOperation.fromJson(e)).toList();
+
+    final grouped = <String, List<OfflineOperation>>{};
+
+    for (final op in offlineOps.where((o) => o.offlineRouteId != null)) {
+      grouped.putIfAbsent(op.offlineRouteId!, () => []).add(op);
+    }
+
+    return grouped;
+  }
+
+  // @override
+  // Future<Map<String, List<OfflineOperation>>>
+  //     getGroupedRouteOperations() async {
+  //   final operations = await getPendingOperations();
+  //   final grouped = <String, List<OfflineOperation>>{};
+
+  //   for (final op in operations.where((o) => o.offlineRouteId != null)) {
+  //     grouped.putIfAbsent(op.offlineRouteId!, () => []).add(op);
+  //   }
+
+  //   return grouped;
+  // }
+
+  @override
   Future<List<OfflineOperation>> getPendingOperations() async {
     final List<Map<String, dynamic>> maps = await database.query(tableName);
     return maps.map((map) => OfflineOperation.fromJson(map)).toList();
   }
 
   @override
-  Future<List<OfflineOperation>> getOperationsByType(
-      OfflineOperationType type) async {
+  Future<List<OfflineOperation>> getOperationsByRoute(String routeId) async {
     final List<Map<String, dynamic>> maps = await database.query(
       tableName,
-      where: 'type = ?',
-      whereArgs: [type.toString()],
+      where: 'routeId = ?',
+      whereArgs: [routeId],
     );
     return maps.map((map) => OfflineOperation.fromJson(map)).toList();
   }
@@ -59,6 +100,109 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  @override
+  Future<void> updateOperation(OfflineOperation operation) async {
+    await database.update(
+      tableName,
+      operation.toJson(),
+      where: 'id = ?',
+      whereArgs: [operation.id],
+    );
+  }
+
+  @override
+  Future<void> retryRouteCreation(String operationId) async {
+    final operation = await _getOperationById(operationId);
+    if (operation == null ||
+        operation.type != OfflineOperationType.routeCreation) {
+      return;
+    }
+
+    try {
+      // Aquí deberías implementar la lógica para reintentar la creación
+      // Por ejemplo, llamar al RouteRepository para crear la ruta
+      // Si tiene éxito:
+      await removeOperation(operationId);
+    } catch (e) {
+      await _updateOperationError(operationId, e.toString());
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> retryRoutePositions(String operationId) async {
+    final operation = await _getOperationById(operationId);
+    if (operation == null ||
+        operation.type != OfflineOperationType.routePositions) {
+      return;
+    }
+
+    try {
+      // Implementar lógica para reintentar envío de posiciones
+      // Si tiene éxito:
+      await removeOperation(operationId);
+    } catch (e) {
+      await _updateOperationError(operationId, e.toString());
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> retryRouteFinish(String operationId) async {
+    final operation = await _getOperationById(operationId);
+    if (operation == null ||
+        operation.type != OfflineOperationType.routeFinish) {
+      return;
+    }
+
+    try {
+      // Implementar lógica para reintentar finalización
+      // Si tiene éxito:
+      await removeOperation(operationId);
+    } catch (e) {
+      await _updateOperationError(operationId, e.toString());
+      rethrow;
+    }
+  }
+
+  Future<OfflineOperation?> _getOperationById(String id) async {
+    final List<Map<String, dynamic>> maps = await database.query(
+      tableName,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return OfflineOperation.fromJson(maps.first);
+  }
+
+  Future<void> _updateOperationError(String id, String error) async {
+    final operation = await _getOperationById(id);
+    if (operation != null) {
+      await database.update(
+        tableName,
+        {
+          'retryCount': operation.retryCount + 1,
+          'lastError': error,
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    }
+  }
+
+  @override
+  Future<List<OfflineOperation>> getOperationsByType(
+      OfflineOperationType type) async {
+    final List<Map<String, dynamic>> maps = await database.query(
+      tableName,
+      where: 'type = ?',
+      whereArgs: [type.toString()],
+    );
+    return maps.map((map) => OfflineOperation.fromJson(map)).toList();
   }
 
   @override
@@ -129,11 +273,6 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
     return getOperationsByType(OfflineOperationType.routePositions);
   }
 
-  @override
-  Future<List<OfflineOperation>> getRouteEventOperations() async {
-    return getOperationsByType(OfflineOperationType.routeEvent);
-  }
-
   Future<void> _handleOperationRetry(OfflineOperation operation) async {
     switch (operation.type) {
       case OfflineOperationType.routeRecovery:
@@ -187,21 +326,6 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
       data: {
         'action': 'batch_insert',
         'positions': positions,
-        'timestamp': DateTime.now().toIso8601String(),
-      },
-    );
-    await saveOperation(operation);
-  }
-
-  @override
-  Future<void> saveRouteEvent(
-      String routeId, String eventType, Map<String, dynamic> data) async {
-    final operation = OfflineOperation(
-      type: OfflineOperationType.routeEvent,
-      data: {
-        'routeId': routeId,
-        'eventType': eventType,
-        'data': data,
         'timestamp': DateTime.now().toIso8601String(),
       },
     );

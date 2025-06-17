@@ -53,25 +53,120 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
               return Column(
                 children: [
                   _buildInputs(context, provider),
-                  Expanded(child: Container()),
-                  SizedBox(
-                    width: getWidth(context, 90),
-                    height: getHeight(context, 50),
-                    child: Stack(
-                      children: [
-                        _buildMap(provider),
-                        _buildCenterPositionButton(provider),
-                      ],
-                    ),
-                  ),
-                  Expanded(child: Container()),
+
+                  // Sección que cambia según conexión
+                  if (!provider.hasInternetConnection)
+                    _buildOfflineUI(provider),
+                  if (provider.hasInternetConnection) _buildOnlineUI(provider),
+
                   _buildConfirmButton(context, provider),
-                  SizedBox(height: getHeight(context, 3)),
+                  SizedBox(height: 20),
+                  // _buildInputs(context, provider),
+                  // Expanded(child: Container()),
+                  // SizedBox(
+                  //   width: getWidth(context, 90),
+                  //   height: getHeight(context, 50),
+                  //   child: Stack(
+                  //     children: [
+                  //       _buildMap(provider),
+                  //       _buildCenterPositionButton(provider),
+                  //     ],
+                  //   ),
+                  // ),
+                  // Expanded(child: Container()),
+                  // _buildConfirmButton(context, provider),
+                  // SizedBox(height: getHeight(context, 3)),
                 ],
               );
             },
           ),
         ),
+      ),
+    );
+  }
+
+  // Widget para mostrar cuando NO hay internet
+  Widget _buildOfflineUI(SelectDestinationProvider provider) {
+    return Expanded(
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            SizedBox(height: 20),
+            _buildCoordinatesDisplay(provider),
+            SizedBox(height: 20),
+            // Text(
+            //   'Sin conexión a internet. Ingrese las coordenadas manualmente.',
+            //   style: TextStyle(color: Colors.grey),
+            // ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCoordinatesDisplay(SelectDestinationProvider provider) {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Ubicación seleccionada:',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Latitud:', style: TextStyle(color: Colors.grey)),
+                  Text(
+                    provider.position.latitude.toStringAsFixed(10),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Longitud:', style: TextStyle(color: Colors.grey)),
+                  Text(
+                    provider.position.longitude.toStringAsFixed(10),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget para mostrar cuando SÍ hay internet
+  Widget _buildOnlineUI(SelectDestinationProvider provider) {
+    return Expanded(
+      child: Column(
+        children: [
+          Expanded(child: Container()),
+          SizedBox(
+            height: 300,
+            child: Stack(
+              children: [
+                _buildMap(provider),
+                _buildCenterPositionButton(provider),
+              ],
+            ),
+          ),
+          Expanded(child: Container()),
+        ],
       ),
     );
   }
@@ -224,7 +319,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
                   if (_formKeyResults.currentState?.validate() ?? false) {
                     provider.searchManualCoordinates(context);
                     // Limpiar los controllers después de la búsqueda exitosa
-                    _clearManualControllers();
+                    // _clearManualControllers();
                   }
                 },
               ),
@@ -320,9 +415,10 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
     return MaterialButton(
       onPressed: () => provider.confirmDestination(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      color: provider.blockNextButton
-          ? CustomColors.primary
-          : CustomColors.primaryOff,
+      // color: provider.blockNextButton
+      //     ? CustomColors.primary
+      //     : CustomColors.primaryOff,
+      color: CustomColors.primary,
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: getHeight(context, 12),
