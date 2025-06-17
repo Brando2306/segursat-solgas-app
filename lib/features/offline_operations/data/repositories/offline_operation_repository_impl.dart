@@ -382,4 +382,15 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
   Future<List<OfflineOperation>> getInspectionOperations() async {
     return getOperationsByType(OfflineOperationType.inspection);
   }
+
+  @override
+  Future<List<OfflineOperation>> getOperationsByOfflineId(
+      String offlineId) async {
+    final List<Map<String, dynamic>> maps = await database.query(
+      tableName,
+      where: 'offlineRouteId = ?',
+      whereArgs: [offlineId],
+    );
+    return maps.map((map) => OfflineOperation.fromJson(map)).toList();
+  }
 }

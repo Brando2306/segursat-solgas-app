@@ -127,7 +127,7 @@ class OfflineOperationsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Obtener la operación actualizada para asegurar los últimos datos
+      // Obtener la operación actualizada
       final updatedOp =
           await repository.getOperationById(operation.id) ?? operation;
 
@@ -135,28 +135,44 @@ class OfflineOperationsProvider with ChangeNotifier {
         throw Exception('Máximo de reintentos alcanzado');
       }
 
+      bool success = false;
+
       switch (updatedOp.type) {
         case OfflineOperationType.routeCreation:
           final route = CreateRouteEntity.fromJson(updatedOp.data);
           await routeRepository.createRoute(route);
+          success = true;
           break;
         case OfflineOperationType.routePositions:
           final positions = (updatedOp.data['positions'] as List)
               .map((p) => RoutePositionEntity.fromJson(p))
               .toList();
           await routeRepository.sendRoutePositions(positions);
+          success = true;
           break;
         case OfflineOperationType.routeFinish:
           final route = FinishRouteEntity.fromJson(updatedOp.data);
           await routeRepository.finishRoute(route);
+          success = true;
           break;
         default:
           throw Exception('Tipo de operación no soportado');
       }
 
-      // Eliminar si fue exitoso
-      await repository.removeOperation(updatedOp.id);
-      Snackbars.showSnackbarSuccess('Operación completada con éxito');
+      if (success) {
+        // Actualizar como sincronizado en lugar de eliminar
+        final updatedData = {...updatedOp.data, 'synced': true};
+        await repository.updateOperation(
+          updatedOp.copyWith(data: updatedData),
+        );
+
+        // Verificar si todo el grupo está sincronizado
+        if (updatedOp.offlineRouteId != null) {
+          await _checkAndCleanGroup(updatedOp.offlineRouteId!);
+        }
+
+        Snackbars.showSnackbarSuccess('Operación sincronizada correctamente');
+      }
     } catch (e) {
       // Actualizar contador de reintentos
       await repository.updateRetryCount(
@@ -167,6 +183,64 @@ class OfflineOperationsProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       await loadOperations();
+    }
+  }
+
+  Future<void> _checkAndCleanGroup(String offlineRouteId) async {
+    final operations =
+        await repository.getOperationsByOfflineId(offlineRouteId);
+    final allSynced = operations.every((op) => op.data['synced'] == true);
+
+    if (allSynced) {
+      for (final op in operations) {
+        await repository.removeOperation(op.id);
+      }
+    }
+  }
+
+  Future<void> retryOperationById(String id, BuildContext context) async {
+    final operation = await repository.getOperationById(id);
+    if (operation != null) {
+      await retryOperation(operation, context);
+    }
+  }
+
+  Future<void> retryRouteGroup(
+    BuildContext context,
+    List<OfflineOperation> operations,
+    String offlineId,
+  ) async {
+    final provider = context.read<OfflineOperationsProvider>();
+
+    try {
+      // Ordenar operaciones: creación -> posiciones -> finalización
+      operations.sort((a, b) {
+        if (a.type == OfflineOperationType.routeCreation) return -1;
+        if (b.type == OfflineOperationType.routeCreation) return 1;
+        if (a.type == OfflineOperationType.routePositions) return -1;
+        if (b.type == OfflineOperationType.routePositions) return 1;
+        return 0;
+      });
+
+      bool allSynced = true;
+
+      for (final op in operations) {
+        if (op.data['synced'] == true) continue;
+
+        try {
+          await provider.retryOperation(op, context);
+        } catch (e) {
+          allSynced = false;
+          // Continuar con las siguientes operaciones aunque falle una
+          continue;
+        }
+      }
+
+      Snackbars.showSnackbarSuccess(allSynced
+          ? 'Todas las operaciones sincronizadas'
+          : 'Algunas operaciones se sincronizaron, verifique las pendientes');
+    } catch (e) {
+      Snackbars.showSnackbarError('Error al reintentar: ${e.toString()}');
     }
   }
 
@@ -442,12 +516,38 @@ class OfflineOperationsProvider with ChangeNotifier {
     final grouped = <String, List<OfflineOperation>>{};
 
     for (final op in routeOperations) {
+      // Usar offlineRouteId como clave principal, si no existe usar routeId
       final key = op.offlineRouteId ?? op.routeId ?? 'no-route';
-      print('[DEBUG] Agrupando operación ${op.type} bajo key=$key');
       grouped.putIfAbsent(key, () => []).add(op);
     }
 
-    return grouped;
+    // Ordenar los grupos por fecha (más reciente primero)
+    final sorted = Map.fromEntries(
+      grouped.entries.toList()
+        ..sort((a, b) {
+          final aDate = a.value.first.createdAt;
+          final bDate = b.value.first.createdAt;
+          return bDate.compareTo(aDate);
+        }),
+    );
+
+    return sorted;
+  }
+
+  Future<List<OfflineOperation>> getOperationsByOfflineId(
+      String offlineId) async {
+    return await repository.getOperationsByOfflineId(offlineId);
+  }
+
+  Future<void> cleanupSyncedGroup(String offlineId) async {
+    final operations = await getOperationsByOfflineId(offlineId);
+
+    if (operations.every((op) => op.data['synced'] == true)) {
+      for (final op in operations) {
+        await repository.removeOperation(op.id);
+      }
+      await loadOperations(); // Actualizar la lista
+    }
   }
 
   // Método para reintentar todas las operaciones de una ruta

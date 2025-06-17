@@ -41,4 +41,6 @@ abstract class OfflineOperationsRepository {
 
   // Agrupación de operaciones
   Future<Map<String, List<OfflineOperation>>> getGroupedRouteOperations();
+
+  Future<List<OfflineOperation>> getOperationsByOfflineId(String offlineId);
 }

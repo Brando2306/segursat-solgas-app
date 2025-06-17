@@ -86,7 +86,8 @@ Future<Database> initializeDatabase() async {
           data TEXT NOT NULL,
           retryCount INTEGER NOT NULL,
           lastError TEXT,
-          routeId TEXT
+          routeId TEXT,
+          offlineRouteId TEXT
         )
       ''');
     },

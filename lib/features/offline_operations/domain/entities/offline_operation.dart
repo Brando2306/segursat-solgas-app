@@ -55,6 +55,7 @@ class OfflineOperation {
       retryCount: json['retryCount'] ?? 0,
       lastError: json['lastError'],
       routeId: json['routeId'],
+      offlineRouteId: json['offlineRouteId'],
     );
   }
 
@@ -67,6 +68,7 @@ class OfflineOperation {
       'retryCount': retryCount,
       'lastError': lastError,
       'routeId': routeId,
+      'offlineRouteId': offlineRouteId,
     };
   }
 
@@ -77,6 +79,7 @@ class OfflineOperation {
     Map<String, dynamic>? data,
     int? retryCount,
     String? lastError,
+    String? offlineRouteId,
   }) {
     return OfflineOperation(
       id: id ?? this.id,
@@ -85,6 +88,7 @@ class OfflineOperation {
       data: data ?? this.data,
       retryCount: retryCount ?? this.retryCount,
       lastError: lastError ?? this.lastError,
+      offlineRouteId: offlineRouteId ?? this.offlineRouteId,
     );
   }
 
