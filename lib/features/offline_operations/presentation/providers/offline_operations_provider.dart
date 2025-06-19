@@ -1,24 +1,20 @@
 import 'dart:developer';
-
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:safe_driving_app/features/inspection/domain/entities/inspection_entity.dart';
-import 'package:safe_driving_app/features/inspection/presentation/providers/inspection_provider.dart';
-import 'package:safe_driving_app/features/maintenance/data/datasources/maintenance_remote_datasource.dart';
-import 'package:safe_driving_app/features/maintenance/data/repositories/maintenance_repository_impl.dart';
-import 'package:safe_driving_app/features/maintenance/domain/entities/maintenance_entity.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
+
+import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_event_entity.dart';
+import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_recovery_entity.dart';
-import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
-import 'package:safe_driving_app/features/route/presentation/providers/route_provider.dart';
+import 'package:safe_driving_app/features/inspection/domain/entities/inspection_entity.dart';
+import 'package:safe_driving_app/features/maintenance/domain/entities/maintenance_entity.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
+import 'package:safe_driving_app/features/inspection/presentation/providers/inspection_provider.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/maintenance/presentation/providers/maintenance_provider.dart';
-import 'package:safe_driving_app/utils/snackbars.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
 
 class OfflineOperationsProvider with ChangeNotifier {
   final OfflineOperationsRepository repository;
@@ -80,36 +76,6 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
   }
 
-  // Future<void> saveFailedRouteCreation(CreateRouteEntity route) async {
-  //   try {
-  //     await repository.saveFailedRouteCreation(route);
-  //     await loadOperations();
-  //   } catch (e) {
-  //     _error = 'Error al guardar creación fallida: ${e.toString()}';
-  //     notifyListeners();
-  //   }
-  // }
-
-  // Future<void> saveFailedPositions(List<RoutePositionEntity> positions) async {
-  //   try {
-  //     await repository.saveFailedPositions(positions);
-  //     await loadOperations();
-  //   } catch (e) {
-  //     _error = 'Error al guardar posiciones fallidas: ${e.toString()}';
-  //     notifyListeners();
-  //   }
-  // }
-
-  // Future<void> saveFailedRouteFinish(FinishRouteEntity route) async {
-  //   try {
-  //     await repository.saveFailedRouteFinish(route);
-  //     await loadOperations();
-  //   } catch (e) {
-  //     _error = 'Error al guardar finalización fallida: ${e.toString()}';
-  //     notifyListeners();
-  //   }
-  // }
-
   Future<void> saveOperation(OfflineOperation operation) async {
     try {
       await repository.saveOperation(operation);
@@ -121,8 +87,7 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
   }
 
-  Future<void> retryOperation(
-      OfflineOperation operation, BuildContext context) async {
+  Future<void> retryOperation(OfflineOperation operation) async {
     _isLoading = true;
     notifyListeners();
 
@@ -131,48 +96,37 @@ class OfflineOperationsProvider with ChangeNotifier {
       final updatedOp =
           await repository.getOperationById(operation.id) ?? operation;
 
-      if (updatedOp.retryCount >= 3) {
-        throw Exception('Máximo de reintentos alcanzado');
-      }
-
-      bool success = false;
-
       switch (updatedOp.type) {
         case OfflineOperationType.routeCreation:
           final route = CreateRouteEntity.fromJson(updatedOp.data);
-          await routeRepository.createRoute(route);
-          success = true;
+          await routeRepository.retryRouteCreation(route);
           break;
         case OfflineOperationType.routePositions:
           final positions = (updatedOp.data['positions'] as List)
               .map((p) => RoutePositionEntity.fromJson(p))
               .toList();
-          await routeRepository.sendRoutePositions(positions);
-          success = true;
+          await routeRepository.retryRoutePositions(positions);
           break;
         case OfflineOperationType.routeFinish:
           final route = FinishRouteEntity.fromJson(updatedOp.data);
-          await routeRepository.finishRoute(route);
-          success = true;
+          await routeRepository.retryRouteFinish(route);
           break;
         default:
           throw Exception('Tipo de operación no soportado');
       }
 
-      if (success) {
-        // Actualizar como sincronizado en lugar de eliminar
-        final updatedData = {...updatedOp.data, 'synced': true};
-        await repository.updateOperation(
-          updatedOp.copyWith(data: updatedData),
-        );
+      // Actualizar como sincronizado en lugar de eliminar
+      final updatedData = {...updatedOp.data, 'synced': true};
+      await repository.updateOperation(
+        updatedOp.copyWith(data: updatedData),
+      );
 
-        // Verificar si todo el grupo está sincronizado
-        if (updatedOp.offlineRouteId != null) {
-          await _checkAndCleanGroup(updatedOp.offlineRouteId!);
-        }
-
-        Snackbars.showSnackbarSuccess('Operación sincronizada correctamente');
+      // Verificar si todo el grupo está sincronizado
+      if (updatedOp.offlineRouteId != null) {
+        await _checkAndCleanGroup(updatedOp.offlineRouteId!);
       }
+
+      Snackbars.showSnackbarSuccess('Operación sincronizada correctamente');
     } catch (e) {
       // Actualizar contador de reintentos
       await repository.updateRetryCount(
@@ -198,53 +152,14 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
   }
 
-  Future<void> retryOperationById(String id, BuildContext context) async {
+  Future<void> retryOperationById(String id) async {
     final operation = await repository.getOperationById(id);
     if (operation != null) {
-      await retryOperation(operation, context);
+      await retryOperation(operation);
     }
   }
 
-  Future<void> retryRouteGroup(
-    BuildContext context,
-    List<OfflineOperation> operations,
-    String offlineId,
-  ) async {
-    final provider = context.read<OfflineOperationsProvider>();
-
-    try {
-      // Ordenar operaciones: creación -> posiciones -> finalización
-      operations.sort((a, b) {
-        if (a.type == OfflineOperationType.routeCreation) return -1;
-        if (b.type == OfflineOperationType.routeCreation) return 1;
-        if (a.type == OfflineOperationType.routePositions) return -1;
-        if (b.type == OfflineOperationType.routePositions) return 1;
-        return 0;
-      });
-
-      bool allSynced = true;
-
-      for (final op in operations) {
-        if (op.data['synced'] == true) continue;
-
-        try {
-          await provider.retryOperation(op, context);
-        } catch (e) {
-          allSynced = false;
-          // Continuar con las siguientes operaciones aunque falle una
-          continue;
-        }
-      }
-
-      Snackbars.showSnackbarSuccess(allSynced
-          ? 'Todas las operaciones sincronizadas'
-          : 'Algunas operaciones se sincronizaron, verifique las pendientes');
-    } catch (e) {
-      Snackbars.showSnackbarError('Error al reintentar: ${e.toString()}');
-    }
-  }
-
-  Future<void> retryRouteCreation(BuildContext context, String id) async {
+  Future<void> retryRouteCreation(String id) async {
     final operation = await repository.getOperationById(id);
     if (operation == null ||
         operation.type != OfflineOperationType.routeCreation) return;
@@ -460,38 +375,6 @@ class OfflineOperationsProvider with ChangeNotifier {
     return await repository.hasPendingRouteOperation();
   }
 
-  Future<void> retryRouteRecovery(
-      String opId, RouteProvider routeProvider, BuildContext context) async {
-    final operation = await repository.getOperationById(opId);
-    if (operation == null ||
-        operation.type != OfflineOperationType.routeRecovery) return;
-    try {
-      // Se extrae el id de la ruta (asegúrate de que se guarde en los datos offline)
-      final int routeId = operation.data['routeId'];
-      // Se intenta reconsultar la ruta a través del provider (usa tu usecase existente)
-      final route = await routeProvider.resumeRoute(routeId);
-      // Si la recuperación fue exitosa, eliminar la operación offline y navegar
-      await repository.removeOperation(opId);
-      await loadOperations();
-      Navigator.pushReplacementNamed(context, '/root/speedometer');
-    } catch (e) {
-      await repository.updateRetryCount(
-          opId, (operation.retryCount + 1), e.toString());
-      rethrow;
-    }
-  }
-
-  Future<void> retryLatestRouteRecovery(BuildContext context) async {
-    final operations = await repository.getRouteRecoveryOperations();
-    if (operations.isEmpty) return;
-
-    // Ordenar por fecha (más reciente primero)
-    operations.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    await retryRouteRecovery(
-        operations.first.id, context.read<RouteProvider>(), context);
-  }
-
   Future<void> saveRouteRecoveryAttempt(
       int routeId, Map<String, dynamic> routeData) async {
     final operation = OfflineOperation(
@@ -532,22 +415,6 @@ class OfflineOperationsProvider with ChangeNotifier {
     );
 
     return sorted;
-  }
-
-  Future<List<OfflineOperation>> getOperationsByOfflineId(
-      String offlineId) async {
-    return await repository.getOperationsByOfflineId(offlineId);
-  }
-
-  Future<void> cleanupSyncedGroup(String offlineId) async {
-    final operations = await getOperationsByOfflineId(offlineId);
-
-    if (operations.every((op) => op.data['synced'] == true)) {
-      for (final op in operations) {
-        await repository.removeOperation(op.id);
-      }
-      await loadOperations(); // Actualizar la lista
-    }
   }
 
   // Método para reintentar todas las operaciones de una ruta

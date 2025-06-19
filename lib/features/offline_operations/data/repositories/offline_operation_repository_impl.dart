@@ -273,65 +273,6 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
     return getOperationsByType(OfflineOperationType.routePositions);
   }
 
-  Future<void> _handleOperationRetry(OfflineOperation operation) async {
-    switch (operation.type) {
-      case OfflineOperationType.routeRecovery:
-        // Lógica específica para recuperación de ruta
-        break;
-      case OfflineOperationType.maintenance:
-        // Lógica para mantenimiento
-        break;
-      case OfflineOperationType.inspection:
-        // Lógica para inspección
-        break;
-      case OfflineOperationType.incidentReport:
-        // Lógica para reporte de incidente
-        break;
-    }
-  }
-
-  @override
-  Future<void> saveRouteCreationAttempt(
-      int routeId, Map<String, dynamic> data) async {
-    final operation = OfflineOperation(
-      type: OfflineOperationType.routeCreation,
-      data: {
-        'routeId': routeId,
-        'action': 'create',
-        'data': data,
-        'timestamp': DateTime.now().toIso8601String(),
-      },
-    );
-    await saveOperation(operation);
-  }
-
-  @override
-  Future<void> saveMaintenanceAttempt(Map<String, dynamic> formData) async {
-    final operation = OfflineOperation(
-      type: OfflineOperationType.maintenance,
-      data: {
-        'action': 'submit',
-        'data': formData,
-        'timestamp': DateTime.now().toIso8601String(),
-      },
-    );
-    await saveOperation(operation);
-  }
-
-  @override
-  Future<void> saveRoutePositionBatch(
-      List<Map<String, dynamic>> positions) async {
-    final operation = OfflineOperation(
-      type: OfflineOperationType.routePositions,
-      data: {
-        'action': 'batch_insert',
-        'positions': positions,
-        'timestamp': DateTime.now().toIso8601String(),
-      },
-    );
-    await saveOperation(operation);
-  }
-
   @override
   Future<OfflineOperation?> getMaintenanceOperationByUniqueKey(
       String maintenanceId) async {
@@ -376,11 +317,6 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
       }
     }
     return null;
-  }
-
-  @override
-  Future<List<OfflineOperation>> getInspectionOperations() async {
-    return getOperationsByType(OfflineOperationType.inspection);
   }
 
   @override

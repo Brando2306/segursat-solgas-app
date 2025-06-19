@@ -1,17 +1,17 @@
 import 'dart:convert';
+import 'package:safe_driving_app/utils/storage.dart';
 
 import 'package:safe_driving_app/core/constants/storage_keys.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
-import 'package:safe_driving_app/features/route/data/datasources/route_local_data_source.dart';
-import 'package:safe_driving_app/features/route/data/datasources/route_remote_data_source.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_event_entity.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
 import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
-import 'package:safe_driving_app/utils/storage.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
+import 'package:safe_driving_app/features/route/data/datasources/route_local_data_source.dart';
+import 'package:safe_driving_app/features/route/data/datasources/route_remote_data_source.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
 
 class RouteRepositoryImpl implements RouteRepository {
   final RouteRemoteDataSource remoteDataSource;
@@ -131,32 +131,6 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  Future<void> syncPendingOperations() async {
-    final pendingPositions = await localDataSource.getPendingPositions();
-    for (final position in pendingPositions) {
-      try {
-        await remoteDataSource.saveRoutePosition(position);
-        await localDataSource.removePendingPosition(position.id);
-      } catch (e) {
-        // Continuar con las demás aunque falle una
-        continue;
-      }
-    }
-  }
-
-  @override
-  Future<void> saveRoutePositionsBatch(
-      List<Map<String, dynamic>> positions) async {
-    try {
-      await remoteDataSource.saveRoutePositionsBatch(positions);
-    } catch (e) {
-      // Guardar posiciones pendientes localmente
-      await localDataSource.savePendingPositions(positions);
-      rethrow;
-    }
-  }
-
-  @override
   Future<RouteEntity> createRoute(CreateRouteEntity route) async {
     try {
       final createdRoute = await remoteDataSource.createRoute(route);
@@ -244,22 +218,17 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  Future<void> retryRouteCreation(OfflineOperation operation) async {
-    final route = CreateRouteEntity.fromJson(operation.data);
+  Future<void> retryRouteCreation(CreateRouteEntity route) async {
     await remoteDataSource.createRoute(route);
   }
 
   @override
-  Future<void> retryRoutePositions(OfflineOperation operation) async {
-    final positions = (operation.data['positions'] as List)
-        .map((p) => RoutePositionEntity.fromJson(p))
-        .toList();
+  Future<void> retryRoutePositions(List<RoutePositionEntity> positions) async {
     await remoteDataSource.sendRoutePositions(positions);
   }
 
   @override
-  Future<void> retryRouteFinish(OfflineOperation operation) async {
-    final route = FinishRouteEntity.fromJson(operation.data);
+  Future<void> retryRouteFinish(FinishRouteEntity route) async {
     await remoteDataSource.finishRoute(route);
   }
 }

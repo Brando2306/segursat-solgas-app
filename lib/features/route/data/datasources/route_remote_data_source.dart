@@ -228,9 +228,10 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
 
   @override
   Future<void> sendRoutePositions(List<RoutePositionEntity> positions) async {
+    final data = positions.map((p) => p.toJson()).toList();
     final response = await _dio.post(
       'http://${ENDPOINTS.HOST}/${ENDPOINTS.INSERT_ROUTE_POSITIONS_BATCH}',
-      data: positions.map((p) => p.toJson()).toList(),
+      data: data,
       options: Options(headers: {
         'Authorization': ENDPOINTS.auth(),
       }),
