@@ -7,6 +7,7 @@ import 'package:safe_driving_app/features/offline_operations/domain/entities/off
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/offline_operations/presentation/providers/offline_operations_provider.dart';
 import 'package:safe_driving_app/features/offline_operations/presentation/widgets/offline_operations_list_widget.dart';
+import 'package:safe_driving_app/utils/snackbars.dart';
 
 class OfflineOperationsPage extends StatefulWidget {
   const OfflineOperationsPage({super.key});
@@ -547,6 +548,47 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
               tooltip: 'Reintentar',
               color: color,
             ),
+
+          IconButton(
+            icon: const Icon(Icons.delete, size: 20),
+            onPressed: () => _showDeleteConfirmation(context, operation.id),
+            tooltip: 'Eliminar',
+            color: Colors.red,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, String id) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text('Confirmar eliminación'),
+        content: const Text(
+            '¿Estás seguro de eliminar esta operación pendiente? Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await context
+                    .read<OfflineOperationsProvider>()
+                    .removeOperation(id);
+
+                Snackbars.showSnackbarSuccess(
+                    'Operación eliminada correctamente');
+              } catch (e) {
+                Snackbars.showSnackbarError('Error al eliminar: $e');
+              }
+            },
+            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
