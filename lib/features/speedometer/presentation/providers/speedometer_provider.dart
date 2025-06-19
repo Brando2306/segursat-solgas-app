@@ -225,63 +225,6 @@ class SpeedometerProvider with ChangeNotifier {
     return savedPositions.length;
   }
 
-  Future<void> _sendPositions(List<RoutePositionEntity> positions) async {
-    try {
-      await routeRepository.sendRoutePositions(positions);
-      // Si se enviaron correctamente, eliminamos cualquier posición pendiente del almacenamiento local
-      writeStorage('savedPositions', []);
-      notifyListeners();
-    } catch (e) {
-      // En caso de error, guardamos las posiciones localmente
-      List<String> savedPositions =
-          readStorage('savedPositions')?.cast<String>() ?? [];
-      savedPositions.addAll(positions.map((p) => json.encode(p.toJson())));
-      writeStorage('savedPositions', savedPositions);
-      notifyListeners();
-      log('Positions saved locally: ${savedPositions.length}');
-    }
-  }
-
-  Future<void> _createRoutePositions(
-      List<Map<String, dynamic>> positions) async {
-    try {
-      final url = Uri.parse(
-        'http://sfdev.segursat.com/web/api/control/insert-route-positions-batch/',
-      );
-
-      final response = await http.post(
-        url,
-        body: jsonEncode(positions),
-        headers: {
-          "Content-Type": "application/json",
-          'Authorization': ENDPOINTS.auth(),
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == STATUSCODE.OK) {
-        log('Positions sent successfully');
-      } else {
-        throw Exception('Failed to send positions');
-      }
-    } catch (e) {
-      log('Failed to send positions: $e');
-      _savePositionsLocally(positions);
-      rethrow;
-    }
-  }
-
-  void _savePositionsLocally(List<Map<String, dynamic>> positions) {
-    List<String> savedPositions =
-        readStorage('savedPositions')?.cast<String>() ?? [];
-
-    for (final position in positions) {
-      savedPositions.add(json.encode(position));
-    }
-
-    writeStorage('savedPositions', savedPositions);
-    log('Positions saved locally: ${savedPositions.length}');
-  }
-
   Future<void> _retrySendingStoredPositions() async {
     final savedPositions = readStorage('savedPositions')?.cast<String>() ?? [];
 
@@ -289,7 +232,7 @@ class SpeedometerProvider with ChangeNotifier {
 
     try {
       const batchSize = 25;
-      final batches = <List<Map<String, dynamic>>>[];
+      final batches = <List<RoutePositionEntity>>[];
 
       // Split into batches
       for (int i = 0; i < savedPositions.length; i += batchSize) {
@@ -305,7 +248,7 @@ class SpeedometerProvider with ChangeNotifier {
 
       // Send each batch
       for (final batch in batches) {
-        await _createRoutePositions(batch);
+        await routeRepository.sendRoutePositions(batch);
       }
 
       // Clear storage if all batches succeeded

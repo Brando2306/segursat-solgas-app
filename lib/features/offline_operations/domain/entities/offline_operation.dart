@@ -14,7 +14,7 @@ class OfflineOperation {
   final Map<String, dynamic> data;
   final int retryCount;
   final String? lastError;
-  final String? routeId; // Para agrupar operaciones por ruta
+  final String? routeId;
   final String? offlineRouteId;
 
   OfflineOperation({

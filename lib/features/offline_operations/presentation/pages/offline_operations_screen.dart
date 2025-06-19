@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -43,6 +46,12 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
       ),
       body: Consumer<OfflineOperationsProvider>(
         builder: (context, provider, _) {
+          log(provider.operations
+              .map((op) =>
+                  "ID: ${op.id}, OfflineRouteId: ${op.offlineRouteId}, Tipo: ${_getOperationTitle(op.type)}, Fecha: ${_formatDate(op.createdAt)}, Datos: ${op.data}")
+              .toList()
+              .toString());
+
           final routeGroups = provider.groupedRouteOperations;
 
           if (provider.isLoading && provider.operations.isEmpty) {
@@ -491,69 +500,145 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
     bool isBatch = false,
     Future<void> Function(String)? onRetry,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[200]!),
+    return GestureDetector(
+      onTap: () => _showOperationDetails(context, operation),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            // Icono con estado de sincronización
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSynced ? Colors.green[50] : color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: isSynced ? Colors.green : color,
+                size: 20,
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            // Información de la operación
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isSynced
+                        ? 'Sincronizado'
+                        : '${operation.retryCount} ${operation.retryCount == 1 ? 'intento' : 'intentos'}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isSynced ? Colors.green : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Botón de reintento (solo si no está sincronizado)
+            if (!isSynced && onRetry != null)
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 20),
+                onPressed: () => onRetry(operation.id),
+                tooltip: 'Reintentar',
+                color: color,
+              ),
+
+            IconButton(
+              icon: const Icon(Icons.delete, size: 20),
+              onPressed: () => _showDeleteConfirmation(context, operation.id),
+              tooltip: 'Eliminar',
+              color: Colors.red,
+            ),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          // Icono con estado de sincronización
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isSynced ? Colors.green[50] : color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: isSynced ? Colors.green : color,
-              size: 20,
-            ),
-          ),
+    );
+  }
 
-          const SizedBox(width: 12),
-
-          // Información de la operación
-          Expanded(
+  void _showOperationDetails(BuildContext context, OfflineOperation operation) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text('Detalles de ${_getOperationTitle(operation.type)}'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                _buildDetailRow('Tipo', _getOperationTitle(operation.type)),
+                _buildDetailRow('Fecha', _formatDate(operation.createdAt)),
+                _buildDetailRow('Intentos', operation.retryCount.toString()),
+                if (operation.lastError != null)
+                  _buildDetailRow('Último Error', operation.lastError!),
+                const SizedBox(height: 16),
+                const Text(
+                  'Datos:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  isSynced
-                      ? 'Sincronizado'
-                      : '${operation.retryCount} ${operation.retryCount == 1 ? 'intento' : 'intentos'}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isSynced ? Colors.green : Colors.grey[600],
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    const JsonEncoder.withIndent('  ').convert(operation.data),
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
 
-          // Botón de reintento (solo si no está sincronizado)
-          if (!isSynced && onRetry != null)
-            IconButton(
-              icon: const Icon(Icons.refresh, size: 20),
-              onPressed: () => onRetry(operation.id),
-              tooltip: 'Reintentar',
-              color: color,
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.w500),
             ),
-
-          IconButton(
-            icon: const Icon(Icons.delete, size: 20),
-            onPressed: () => _showDeleteConfirmation(context, operation.id),
-            tooltip: 'Eliminar',
-            color: Colors.red,
+          ),
+          Expanded(
+            child: Text(value),
           ),
         ],
       ),
