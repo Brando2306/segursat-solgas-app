@@ -46,6 +46,15 @@ class _SeatbeltPageState extends State<SeatbeltPage> {
                 height: getHeight(context, 3),
               ),
               titlePhoto(SEATBELT.TEXT_IMAGE),
+              SizedBox(height: 5),
+              Text(
+                'enganchado',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
               SizedBox(
                 height: getHeight(context, 2),
               ),
@@ -54,9 +63,9 @@ class _SeatbeltPageState extends State<SeatbeltPage> {
                 height: getHeight(context, 55),
                 child: FadeInImage(
                     width: size.width * 0.8,
-                    placeholder: AssetImage('assets/images/seatbelt2.png'),
+                    placeholder: AssetImage('assets/images/seatbelt.png'),
                     image:
-                        fileImage ?? AssetImage('assets/images/seatbelt2.png')),
+                        fileImage ?? AssetImage('assets/images/seatbelt.png')),
               ),
               SizedBox(
                 height: getHeight(context, 2),

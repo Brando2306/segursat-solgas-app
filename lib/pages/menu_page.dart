@@ -33,7 +33,7 @@ class _MenuPageContent extends StatelessWidget {
     final isLoading = inspectionEnabled == null || rootEnabled == null;
 
     return WillPopScope(
-      onWillPop: () async => false,
+      onWillPop: () async => true,
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: _buildAppBar(context),

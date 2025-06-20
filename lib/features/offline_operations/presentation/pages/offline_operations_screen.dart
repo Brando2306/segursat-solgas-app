@@ -46,11 +46,11 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
       ),
       body: Consumer<OfflineOperationsProvider>(
         builder: (context, provider, _) {
-          log(provider.operations
-              .map((op) =>
-                  "ID: ${op.id}, OfflineRouteId: ${op.offlineRouteId}, Tipo: ${_getOperationTitle(op.type)}, Fecha: ${_formatDate(op.createdAt)}, Datos: ${op.data}")
-              .toList()
-              .toString());
+          // log(provider.operations
+          //     .map((op) =>
+          //         "ID: ${op.id}, OfflineRouteId: ${op.offlineRouteId}, Tipo: ${_getOperationTitle(op.type)}, Fecha: ${_formatDate(op.createdAt)}, Datos: ${op.data}")
+          //     .toList()
+          //     .toString());
 
           final routeGroups = provider.groupedRouteOperations;
 
@@ -101,44 +101,44 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Card(
-                  color: Colors.yellow[50],
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'DEBUG: Primeras 20 operaciones offline',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        ...provider.operations
-                            .take(20)
-                            .map((op) => Container(
-                                  margin: EdgeInsets.all(8),
-                                  padding: EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.black)),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        '- ${op.offlineRouteId} |  id: ${op.id}',
-                                        style: const TextStyle(fontSize: 8),
-                                      ),
-                                      Text(
-                                        '- ${_getOperationTitle(op.type)} | ${_formatDate(op.createdAt)}',
-                                        style: const TextStyle(fontSize: 8),
-                                      ),
-                                    ],
-                                  ),
-                                ))
-                            .toList(),
-                      ],
-                    ),
-                  ),
-                ),
+                // Card(
+                //   color: Colors.yellow[50],
+                //   margin: const EdgeInsets.only(bottom: 16),
+                //   child: Padding(
+                //     padding: const EdgeInsets.all(12),
+                //     child: Column(
+                //       crossAxisAlignment: CrossAxisAlignment.start,
+                //       children: [
+                //         const Text(
+                //           'DEBUG: Primeras 20 operaciones offline',
+                //           style: TextStyle(fontWeight: FontWeight.bold),
+                //         ),
+                //         const SizedBox(height: 8),
+                //         ...provider.operations
+                //             .take(20)
+                //             .map((op) => Container(
+                //                   margin: EdgeInsets.all(8),
+                //                   padding: EdgeInsets.all(12),
+                //                   decoration: BoxDecoration(
+                //                       border: Border.all(color: Colors.black)),
+                //                   child: Column(
+                //                     children: [
+                //                       Text(
+                //                         '- ${op.offlineRouteId} |  id: ${op.id}',
+                //                         style: const TextStyle(fontSize: 8),
+                //                       ),
+                //                       Text(
+                //                         '- ${_getOperationTitle(op.type)} | ${_formatDate(op.createdAt)}',
+                //                         style: const TextStyle(fontSize: 8),
+                //                       ),
+                //                     ],
+                //                   ),
+                //                 ))
+                //             .toList(),
+                //       ],
+                //     ),
+                //   ),
+                // ),
                 if (routeGroups.isNotEmpty)
                   _buildRouteOperationsSection(context, routeGroups),
                 SizedBox(height: 16),
@@ -554,12 +554,12 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                 color: color,
               ),
 
-            IconButton(
-              icon: const Icon(Icons.delete, size: 20),
-              onPressed: () => _showDeleteConfirmation(context, operation.id),
-              tooltip: 'Eliminar',
-              color: Colors.red,
-            ),
+            // IconButton(
+            //   icon: const Icon(Icons.delete, size: 20),
+            //   onPressed: () => _showDeleteConfirmation(context, operation.id),
+            //   tooltip: 'Eliminar',
+            //   color: Colors.red,
+            // ),
           ],
         ),
       ),

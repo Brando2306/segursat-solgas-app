@@ -35,110 +35,152 @@ class _QuestionPageState extends State<QuestionPage> {
       onWillPop: () async => false,
       child: Scaffold(
         appBar: header(context),
-        body: Column(children: [
-          Expanded(child: Container()),
-          Text(QUESTION.TEXT_QUESTION_ONE),
-          SizedBox(
-            height: getHeight(context, 1),
-          ),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            ToggleButtons(
-              direction: vertical ? Axis.vertical : Axis.horizontal,
-              onPressed: (int index) {
-                setState(() {
-                  for (int i = 0; i < _selectedQuestionOne.length; i++) {
-                    _selectedQuestionOne[i] = i == index;
-                  }
-                  writeStorage('question.one', index == 1 ? true : false);
-                });
-              },
-              borderRadius: const BorderRadius.all(Radius.circular(8)),
-              selectedBorderColor: Colors.blue[700],
-              selectedColor: Colors.white,
-              fillColor: Colors.blue[200],
-              color: Colors.blue[400],
-              constraints: const BoxConstraints(
-                minHeight: 40.0,
-                minWidth: 80.0,
+        body: Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(child: Container()),
+                      Text(
+                        QUESTION.TEXT_QUESTION_ONE,
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(
+                        height: getHeight(context, 1),
+                      ),
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ToggleButtons(
+                              direction:
+                                  vertical ? Axis.vertical : Axis.horizontal,
+                              onPressed: (int index) {
+                                setState(() {
+                                  for (int i = 0;
+                                      i < _selectedQuestionOne.length;
+                                      i++) {
+                                    _selectedQuestionOne[i] = i == index;
+                                  }
+                                  writeStorage('question.one',
+                                      index == 1 ? true : false);
+                                });
+                              },
+                              borderRadius:
+                                  const BorderRadius.all(Radius.circular(8)),
+                              selectedBorderColor: Colors.blue[700],
+                              selectedColor: Colors.white,
+                              fillColor: Colors.blue[200],
+                              color: Colors.blue[400],
+                              constraints: const BoxConstraints(
+                                minHeight: 40.0,
+                                minWidth: 80.0,
+                              ),
+                              isSelected: _selectedQuestionOne,
+                              children: _questionOne,
+                            )
+                          ]),
+                      Expanded(child: Container()),
+                      Text(
+                        QUESTION.TEXT_QUESTION_TWO,
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(
+                        height: getHeight(context, 1),
+                      ),
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ToggleButtons(
+                              direction:
+                                  vertical ? Axis.vertical : Axis.horizontal,
+                              onPressed: (int index) {
+                                setState(() {
+                                  for (int i = 0;
+                                      i < _selectedQuestionTwo.length;
+                                      i++) {
+                                    _selectedQuestionTwo[i] = i == index;
+                                  }
+                                  writeStorage('question.two',
+                                      index == 1 ? true : false);
+                                });
+                              },
+                              borderRadius:
+                                  const BorderRadius.all(Radius.circular(8)),
+                              selectedBorderColor: Colors.blue[700],
+                              selectedColor: Colors.white,
+                              fillColor: Colors.blue[200],
+                              color: Colors.blue[400],
+                              constraints: const BoxConstraints(
+                                minHeight: 40.0,
+                                minWidth: 80.0,
+                              ),
+                              isSelected: _selectedQuestionTwo,
+                              children: _questionTwo,
+                            )
+                          ]),
+                      Expanded(child: Container()),
+                      Text(
+                        QUESTION.TEXT_QUESTION_THREE,
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(
+                        height: getHeight(context, 1),
+                      ),
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ToggleButtons(
+                              direction:
+                                  vertical ? Axis.vertical : Axis.horizontal,
+                              onPressed: (int index) {
+                                setState(() {
+                                  for (int i = 0;
+                                      i < _selectedQuestionThree.length;
+                                      i++) {
+                                    _selectedQuestionThree[i] = i == index;
+                                  }
+                                  writeStorage('question.three',
+                                      index == 1 ? true : false);
+                                });
+                              },
+                              borderRadius:
+                                  const BorderRadius.all(Radius.circular(8)),
+                              selectedBorderColor: Colors.blue[700],
+                              selectedColor: Colors.white,
+                              fillColor: Colors.blue[200],
+                              color: Colors.blue[400],
+                              constraints: const BoxConstraints(
+                                minHeight: 40.0,
+                                minWidth: 80.0,
+                              ),
+                              isSelected: _selectedQuestionThree,
+                              children: _questionThree,
+                            )
+                          ]),
+                      Expanded(child: Container()),
+                      Expanded(child: Container()),
+                      Expanded(child: Container()),
+                    ]),
               ),
-              isSelected: _selectedQuestionOne,
-              children: _questionOne,
+            ),
+            nextButton(
+                context,
+                QUESTION.TEXT_BUTTON,
+                '/inspection/odometer',
+                (readStorage('question.one') ?? false) &&
+                    (readStorage('question.two') ?? false) &&
+                    (readStorage('question.three') ?? false),
+                () {},
+                null),
+            SizedBox(
+              height: getHeight(context, 3),
             )
-          ]),
-          Expanded(child: Container()),
-          Text(QUESTION.TEXT_QUESTION_TWO),
-          SizedBox(
-            height: getHeight(context, 1),
-          ),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            ToggleButtons(
-              direction: vertical ? Axis.vertical : Axis.horizontal,
-              onPressed: (int index) {
-                setState(() {
-                  for (int i = 0; i < _selectedQuestionTwo.length; i++) {
-                    _selectedQuestionTwo[i] = i == index;
-                  }
-                  writeStorage('question.two', index == 1 ? true : false);
-                });
-              },
-              borderRadius: const BorderRadius.all(Radius.circular(8)),
-              selectedBorderColor: Colors.blue[700],
-              selectedColor: Colors.white,
-              fillColor: Colors.blue[200],
-              color: Colors.blue[400],
-              constraints: const BoxConstraints(
-                minHeight: 40.0,
-                minWidth: 80.0,
-              ),
-              isSelected: _selectedQuestionTwo,
-              children: _questionTwo,
-            )
-          ]),
-          Expanded(child: Container()),
-          Text(QUESTION.TEXT_QUESTION_THREE),
-          SizedBox(
-            height: getHeight(context, 1),
-          ),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            ToggleButtons(
-              direction: vertical ? Axis.vertical : Axis.horizontal,
-              onPressed: (int index) {
-                setState(() {
-                  for (int i = 0; i < _selectedQuestionThree.length; i++) {
-                    _selectedQuestionThree[i] = i == index;
-                  }
-                  writeStorage('question.three', index == 1 ? true : false);
-                });
-              },
-              borderRadius: const BorderRadius.all(Radius.circular(8)),
-              selectedBorderColor: Colors.blue[700],
-              selectedColor: Colors.white,
-              fillColor: Colors.blue[200],
-              color: Colors.blue[400],
-              constraints: const BoxConstraints(
-                minHeight: 40.0,
-                minWidth: 80.0,
-              ),
-              isSelected: _selectedQuestionThree,
-              children: _questionThree,
-            )
-          ]),
-          Expanded(child: Container()),
-          Expanded(child: Container()),
-          Expanded(child: Container()),
-          nextButton(
-              context,
-              QUESTION.TEXT_BUTTON,
-              '/inspection/odometer',
-              (readStorage('question.one') ?? false) &&
-                  (readStorage('question.two') ?? false) &&
-                  (readStorage('question.three') ?? false),
-              () {},
-              null),
-          SizedBox(
-            height: getHeight(context, 3),
-          )
-        ]),
+          ],
+        ),
       ),
     );
   }
