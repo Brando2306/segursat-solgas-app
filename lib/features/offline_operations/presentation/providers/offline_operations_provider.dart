@@ -15,6 +15,7 @@ import 'package:safe_driving_app/features/inspection/presentation/providers/insp
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/maintenance/presentation/providers/maintenance_provider.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
+import 'package:safe_driving_app/utils/storage.dart';
 
 class OfflineOperationsProvider with ChangeNotifier {
   final OfflineOperationsRepository repository;
@@ -147,15 +148,62 @@ class OfflineOperationsProvider with ChangeNotifier {
 
     if (allSynced) {
       for (final op in operations) {
-        await repository.removeOperation(op.id);
+        // await repository.removeOperation(op.id);
       }
     }
   }
 
   Future<void> retryOperationById(String id) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final updatedOp = await repository.getOperationById(id);
+      if (updatedOp == null) return;
+
+      switch (updatedOp.type) {
+        case OfflineOperationType.routeCreation:
+          await retryRouteCreation(id);
+          break;
+        case OfflineOperationType.routePositions:
+          await retryRoutePositions(id);
+          break;
+        case OfflineOperationType.routeFinish:
+          await retryRouteFinish(id);
+          break;
+        // ... otros casos
+        default:
+          await retryOperation(updatedOp);
+      }
+
+      // Actualizar como sincronizado en lugar de eliminar
+      final updatedData = {...updatedOp.data, 'synced': true};
+      await repository.updateOperation(
+        updatedOp.copyWith(data: updatedData),
+      );
+
+      // Verificar si todo el grupo está sincronizado
+      if (updatedOp.offlineRouteId != null) {
+        await _checkAndCleanGroup(updatedOp.offlineRouteId!);
+      }
+
+      Snackbars.showSnackbarSuccess('Operación sincronizada correctamente');
+    } catch (e) {
+      await _handleRetryError(id, e);
+    } finally {
+      _isLoading = false;
+      await loadOperations();
+    }
+  }
+
+  Future<void> _handleRetryError(String id, dynamic error) async {
     final operation = await repository.getOperationById(id);
     if (operation != null) {
-      await retryOperation(operation);
+      await repository.updateRetryCount(
+          id, operation.retryCount + 1, error.toString());
+
+      Snackbars.showSnackbarError(
+          'Error al reintentar (${operation.retryCount + 1}/3): ${error.toString()}');
     }
   }
 
@@ -166,17 +214,56 @@ class OfflineOperationsProvider with ChangeNotifier {
 
     try {
       final route = CreateRouteEntity.fromJson(operation.data);
-      await routeRepository.createRoute(route);
-      await repository.removeOperation(id);
+      final createdRoute = await routeRepository.retryRouteCreation(route);
+
+      // Actualizar el ID de ruta en todas las operaciones relacionadas
+      if (operation.offlineRouteId != null) {
+        await _updateRelatedOperationsWithNewRouteId(
+            operation.offlineRouteId!, createdRoute.id);
+      }
+
+      // await repository.removeOperation(id);
       await loadOperations();
     } catch (e) {
-      await repository.updateRetryCount(
-          id, operation.retryCount + 1, e.toString());
       rethrow;
     }
   }
 
-  Future<void> retryRouteFinish(BuildContext context, String id) async {
+  Future<void> _updateRelatedOperationsWithNewRouteId(
+      String offlineRouteId, int newRouteId) async {
+    // Obtener todas las operaciones del mismo grupo
+    final operations =
+        await repository.getOperationsByOfflineId(offlineRouteId);
+
+    for (final op in operations) {
+      if (op.type == OfflineOperationType.routePositions) {
+        // Actualizar las posiciones con el nuevo routeId
+        final updatedPositions = (op.data['positions'] as List).map((p) {
+          final position = RoutePositionEntity.fromJson(p);
+          return position.copyWith(routeId: newRouteId);
+        }).toList();
+
+        await repository.updateOperation(op.copyWith(
+          data: {'positions': updatedPositions.map((p) => p.toJson()).toList()},
+          routeId: newRouteId.toString(),
+        ));
+      } else if (op.type == OfflineOperationType.routeFinish) {
+        // Actualizar el finish con el nuevo routeId
+        final finish = FinishRouteEntity.fromJson(op.data);
+        await repository.updateOperation(op.copyWith(
+          data: finish.copyWith(routeId: newRouteId).toJson(),
+          routeId: newRouteId.toString(),
+        ));
+      }
+    }
+
+    // Actualizar el ID en el almacenamiento local si es la ruta actual
+    if (readStorage('root.createRoute.id') == offlineRouteId) {
+      writeStorage('root.createRoute.id', newRouteId);
+    }
+  }
+
+  Future<void> retryRouteFinish(String id) async {
     final operation = await repository.getOperationById(id);
     if (operation == null ||
         operation.type != OfflineOperationType.routeFinish) {
@@ -185,12 +272,10 @@ class OfflineOperationsProvider with ChangeNotifier {
 
     try {
       final route = FinishRouteEntity.fromJson(operation.data);
-      await routeRepository.finishRoute(route);
-      await repository.removeOperation(id);
+      await routeRepository.retryRouteFinish(route);
+      // await repository.removeOperation(id);
       await loadOperations();
     } catch (e) {
-      await repository.updateRetryCount(
-          id, operation.retryCount + 1, e.toString());
       rethrow;
     }
   }
@@ -252,8 +337,13 @@ class OfflineOperationsProvider with ChangeNotifier {
         await routeRepository.retryRoutePositions(batch);
       }
 
+      // Actualizar como sincronizado en lugar de eliminar
+      final updatedData = {...operation.data, 'synced': true};
+      await repository.updateOperation(
+        operation.copyWith(data: updatedData),
+      );
       // Eliminar operación exitosa
-      await repository.removeOperation(operation.id);
+      // await repository.removeOperation(operation.id);
 
       Snackbars.showSnackbarSuccess('Posiciones sincronizadas correctamente');
     } catch (e) {
@@ -418,7 +508,7 @@ class OfflineOperationsProvider with ChangeNotifier {
 
     for (final op in routeOperations) {
       // Usar offlineRouteId como clave principal, si no existe usar routeId
-      final key = op.offlineRouteId ?? op.routeId ?? 'no-route';
+      final key = op.offlineRouteId ?? op.routeId.toString() ?? 'no-route';
       grouped.putIfAbsent(key, () => []).add(op);
     }
 

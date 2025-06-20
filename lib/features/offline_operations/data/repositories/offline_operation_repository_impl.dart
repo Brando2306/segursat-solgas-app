@@ -349,4 +349,28 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
     );
     return maps.map((map) => OfflineOperation.fromJson(map)).toList();
   }
+
+  @override
+  Future<void> markOperationAsSynced(String id) async {
+    await database.update(
+      'offline_operations',
+      {
+        'synced': 1,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  @override
+  Future<List<OfflineOperation>> getSyncedOperations(
+      String offlineRouteId) async {
+    final maps = await database.query(
+      'offline_operations',
+      where: 'offlineRouteId = ? AND synced = 1',
+      whereArgs: [offlineRouteId],
+    );
+    return maps.map((map) => OfflineOperation.fromJson(map)).toList();
+  }
 }

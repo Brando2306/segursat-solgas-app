@@ -1,7 +1,7 @@
 import 'package:safe_driving_app/features/route/domain/entities/route.dart';
 
 class RouteEntity {
-  final dynamic id;
+  final int id;
   final dynamic unitName;
   final dynamic timestamp;
   final dynamic sourceLatitude;
@@ -57,7 +57,7 @@ class RouteEntity {
 
   Route toRoute() {
     return Route(
-      id: int.tryParse(this.id) ?? 0,
+      id: this.id,
       unitName: this.unitName,
       status: RouteStatus.running, // You'll need to handle status properly
       timestamp: this.timestamp,
@@ -137,6 +137,22 @@ class FinishRouteEntity {
       finishLatitude: json['finish_latitude'],
       finishLongitude: json['finish_longitude'],
       time: json['time'],
+    );
+  }
+
+  FinishRouteEntity copyWith({
+    dynamic routeId,
+    dynamic finishTimestamp,
+    dynamic finishLatitude,
+    dynamic finishLongitude,
+    dynamic time,
+  }) {
+    return FinishRouteEntity(
+      routeId: routeId ?? this.routeId,
+      finishTimestamp: finishTimestamp ?? this.finishTimestamp,
+      finishLatitude: finishLatitude ?? this.finishLatitude,
+      finishLongitude: finishLongitude ?? this.finishLongitude,
+      time: time ?? this.time,
     );
   }
 }

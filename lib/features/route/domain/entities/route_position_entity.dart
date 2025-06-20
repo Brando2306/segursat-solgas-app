@@ -44,4 +44,26 @@ class RoutePositionEntity {
       angle: json['angle'],
     );
   }
+
+  RoutePositionEntity copyWith({
+    dynamic routeId,
+    dynamic unitId,
+    dynamic timestamp,
+    dynamic latitude,
+    dynamic longitude,
+    dynamic altitude,
+    dynamic speed,
+    dynamic angle,
+  }) {
+    return RoutePositionEntity(
+      routeId: routeId ?? this.routeId,
+      unitId: unitId ?? this.unitId,
+      timestamp: timestamp ?? this.timestamp,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      altitude: altitude ?? this.altitude,
+      speed: speed ?? this.speed,
+      angle: angle ?? this.angle,
+    );
+  }
 }

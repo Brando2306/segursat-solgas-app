@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:latlong2/latlong.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
@@ -16,6 +17,7 @@ class OfflineOperation {
   final String? lastError;
   final String? routeId;
   final String? offlineRouteId;
+  final bool synced;
 
   OfflineOperation({
     required this.type,
@@ -27,12 +29,18 @@ class OfflineOperation {
     this.updatedAt,
     this.routeId,
     this.offlineRouteId,
+    this.synced = false,
   })  : id = id == null || id.isEmpty
             ? DateTime.now().millisecondsSinceEpoch.toString()
             : id,
         createdAt = createdAt ?? DateTime.now();
 
   factory OfflineOperation.fromJson(Map<String, dynamic> json) {
+    // Manejo del campo 'synced' (puede venir como int o bool)
+    final synced = json['synced'] is int
+        ? json['synced'] == 1
+        : json['synced'] as bool? ?? false;
+
     Map<String, dynamic> dataField;
     if (json['data'] is String) {
       dataField = jsonDecode(json['data']);
@@ -41,6 +49,8 @@ class OfflineOperation {
     } else {
       dataField = {};
     }
+
+    log('message ${json}');
 
     return OfflineOperation(
       id: json['id'],
@@ -56,6 +66,7 @@ class OfflineOperation {
       lastError: json['lastError'],
       routeId: json['routeId'],
       offlineRouteId: json['offlineRouteId'],
+      synced: synced,
     );
   }
 
@@ -64,11 +75,13 @@ class OfflineOperation {
       'id': id,
       'type': type.toString(),
       'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
       'data': jsonEncode(data),
       'retryCount': retryCount,
       'lastError': lastError,
       'routeId': routeId,
       'offlineRouteId': offlineRouteId,
+      'synced': synced ? 1 : 0,
     };
   }
 
@@ -80,6 +93,7 @@ class OfflineOperation {
     int? retryCount,
     String? lastError,
     String? offlineRouteId,
+    String? routeId,
   }) {
     return OfflineOperation(
       id: id ?? this.id,
@@ -89,6 +103,7 @@ class OfflineOperation {
       retryCount: retryCount ?? this.retryCount,
       lastError: lastError ?? this.lastError,
       offlineRouteId: offlineRouteId ?? this.offlineRouteId,
+      routeId: routeId ?? this.routeId,
     );
   }
 

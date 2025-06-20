@@ -258,7 +258,7 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
     // 3. Calcular total de posiciones pendientes
     final pendingPositions = (positionOp.data['positions'] as List).length;
     final isPositionsSynced =
-        pendingPositions == 0 || positionOp.data['synced'] == true;
+      positionOp.data['synced'] == true;
 
     return Card(
       margin: const EdgeInsets.only(top: 8),

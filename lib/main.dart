@@ -50,33 +50,6 @@ Future<Database> initializeDatabase() async {
     path,
     version: 1,
     onCreate: (db, version) async {
-      // Tablas para rutas (se crean también en RouteLocalDataSource.init())
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS routes (
-          id INTEGER PRIMARY KEY,
-          unitName TEXT NOT NULL,
-          status TEXT NOT NULL,
-          timestamp TEXT NOT NULL,
-          sourceLat REAL NOT NULL,
-          sourceLng REAL NOT NULL,
-          destLat REAL NOT NULL,
-          destLng REAL NOT NULL
-        )
-      ''');
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS route_positions (
-          id TEXT PRIMARY KEY,
-          routeId INTEGER NOT NULL,
-          timestamp TEXT NOT NULL,
-          latitude REAL NOT NULL,
-          longitude REAL NOT NULL,
-          altitude REAL NOT NULL,
-          speed REAL NOT NULL,
-          angle INTEGER NOT NULL,
-          FOREIGN KEY (routeId) REFERENCES routes (id) ON DELETE CASCADE
-        )
-      ''');
-      // Tabla para operaciones offline
       await db.execute('''
         CREATE TABLE IF NOT EXISTS offline_operations (
           id TEXT PRIMARY KEY,
@@ -87,7 +60,8 @@ Future<Database> initializeDatabase() async {
           retryCount INTEGER NOT NULL,
           lastError TEXT,
           routeId TEXT,
-          offlineRouteId TEXT
+          offlineRouteId TEXT,
+          synced INTEGER NOT NULL DEFAULT 0
         )
       ''');
     },
