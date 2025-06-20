@@ -36,9 +36,29 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
       List<RoutePositionEntity> positions, String offlineRouteId) async {
     if (positions.isEmpty) return;
 
-    final operation =
-        OfflineOperation.routePositions(positions, offlineRouteId);
-    await saveOperation(operation);
+    // 1. Buscar si ya existe una operación de posiciones para esta ruta
+    final existingOps = await getOperationsByOfflineId(offlineRouteId);
+    final existingPositionsOp = existingOps.firstWhere(
+      (op) => op.type == OfflineOperationType.routePositions,
+      orElse: () => OfflineOperation(
+        type: OfflineOperationType.routePositions,
+        data: {'positions': []},
+        offlineRouteId: offlineRouteId,
+      ),
+    );
+
+    // 2. Fusionar las nuevas posiciones con las existentes
+    final List<Map<String, dynamic>> allPositions = [
+      ...(existingPositionsOp.data['positions'] as List? ?? []),
+      ...positions.map((p) => p.toJson()).toList(),
+    ];
+
+    // 3. Actualizar o crear la operación consolidada
+    final updatedOp = existingPositionsOp.copyWith(
+      data: {'positions': allPositions},
+    );
+
+    await saveOperation(updatedOp);
   }
 
   @override

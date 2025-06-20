@@ -226,7 +226,7 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
       {required String offlineId}) {
     final provider = context.read<OfflineOperationsProvider>();
 
-    // Filtrar operaciones por tipo y estado de sincronización
+    // 1. Buscar operaciones relevantes
     final creationOp = operations.firstWhere(
       (op) => op.type == OfflineOperationType.routeCreation,
       orElse: () => OfflineOperation(
@@ -236,9 +236,15 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
       ),
     );
 
-    final positionOps = operations
-        .where((op) => op.type == OfflineOperationType.routePositions)
-        .toList();
+    // 2. Obtener TODAS las posiciones agrupadas (ahora vienen en una sola operación)
+    final positionOp = operations.firstWhere(
+      (op) => op.type == OfflineOperationType.routePositions,
+      orElse: () => OfflineOperation(
+        type: OfflineOperationType.routePositions,
+        data: {'positions': []},
+        offlineRouteId: offlineId,
+      ),
+    );
 
     final finishOp = operations.firstWhere(
       (op) => op.type == OfflineOperationType.routeFinish,
@@ -249,43 +255,35 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
       ),
     );
 
-    // Calcular estados de sincronización
-    final isCreationSynced = creationOp.data['synced'] == true;
-    final arePositionsSynced = positionOps.isEmpty ||
-        positionOps.every((op) => op.data['synced'] == true);
-    final isFinishSynced = finishOp.data['synced'] == true;
+    // 3. Calcular total de posiciones pendientes
+    final pendingPositions = (positionOp.data['positions'] as List).length;
+    final isPositionsSynced =
+        pendingPositions == 0 || positionOp.data['synced'] == true;
 
     return Card(
       margin: const EdgeInsets.only(top: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Encabezado con estado de sincronización
+            // Título de la ruta
             Row(
               children: [
-                Icon(
-                  Icons.sync_problem,
-                  color: Colors.orange,
-                  size: 20,
-                ),
-                SizedBox(width: 8),
+                Icon(Icons.route, color: Colors.blue),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     title,
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      fontSize: 16,
                     ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 12),
 
             // Creación de ruta
             _buildOperationItem(
@@ -294,22 +292,22 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
               title: 'Creación de ruta',
               icon: Icons.route,
               color: Colors.blue,
-              isSynced: isCreationSynced,
+              isSynced: creationOp.data['synced'] == true,
               onRetry: (id) => provider.retryOperationById(id),
             ),
 
-            // Posiciones pendientes
-            if (positionOps.isNotEmpty)
+            // Posiciones pendientes (¡Ahora muestra el total!)
+            if (pendingPositions > 0)
               _buildOperationItem(
                 context: context,
-                operation: positionOps.first,
+                operation: positionOp,
                 title:
-                    '${positionOps.length} ${positionOps.length == 1 ? 'posición' : 'posiciones'} pendientes',
+                    '$pendingPositions posiciones pendientes', // Ej: "23 posiciones"
                 icon: Icons.location_on,
                 color: Colors.green,
-                isSynced: arePositionsSynced,
-                isBatch: true,
-                onRetry: (id) => provider.retryOperationById(id),
+                isSynced: isPositionsSynced,
+                onRetry: (id) => provider
+                    .retryRoutePositions(id), // Reintenta TODAS las posiciones
               ),
 
             // Finalización de ruta
@@ -319,12 +317,9 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
               title: 'Finalización de ruta',
               icon: Icons.flag,
               color: Colors.orange,
-              isSynced: isFinishSynced,
+              isSynced: finishOp.data['synced'] == true,
               onRetry: (id) => provider.retryOperationById(id),
             ),
-
-            // Botón para reintentar todo el grupo
-            SizedBox(height: 8),
           ],
         ),
       ),
@@ -497,7 +492,6 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
     required IconData icon,
     required Color color,
     bool isSynced = false,
-    bool isBatch = false,
     Future<void> Function(String)? onRetry,
   }) {
     return GestureDetector(

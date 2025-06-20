@@ -187,7 +187,9 @@ void main() async {
           create: (_) => SelectDestinationProvider(),
         ),
         ChangeNotifierProvider(
-          create: (_) => SpeedometerProvider(routeRepository: routeRepository),
+          create: (_) => SpeedometerProvider(
+              routeRepository: routeRepository,
+              offlineOperationsRepository: offlineOperationRepo),
         ),
       ],
       child: MyApp(),

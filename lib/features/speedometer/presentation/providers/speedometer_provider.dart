@@ -8,6 +8,9 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:safe_driving_app/core/constants/storage_keys.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_event_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
@@ -23,10 +26,11 @@ import 'package:collection/collection.dart';
 
 class SpeedometerProvider with ChangeNotifier {
   late final RouteRepository routeRepository;
+  late final OfflineOperationsRepository offlineOperationsRepository;
 
-  SpeedometerProvider({
-    required this.routeRepository,
-  });
+  SpeedometerProvider(
+      {required this.routeRepository,
+      required this.offlineOperationsRepository});
 
   // Stream subscriptions
   StreamSubscription<Position>? _positionStream;
@@ -173,6 +177,7 @@ class SpeedometerProvider with ChangeNotifier {
     // Timer for sending position data
     _dataSendTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _attemptToSendPosition();
+      _updatePendingPositionsCount();
     });
 
     // Timer for internet connectivity check
@@ -220,42 +225,72 @@ class SpeedometerProvider with ChangeNotifier {
     }
   }
 
-  int get pendingPositionsCount {
-    final savedPositions = readStorage('savedPositions')?.cast<String>() ?? [];
-    return savedPositions.length;
+  int _pendingPositionsCountValue = 0;
+
+  int get pendingPositionsCountValue => _pendingPositionsCountValue;
+
+  Future<void> _updatePendingPositionsCount() async {
+    final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+    if (offlineId == null) {
+      _pendingPositionsCountValue = 0;
+      notifyListeners();
+      return;
+    }
+
+    final operations =
+        await offlineOperationsRepository.getOperationsByOfflineId(offlineId);
+    final positionOps = operations
+        .where((op) => op.type == OfflineOperationType.routePositions);
+
+    int total = 0;
+    for (final op in positionOps) {
+      total += (op.data['positions'] as List).length;
+    }
+
+    if (total != _pendingPositionsCountValue) {
+      _pendingPositionsCountValue = total;
+      notifyListeners();
+    }
   }
 
   Future<void> _retrySendingStoredPositions() async {
-    final savedPositions = readStorage('savedPositions')?.cast<String>() ?? [];
+    final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+    if (offlineId == null) return;
 
-    if (savedPositions.isEmpty) return;
+    // Obtener todas las posiciones pendientes para esta ruta
+    final operations =
+        await offlineOperationsRepository.getOperationsByOfflineId(offlineId);
+    final positionOps = operations
+        .where((op) => op.type == OfflineOperationType.routePositions);
+
+    if (positionOps.isEmpty) return;
 
     try {
-      const batchSize = 25;
-      final batches = <List<RoutePositionEntity>>[];
-
-      // Split into batches
-      for (int i = 0; i < savedPositions.length; i += batchSize) {
-        final end = i + batchSize < savedPositions.length
-            ? i + batchSize
-            : savedPositions.length;
-        final batch = savedPositions
-            .sublist(i, end)
-            .map((p) => json.decode(p) as Map<String, dynamic>)
+      // Extraer y unir todas las posiciones fallidas
+      final allPositions = <RoutePositionEntity>[];
+      for (final op in positionOps) {
+        final positions = (op.data['positions'] as List)
+            .map((p) => RoutePositionEntity.fromJson(p))
             .toList();
-        batches.add(batch);
+        allPositions.addAll(positions);
       }
 
-      // Send each batch
-      for (final batch in batches) {
+      // Enviar en lotes de 25
+      const batchSize = 25;
+      for (int i = 0; i < allPositions.length; i += batchSize) {
+        final end = (i + batchSize < allPositions.length)
+            ? i + batchSize
+            : allPositions.length;
+        final batch = allPositions.sublist(i, end);
         await routeRepository.sendRoutePositions(batch);
       }
 
-      // Clear storage if all batches succeeded
-      writeStorage('savedPositions', []);
-      log('All stored positions sent successfully');
+      // Eliminar las operaciones ya sincronizadas
+      for (final op in positionOps) {
+        await offlineOperationsRepository.removeOperation(op.id);
+      }
     } catch (e) {
-      log('Failed to resend stored positions: $e');
+      log('Error al reenviar posiciones: $e');
     }
   }
 
@@ -289,8 +324,7 @@ class SpeedometerProvider with ChangeNotifier {
         await routeRepository.finishRoute(route);
       }
 
-      // Enviar cualquier posición pendiente antes de limpiar
-      await _sendPendingPositions();
+      //TODO: Limpiar Rutas
 
       _cleanup();
     } catch (e) {
@@ -300,22 +334,6 @@ class SpeedometerProvider with ChangeNotifier {
           'Modo offline activado. La ruta se sincronizará cuando haya conexión.');
       _cleanup();
       // rethrow;
-    }
-  }
-
-  Future<void> _sendPendingPositions() async {
-    final savedPositions = readStorage('savedPositions')?.cast<String>() ?? [];
-    if (savedPositions.isEmpty) return;
-
-    try {
-      final positions = savedPositions
-          .map((p) => RoutePositionEntity.fromJson(json.decode(p)))
-          .toList();
-
-      await routeRepository.sendRoutePositions(positions);
-      writeStorage('savedPositions', []);
-    } catch (e) {
-      log('Failed to send pending positions: $e');
     }
   }
 

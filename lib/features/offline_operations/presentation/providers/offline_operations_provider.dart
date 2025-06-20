@@ -232,23 +232,41 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
   }
 
-  Future<void> retryRoutePositions(BuildContext context, String id) async {
+  Future<void> retryRoutePositions(String id) async {
     final operation = await repository.getOperationById(id);
     if (operation == null ||
         operation.type != OfflineOperationType.routePositions) return;
 
     try {
-      final position = RoutePositionEntity.fromJson(operation.data);
-      await routeRepository.sendRoutePositions([position]);
-      await repository.removeOperation(id);
-      await loadOperations();
+      final positions = (operation.data['positions'] as List)
+          .map((p) => RoutePositionEntity.fromJson(p))
+          .toList();
 
-      Snackbars.showSnackbarSuccess('Posición sincronizada correctamente');
+      // Enviar en lotes de 25
+      const batchSize = 25;
+      for (int i = 0; i < positions.length; i += batchSize) {
+        final end = (i + batchSize < positions.length)
+            ? i + batchSize
+            : positions.length;
+        final batch = positions.sublist(i, end);
+        await routeRepository.retryRoutePositions(batch);
+      }
+
+      // Eliminar operación exitosa
+      await repository.removeOperation(operation.id);
+
+      Snackbars.showSnackbarSuccess('Posiciones sincronizadas correctamente');
     } catch (e) {
       await repository.updateRetryCount(
-          id, operation.retryCount + 1, e.toString());
-      Snackbars.showSnackbarError('Error al sincronizar posición: $e');
+        operation.id,
+        operation.retryCount + 1,
+        e.toString(),
+      );
+      Snackbars.showSnackbarError('Error al sincronizar posiciones: $e');
       rethrow;
+    } finally {
+      _isLoading = false;
+      await loadOperations();
     }
   }
 
