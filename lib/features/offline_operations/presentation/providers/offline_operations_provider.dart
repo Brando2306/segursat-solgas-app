@@ -306,7 +306,7 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
 
     try {
-      final event = RouteEventEntity.fromJson(operation.data);
+      final event = EmergencyEventEntity.fromJson(operation.data);
       await routeRepository.sendSos(event);
       await repository.removeOperation(id);
       await loadOperations();

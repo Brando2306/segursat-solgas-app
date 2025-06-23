@@ -188,7 +188,7 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  Future<void> sendSos(RouteEventEntity event) async {
+  Future<void> sendSos(EmergencyEventEntity event) async {
     try {
       await remoteDataSource.sendSos(event);
     } catch (e) {

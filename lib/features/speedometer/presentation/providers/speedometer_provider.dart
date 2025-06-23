@@ -350,27 +350,15 @@ class SpeedometerProvider with ChangeNotifier {
     cleanRootRecurringStop();
   }
 
-  // Future<void> triggerEmergency() async {
-  //   try {
-  //     await sendEmergencyNotification();
-  //     await callEmergencyPhone();
-  //     await finishRoute(isEmergency: true);
-  //   } catch (e) {
-  //     log('Emergency trigger failed: $e');
-  //     rethrow;
-  //   }
-  // }
-
   Future<void> triggerEmergency() async {
     try {
       final currentPosition = await Geolocator.getCurrentPosition();
-      final event = RouteEventEntity(
+      final event = EmergencyEventEntity(
         routeId: readStorage('root.createRoute.id'),
         unitId: readStorage('personal.unitId'),
-        timestamp: DateTime.now(),
+        timestamp: getDate(),
         latitude: currentPosition.latitude,
         longitude: currentPosition.longitude,
-        eventType: 'SOS',
       );
 
       await routeRepository.sendSos(event);

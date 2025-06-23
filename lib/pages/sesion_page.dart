@@ -242,6 +242,7 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
 
     try {
       EasyLoading.show(status: 'Validando...');
+      FocusManager.instance.primaryFocus?.unfocus();
 
       await _validateUserCredentials(driverProvider, unitProvider);
 

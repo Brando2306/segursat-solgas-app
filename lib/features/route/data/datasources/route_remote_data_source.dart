@@ -19,7 +19,7 @@ abstract class RouteRemoteDataSource {
   Future<RouteEntity> getRoute(String routeId);
   Future<void> finishRoute(FinishRouteEntity route);
   Future<void> cancelRoute(CancelRouteEntity route);
-  Future<void> sendSos(RouteEventEntity event);
+  Future<void> sendSos(EmergencyEventEntity event);
   Future<void> sendRoutePositions(List<RoutePositionEntity> positions);
 }
 
@@ -213,7 +213,7 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
   }
 
   @override
-  Future<void> sendSos(RouteEventEntity event) async {
+  Future<void> sendSos(EmergencyEventEntity event) async {
     final response = await _dio.post(
       'http://${ENDPOINTS.HOST}/${ENDPOINTS.INSERT_ROUTE_SOS}',
       data: [event.toJson()],
