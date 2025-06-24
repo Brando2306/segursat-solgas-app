@@ -17,16 +17,13 @@ class InspectionProvider with ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  Future<void> submitInspectionData(
-    InspectionEntity inspection, {
-    bool isRetry = false,
-  }) async {
+  Future<void> submitInspectionData(InspectionEntity inspection) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await submitInspection(inspection, isRetry: isRetry);
+      await submitInspection(inspection);
       _error = null;
     } catch (e) {
       _error = e.toString();

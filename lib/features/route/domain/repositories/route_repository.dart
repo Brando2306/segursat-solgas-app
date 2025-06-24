@@ -15,8 +15,12 @@ abstract class RouteRepository {
   Future<void> cancelRoute(CancelRouteEntity route);
   Future<void> sendSos(EmergencyEventEntity event);
   Future<void> sendRoutePositions(List<RoutePositionEntity> positions);
+  Future<String> getEmergencyPhoneNumber();
 
   Future<RouteEntity> retryRouteCreation(CreateRouteEntity route);
   Future<void> retryRoutePositions(List<RoutePositionEntity> positions);
+  Future<void> retrySendSos(EmergencyEventEntity event);
+  Future<String> retryEmergencyPhoneNumber();
+  Future<void> retryCancelRoute(CancelRouteEntity event);
   Future<void> retryRouteFinish(FinishRouteEntity route);
 }

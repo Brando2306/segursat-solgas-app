@@ -49,7 +49,7 @@ class _IncidentReportPageState extends State<IncidentReportPage> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-        onWillPop: () async => false,
+        onWillPop: () async => true,
         child: GestureDetector(
           onTap: () {
             FocusScope.of(context).unfocus();

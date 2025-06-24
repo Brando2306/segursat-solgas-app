@@ -2,13 +2,13 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
+import 'package:safe_driving_app/utils/storage.dart';
+import 'package:safe_driving_app/utils/endpoints.dart';
+import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_event_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
-import 'package:safe_driving_app/helpers/functions.dart';
-import 'package:safe_driving_app/utils/endpoints.dart';
-import 'package:safe_driving_app/utils/storage.dart';
 
 abstract class RouteRemoteDataSource {
   Future<List<Route>> getActiveRoutes();
@@ -21,6 +21,8 @@ abstract class RouteRemoteDataSource {
   Future<void> cancelRoute(CancelRouteEntity route);
   Future<void> sendSos(EmergencyEventEntity event);
   Future<void> sendRoutePositions(List<RoutePositionEntity> positions);
+
+  Future<String> getEmergencyPhoneNumber();
 }
 
 class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
@@ -242,5 +244,23 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
     if (response.statusCode != 200) {
       throw Exception('Failed to send route positions');
     }
+  }
+
+  @override
+  Future<String> getEmergencyPhoneNumber() async {
+    final response = await _client.get(
+      Uri.http(ENDPOINTS.HOST, ENDPOINTS.EMERGENCY_PHONE),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": ENDPOINTS.auth()
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to get emergency number');
+    }
+
+    final data = json.decode(response.body);
+    return data['emergency_phone'] as String;
   }
 }

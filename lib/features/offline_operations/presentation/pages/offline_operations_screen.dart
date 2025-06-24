@@ -48,7 +48,7 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
         builder: (context, provider, _) {
           // log(provider.operations
           //     .map((op) =>
-          //         "ID: ${op.id}, OfflineRouteId: ${op.offlineRouteId}, Tipo: ${_getOperationTitle(op.type)}, Fecha: ${_formatDate(op.createdAt)}, Datos: ${op.data}")
+          //         "ID: ${op.id}, OfflineRouteId: ${op.offlineRouteId}, Tipo: ${op.type.displayName}, Fecha: ${_formatDate(op.createdAt)}, Datos: ${op.data}")
           //     .toList()
           //     .toString());
 
@@ -101,44 +101,7 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                // Card(
-                //   color: Colors.yellow[50],
-                //   margin: const EdgeInsets.only(bottom: 16),
-                //   child: Padding(
-                //     padding: const EdgeInsets.all(12),
-                //     child: Column(
-                //       crossAxisAlignment: CrossAxisAlignment.start,
-                //       children: [
-                //         const Text(
-                //           'DEBUG: Primeras 20 operaciones offline',
-                //           style: TextStyle(fontWeight: FontWeight.bold),
-                //         ),
-                //         const SizedBox(height: 8),
-                //         ...provider.operations
-                //             .take(20)
-                //             .map((op) => Container(
-                //                   margin: EdgeInsets.all(8),
-                //                   padding: EdgeInsets.all(12),
-                //                   decoration: BoxDecoration(
-                //                       border: Border.all(color: Colors.black)),
-                //                   child: Column(
-                //                     children: [
-                //                       Text(
-                //                         '- ${op.offlineRouteId} |  id: ${op.id}',
-                //                         style: const TextStyle(fontSize: 8),
-                //                       ),
-                //                       Text(
-                //                         '- ${_getOperationTitle(op.type)} | ${_formatDate(op.createdAt)}',
-                //                         style: const TextStyle(fontSize: 8),
-                //                       ),
-                //                     ],
-                //                   ),
-                //                 ))
-                //             .toList(),
-                //       ],
-                //     ),
-                //   ),
-                // ),
+                _buildDebugCard(context, provider),
                 if (routeGroups.isNotEmpty)
                   _buildRouteOperationsSection(context, routeGroups),
                 SizedBox(height: 16),
@@ -147,27 +110,17 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                   title: 'Mantenimientos',
                   operations: provider.maintenanceOperations,
                   onRetry: (String id) async {
-                    await provider.retryMaintenance(context, id);
+                    await provider.retryMaintenance(id);
                   },
                   icon: Icons.build,
                   color: Colors.orange,
                 ),
                 _buildSection(
                   context,
-                  title: 'Emergencias SOS',
-                  operations: provider.routeSosOperations,
-                  onRetry: (String id) async {
-                    await provider.retryRouteSos(context, id);
-                  },
-                  icon: Icons.warning,
-                  color: Colors.red,
-                ),
-                _buildSection(
-                  context,
                   title: 'Inspecciones',
                   operations: provider.inspectionOperations,
                   onRetry: (String id) async {
-                    await provider.retryInspection(context, id);
+                    await provider.retryInspection(id);
                   },
                   icon: Icons.assignment,
                   color: Colors.teal,
@@ -176,6 +129,51 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildDebugCard(
+      BuildContext context, OfflineOperationsProvider provider) {
+    return Card(
+      color: Colors.yellow[50],
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'DEBUG: Primeras 20 operaciones offline',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...provider.operations
+                .take(20)
+                .map((op) => GestureDetector(
+                      onTap: () => _showDeleteConfirmation(context, op.id),
+                      child: Container(
+                        margin: EdgeInsets.all(8),
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black)),
+                        child: Column(
+                          children: [
+                            Text(
+                              '- ${op.offlineRouteId} |  id: ${op.id}',
+                              style: const TextStyle(fontSize: 8),
+                            ),
+                            Text(
+                              '- ${op.type.displayName} | ${_formatDate(op.createdAt)}',
+                              style: const TextStyle(fontSize: 8),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ],
+        ),
       ),
     );
   }
@@ -246,6 +244,37 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
       ),
     );
 
+    // 3. Buscar operación SOS (para rutas que tengan emergencias)
+    final sosOp = operations.firstWhere(
+      (op) => op.type == OfflineOperationType.routeSos,
+      orElse: () => OfflineOperation(
+        type: OfflineOperationType.routeSos,
+        data: {},
+        offlineRouteId: offlineId,
+      ),
+    );
+
+    // 4. Buscar operación emergencyCall (para rutas que tengan llamadas de emergencia)
+    final emergencyCallOp = operations.firstWhere(
+      (op) => op.type == OfflineOperationType.emergencyCall,
+      orElse: () => OfflineOperation(
+        type: OfflineOperationType.emergencyCall,
+        data: {},
+        offlineRouteId: offlineId,
+      ),
+    );
+
+    // 5. Buscar operación routeCancel (para rutas que hayan sido canceladas)
+    final cancelOp = operations.firstWhere(
+      (op) => op.type == OfflineOperationType.routeCancel,
+      orElse: () => OfflineOperation(
+        type: OfflineOperationType.routeCancel,
+        data: {},
+        offlineRouteId: offlineId,
+      ),
+    );
+
+    // 6. Buscar operación de finalización (puede que no exista si la ruta no se ha completado)
     final finishOp = operations.firstWhere(
       (op) => op.type == OfflineOperationType.routeFinish,
       orElse: () => OfflineOperation(
@@ -255,10 +284,9 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
       ),
     );
 
-    // 3. Calcular total de posiciones pendientes
+    // Calcular total de posiciones pendientes
     final pendingPositions = (positionOp.data['positions'] as List).length;
-    final isPositionsSynced =
-      positionOp.data['synced'] == true;
+    final isPositionsSynced = positionOp.data['synced'] == true;
 
     return Card(
       margin: const EdgeInsets.only(top: 8),
@@ -310,16 +338,56 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                     .retryRoutePositions(id), // Reintenta TODAS las posiciones
               ),
 
+            // Evento SOS
+            // if (sosOp != null)
+            if (sosOp.data.isNotEmpty)
+              _buildOperationItem(
+                context: context,
+                operation: sosOp,
+                title: 'Alerta de emergencia enviada',
+                icon: Icons.warning,
+                color: Colors.red,
+                isSynced: sosOp.data['synced'] == true,
+                onRetry: (id) => provider.retryOperationById(id),
+              ),
+
+            // Llamada de emergencia
+            // if (emergencyCallOp != null)
+            if (emergencyCallOp.data.isNotEmpty)
+              _buildOperationItem(
+                context: context,
+                operation: emergencyCallOp,
+                title: 'Llamada a emergencia',
+                icon: Icons.phone,
+                color: Colors.purple,
+                isSynced: emergencyCallOp.data['synced'] == true,
+                onRetry: (id) => provider.retryOperationById(id),
+              ),
+
+            // // Cancelación de ruta
+            // if (cancelOp != null)
+            if (cancelOp.data.isNotEmpty)
+              _buildOperationItem(
+                context: context,
+                operation: cancelOp,
+                title: 'Cancelación de ruta',
+                icon: Icons.cancel,
+                color: Colors.orange,
+                isSynced: cancelOp.data['synced'] == true,
+                onRetry: (id) => provider.retryOperationById(id),
+              ),
+
             // Finalización de ruta
-            _buildOperationItem(
-              context: context,
-              operation: finishOp,
-              title: 'Finalización de ruta',
-              icon: Icons.flag,
-              color: Colors.orange,
-              isSynced: finishOp.data['synced'] == true,
-              onRetry: (id) => provider.retryOperationById(id),
-            ),
+            if (finishOp.data.isNotEmpty)
+              _buildOperationItem(
+                context: context,
+                operation: finishOp,
+                title: 'Finalización de ruta',
+                icon: Icons.flag,
+                color: Colors.orange,
+                isSynced: finishOp.data['synced'] == true,
+                onRetry: (id) => provider.retryOperationById(id),
+              ),
           ],
         ),
       ),
@@ -389,13 +457,11 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
             ...previewOps.map((op) => _buildOperationItem(
                   context: context,
                   operation: op,
-                  title: _getOperationTitle(op.type),
+                  title: op.type.displayName,
                   icon: _getOperationIcon(op.type),
                   color: _getOperationColor(op.type),
                   isSynced: op.data['synced'] == true,
-                  onRetry: (id) => context
-                      .read<OfflineOperationsProvider>()
-                      .retryOperationById(id),
+                  onRetry: onRetry,
                 )),
             if (operations.length > 2) ...[
               const SizedBox(height: 8),
@@ -426,25 +492,6 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
         ),
       ),
     );
-  }
-
-  String _getOperationTitle(OfflineOperationType type) {
-    switch (type) {
-      case OfflineOperationType.routeCreation:
-        return 'Creación de ruta';
-      case OfflineOperationType.routePositions:
-        return 'Posiciones de ruta';
-      case OfflineOperationType.routeFinish:
-        return 'Finalización de ruta';
-      case OfflineOperationType.routeRecovery:
-        return 'Recuperación de ruta';
-      case OfflineOperationType.maintenance:
-        return 'Mantenimiento';
-      case OfflineOperationType.inspection:
-        return 'Inspección';
-      default:
-        return 'Operación';
-    }
   }
 
   IconData _getOperationIcon(OfflineOperationType type) {
@@ -554,12 +601,12 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                 color: color,
               ),
 
-            // IconButton(
-            //   icon: const Icon(Icons.delete, size: 20),
-            //   onPressed: () => _showDeleteConfirmation(context, operation.id),
-            //   tooltip: 'Eliminar',
-            //   color: Colors.red,
-            // ),
+            IconButton(
+              icon: const Icon(Icons.delete, size: 20),
+              onPressed: () => _showDeleteConfirmation(context, operation.id),
+              tooltip: 'Eliminar',
+              color: Colors.red,
+            ),
           ],
         ),
       ),
@@ -571,7 +618,7 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text('Detalles de ${_getOperationTitle(operation.type)}'),
+        title: Text('Detalles de ${operation.type.displayName}'),
         content: SizedBox(
           width: double.maxFinite,
           child: SingleChildScrollView(
@@ -579,7 +626,7 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildDetailRow('Tipo', _getOperationTitle(operation.type)),
+                _buildDetailRow('Tipo', operation.type.displayName),
                 _buildDetailRow('Fecha', _formatDate(operation.createdAt)),
                 _buildDetailRow('Intentos', operation.retryCount.toString()),
                 if (operation.lastError != null)

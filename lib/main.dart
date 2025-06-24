@@ -110,6 +110,16 @@ void main() async {
     offlineOperationsRepository: offlineOperationRepo,
   );
 
+  final maintenanceRepository = MaintenanceRepositoryImpl(
+    remoteDataSource: MaintenanceRemoteDataSourceImpl(dio: Dio()),
+    offlineOperationsRepository: offlineOperationRepo,
+  );
+
+  final inspectionRepository = InspectionRepositoryImpl(
+    remoteDataSource: InspectionRemoteDataSourceImpl(dio: Dio()),
+    offlineOperationsRepository: offlineOperationRepo,
+  );
+
   final connectivity = Connectivity();
 
   runApp(
@@ -136,23 +146,15 @@ void main() async {
               repository: OfflineOperationsRepositoryImpl(
                 database: database,
               ),
-              routeRepository: routeRepository),
+              routeRepository: routeRepository,
+              maintenanceRepository: maintenanceRepository,
+              inspectionRepository: inspectionRepository),
         ),
         ChangeNotifierProvider(
-          create: (_) => MaintenanceProvider(
-            repository: MaintenanceRepositoryImpl(
-              remoteDataSource: MaintenanceRemoteDataSourceImpl(dio: Dio()),
-              offlineOperationsRepository: offlineOperationRepo,
-            ),
-          ),
+          create: (_) => MaintenanceProvider(repository: maintenanceRepository),
         ),
         ChangeNotifierProvider(
-          create: (_) => InspectionProvider(
-            repository: InspectionRepositoryImpl(
-              remoteDataSource: InspectionRemoteDataSourceImpl(dio: Dio()),
-              offlineOperationsRepository: offlineOperationRepo,
-            ),
-          ),
+          create: (_) => InspectionProvider(repository: inspectionRepository),
         ),
         ChangeNotifierProvider(
           create: (_) => SelectSourceProvider(),

@@ -6,8 +6,7 @@ class SubmitMaintenance {
 
   SubmitMaintenance(this.repository);
 
-  Future<void> call(MaintenanceEntity maintenance,
-      {bool isRetry = false}) async {
-    return await repository.submitMaintenance(maintenance, isRetry: isRetry);
+  Future<void> call(MaintenanceEntity maintenance) async {
+    return await repository.submitMaintenance(maintenance);
   }
 }

@@ -6,7 +6,7 @@ class SubmitInspection {
 
   SubmitInspection(this.repository);
 
-  Future<void> call(InspectionEntity inspection, {bool isRetry = false}) async {
-    return await repository.submitInspection(inspection, isRetry: isRetry);
+  Future<void> call(InspectionEntity inspection) async {
+    return await repository.submitInspection(inspection);
   }
 }

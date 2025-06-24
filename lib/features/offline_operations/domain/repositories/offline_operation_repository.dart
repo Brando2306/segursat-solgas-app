@@ -1,7 +1,7 @@
-import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 
 abstract class OfflineOperationsRepository {
   Future<void> saveOperation(OfflineOperation operation);
@@ -33,6 +33,8 @@ abstract class OfflineOperationsRepository {
       List<RoutePositionEntity> positions, String offlineRouteId);
   Future<void> saveFailedRouteFinish(
       FinishRouteEntity route, String offlineRouteId);
+  Future<void> saveFailedRouteCancel(
+      CancelRouteEntity route, String offlineRouteId);
 
   // Métodos para reintentar
   Future<void> retryRouteCreation(String operationId);
@@ -43,4 +45,6 @@ abstract class OfflineOperationsRepository {
   Future<Map<String, List<OfflineOperation>>> getGroupedRouteOperations();
 
   Future<List<OfflineOperation>> getOperationsByOfflineId(String offlineId);
+
+  Future<void> saveFailedEmergencyCall(String offlineRouteId);
 }

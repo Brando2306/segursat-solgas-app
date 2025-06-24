@@ -16,16 +16,13 @@ class MaintenanceProvider with ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  Future<void> submitMaintenanceData(
-    MaintenanceEntity maintenance, {
-    bool isRetry = false,
-  }) async {
+  Future<void> submitMaintenanceData(MaintenanceEntity maintenance) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await submitMaintenance(maintenance, isRetry: isRetry);
+      await submitMaintenance(maintenance);
       _error = null;
     } catch (e) {
       _error = e.toString();

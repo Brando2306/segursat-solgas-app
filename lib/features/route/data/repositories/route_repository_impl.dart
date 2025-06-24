@@ -156,13 +156,14 @@ class RouteRepositoryImpl implements RouteRepository {
   Future<void> finishRoute(FinishRouteEntity route) async {
     try {
       await remoteDataSource.finishRoute(route);
-      // Limpiar ID offline si existe
+
       final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
       if (offlineId != null) {
         await removeStorage(StorageKeys.currentOfflineRouteId);
       }
     } catch (e) {
       final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedRouteFinish(
             route, offlineId);
@@ -175,14 +176,18 @@ class RouteRepositoryImpl implements RouteRepository {
   Future<void> cancelRoute(CancelRouteEntity route) async {
     try {
       await remoteDataSource.cancelRoute(route);
+
+      final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+      if (offlineId != null) {
+        await removeStorage(StorageKeys.currentOfflineRouteId);
+      }
     } catch (e) {
-      // Guardar en operaciones offline
-      await offlineOperationsRepository.saveOperation(
-        OfflineOperation(
-          type: OfflineOperationType.routeCancel,
-          data: route.toJson(),
-        ),
-      );
+      final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+
+      if (offlineId != null) {
+        await offlineOperationsRepository.saveFailedRouteCancel(
+            route, offlineId);
+      }
       rethrow;
     }
   }
@@ -192,17 +197,22 @@ class RouteRepositoryImpl implements RouteRepository {
     try {
       await remoteDataSource.sendSos(event);
     } catch (e) {
-      // Guardar en operaciones offline
-      await offlineOperationsRepository.saveOperation(
-        OfflineOperation(
-          type: OfflineOperationType.routeSos,
-          data: event.toJson(),
-        ),
-      );
+      final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+
+      if (offlineId != null) {
+        await offlineOperationsRepository.saveOperation(
+          OfflineOperation(
+            type: OfflineOperationType.routeSos,
+            data: event.toJson(),
+            offlineRouteId: offlineId,
+          ),
+        );
+      }
       rethrow;
     }
   }
 
+  @override
   @override
   Future<void> sendRoutePositions(List<RoutePositionEntity> positions) async {
     try {
@@ -214,6 +224,20 @@ class RouteRepositoryImpl implements RouteRepository {
             positions, offlineId);
       }
       rethrow;
+    }
+  }
+
+  @override
+  Future<String> getEmergencyPhoneNumber() async {
+    try {
+      return await remoteDataSource.getEmergencyPhoneNumber();
+    } catch (e) {
+      // Guardar como operación offline solo si hay un offlineRouteId
+      final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+      if (offlineId != null) {
+        await offlineOperationsRepository.saveFailedEmergencyCall(offlineId);
+      }
+      throw Exception('Failed to get emergency number: $e');
     }
   }
 
@@ -231,5 +255,20 @@ class RouteRepositoryImpl implements RouteRepository {
   @override
   Future<void> retryRouteFinish(FinishRouteEntity route) async {
     await remoteDataSource.finishRoute(route);
+  }
+
+  @override
+  Future<void> retrySendSos(EmergencyEventEntity event) async {
+    await remoteDataSource.sendSos(event);
+  }
+
+  @override
+  Future<void> retryCancelRoute(CancelRouteEntity event) async {
+    await remoteDataSource.cancelRoute(event);
+  }
+
+  @override
+  Future<String> retryEmergencyPhoneNumber() async {
+    return await remoteDataSource.getEmergencyPhoneNumber();
   }
 }

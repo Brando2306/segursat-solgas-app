@@ -359,7 +359,7 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text(
           "Emergencia",
           style: TextStyle(
@@ -373,7 +373,7 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
         actions: <Widget>[
           ElevatedButton(
             onPressed: () async {
-              Navigator.of(context, rootNavigator: true).pop();
+              Navigator.of(dialogContext, rootNavigator: true).pop();
               EasyLoading.show(status: 'Procesando...');
               try {
                 await provider.triggerEmergency();
@@ -388,7 +388,7 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
             child: const Text('Sí'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+            onPressed: () => Navigator.of(dialogContext, rootNavigator: true).pop(),
             style: ElevatedButton.styleFrom(primary: Colors.deepOrange),
             child: const Text('No'),
           ),

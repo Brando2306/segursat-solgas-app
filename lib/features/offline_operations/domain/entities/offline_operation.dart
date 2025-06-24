@@ -1,11 +1,8 @@
 import 'dart:convert';
-import 'dart:developer';
 
-import 'package:latlong2/latlong.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 
 class OfflineOperation {
   final String id;
@@ -49,8 +46,6 @@ class OfflineOperation {
     } else {
       dataField = {};
     }
-
-    log('message ${json}');
 
     return OfflineOperation(
       id: json['id'],
@@ -123,10 +118,6 @@ class OfflineOperation {
     return OfflineOperation(
       type: OfflineOperationType.routePositions,
       data: {'positions': positions.map((p) => p.toJson()).toList()},
-      // data: {
-      //   'positions': positions.map((p) => p.toJson()).toList(),
-      //   'routeId': positions.isNotEmpty ? positions.first.routeId : null,
-      // },
       offlineRouteId: offlineRouteId,
     );
   }
@@ -140,18 +131,12 @@ class OfflineOperation {
     );
   }
 
-  // Método para obtener el ID de ruta asociado (si existe)
-  String? get associatedRouteId {
-    switch (type) {
-      case OfflineOperationType.routeCreation:
-        return data['unit_name'] ?? data['unitName'];
-      case OfflineOperationType.routePositions:
-        return data['routeId'] ?? (data['positions']?.first['routeid']);
-      case OfflineOperationType.routeFinish:
-      case OfflineOperationType.routeCancel:
-        return data['routeid'] ?? data['routeId'];
-      default:
-        return null;
-    }
+  static OfflineOperation routeCancel(
+      CancelRouteEntity route, String offlineRouteId) {
+    return OfflineOperation(
+      type: OfflineOperationType.routeCancel,
+      data: route.toJson(),
+      offlineRouteId: offlineRouteId,
+    );
   }
 }

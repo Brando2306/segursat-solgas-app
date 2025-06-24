@@ -9,6 +9,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:safe_driving_app/core/constants/storage_keys.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
@@ -337,6 +338,151 @@ class SpeedometerProvider with ChangeNotifier {
     }
   }
 
+  Future<void> triggerEmergency() async {
+    final currentPosition = await Geolocator.getCurrentPosition();
+    final routeId = readStorage('root.createRoute.id');
+    final offlineId = readStorage(StorageKeys.currentOfflineRouteId) ??
+        '${StorageKeys.offlineRoutePrefix}${DateTime.now().millisecondsSinceEpoch}';
+
+    // Verificar si ya hay operaciones de emergencia para esta ruta
+    final existingOps =
+        await offlineOperationsRepository.getOperationsByOfflineId(offlineId);
+    final hasExistingSos =
+        existingOps.any((op) => op.type == OfflineOperationType.routeSos);
+    final hasExistingCall =
+        existingOps.any((op) => op.type == OfflineOperationType.emergencyCall);
+    final hasExistingCancel =
+        existingOps.any((op) => op.type == OfflineOperationType.routeCancel);
+
+    // 1. Paso SOS - Solo si no existe ya
+    if (!hasExistingSos) {
+      await _executeEmergencyStep(
+        action: () {
+          final event = EmergencyEventEntity(
+            routeId: routeId,
+            unitId: readStorage('personal.unitId'),
+            timestamp: getDate(),
+            latitude: currentPosition.latitude,
+            longitude: currentPosition.longitude,
+          );
+          return routeRepository.sendSos(event);
+        },
+        offlineType: OfflineOperationType.routeSos,
+        offlineData: {
+          'routeId': routeId,
+          'unitId': readStorage('personal.unitId'),
+          'timestamp': getDate(),
+          'latitude': currentPosition.latitude,
+          'longitude': currentPosition.longitude,
+        },
+        offlineId: offlineId,
+      );
+    }
+
+    // 2. Paso Llamada - Solo si no existe ya
+    if (!hasExistingCall) {
+      await _executeEmergencyStep(
+        action: () async {
+          final phoneNumber = await routeRepository.getEmergencyPhoneNumber();
+          final url = Uri(scheme: 'tel', path: phoneNumber);
+          if (await canLaunchUrl(url)) {
+            await launchUrl(url);
+          } else {
+            throw Exception('No se pudo iniciar la llamada');
+          }
+        },
+        offlineType: OfflineOperationType.emergencyCall,
+        offlineData: {
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+        offlineId: offlineId,
+      );
+    }
+
+    // 3. Paso Cancelación - Solo si no existe ya
+    if (!hasExistingCancel) {
+      await _executeEmergencyStep(
+        action: () {
+          final route = CancelRouteEntity(
+            routeId: routeId,
+            cancelTimestamp: getDate(),
+            cancelLatitude: currentPosition.latitude,
+            cancelLongitude: currentPosition.longitude,
+            time: readStorage('root.cronometer') ?? 0,
+          );
+          return routeRepository.cancelRoute(route);
+        },
+        offlineType: OfflineOperationType.routeCancel,
+        offlineData: {
+          'routeId': routeId,
+          'cancelTimestamp': getDate(),
+          'cancelLatitude': currentPosition.latitude,
+          'cancelLongitude': currentPosition.longitude,
+          'time': readStorage('root.cronometer') ?? 0,
+        },
+        offlineId: offlineId,
+      );
+    }
+
+    _cleanup();
+  }
+
+  Future<void> _executeEmergencyStep({
+    required Future<void> Function() action,
+    required OfflineOperationType offlineType,
+    required Map<String, dynamic> offlineData,
+    required String offlineId,
+  }) async {
+    try {
+      // Verificar si ya existe una operación similar no sincronizada
+      final existingOps =
+          await offlineOperationsRepository.getOperationsByOfflineId(offlineId);
+      final existingOp = existingOps.firstWhereOrNull(
+          (op) => op.type == offlineType && op.data['synced'] != true);
+
+      if (existingOp != null) {
+        // Si ya existe una operación no sincronizada, no hacemos nada
+        return;
+      }
+
+      await action();
+    } catch (e) {
+      log('Error en operación $offlineType, guardando offline: $e');
+
+      // Verificar nuevamente antes de guardar para evitar duplicados
+      final existingOps =
+          await offlineOperationsRepository.getOperationsByOfflineId(offlineId);
+      final hasExisting = existingOps
+          .any((op) => op.type == offlineType && op.data['synced'] != true);
+
+      if (!hasExisting) {
+        await offlineOperationsRepository.saveOperation(
+          OfflineOperation(
+            type: offlineType,
+            data: offlineData,
+            offlineRouteId: offlineId,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> callEmergencyPhone() async {
+    try {
+      final phoneNumber = await routeRepository.getEmergencyPhoneNumber();
+      final url = Uri(scheme: 'tel', path: phoneNumber);
+
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
+      } else {
+        throw Exception('Could not launch phone call');
+      }
+    } catch (e) {
+      log('Emergency call failed: $e');
+      rethrow;
+    }
+  }
+
   void _cleanup() {
     _positionStream?.cancel();
     _dateTimer?.cancel();
@@ -348,56 +494,6 @@ class SpeedometerProvider with ChangeNotifier {
     cleanResumeRoute();
     cleanRoot();
     cleanRootRecurringStop();
-  }
-
-  Future<void> triggerEmergency() async {
-    try {
-      final currentPosition = await Geolocator.getCurrentPosition();
-      final event = EmergencyEventEntity(
-        routeId: readStorage('root.createRoute.id'),
-        unitId: readStorage('personal.unitId'),
-        timestamp: getDate(),
-        latitude: currentPosition.latitude,
-        longitude: currentPosition.longitude,
-      );
-
-      await routeRepository.sendSos(event);
-      await callEmergencyPhone();
-      await finishRoute(isEmergency: true);
-    } catch (e) {
-      log('Emergency trigger failed: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> sendEmergencyNotification() async {
-    try {
-      final response = await postInsertRouteSos();
-
-      if (response['status'] != STATUSCODE.OK) {
-        throw Exception('Failed to send emergency notification');
-      }
-    } catch (e) {
-      log('Emergency notification failed: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> callEmergencyPhone() async {
-    try {
-      final response = await getEmergencyNumber();
-
-      if (response['status'] == STATUSCODE.OK) {
-        final url = Uri(scheme: 'tel', path: response['emergency_phone']);
-
-        if (await canLaunchUrl(url)) {
-          await launchUrl(url);
-        }
-      }
-    } catch (e) {
-      log('Emergency call failed: $e');
-      rethrow;
-    }
   }
 
   @override

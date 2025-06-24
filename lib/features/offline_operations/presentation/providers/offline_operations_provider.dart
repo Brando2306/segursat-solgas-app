@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:safe_driving_app/utils/storage.dart';
 
 import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
@@ -11,18 +12,22 @@ import 'package:safe_driving_app/features/route/domain/entities/route_recovery_e
 import 'package:safe_driving_app/features/inspection/domain/entities/inspection_entity.dart';
 import 'package:safe_driving_app/features/maintenance/domain/entities/maintenance_entity.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
-import 'package:safe_driving_app/features/inspection/presentation/providers/inspection_provider.dart';
+import 'package:safe_driving_app/features/inspection/domain/repositories/inspection_repository.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
-import 'package:safe_driving_app/features/maintenance/presentation/providers/maintenance_provider.dart';
+import 'package:safe_driving_app/features/maintenance/domain/repositories/maintenance_repository.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
-import 'package:safe_driving_app/utils/storage.dart';
 
 class OfflineOperationsProvider with ChangeNotifier {
   final OfflineOperationsRepository repository;
   final RouteRepository routeRepository;
+  final MaintenanceRepository maintenanceRepository;
+  final InspectionRepository inspectionRepository;
 
   OfflineOperationsProvider(
-      {required this.repository, required this.routeRepository});
+      {required this.repository,
+      required this.routeRepository,
+      required this.maintenanceRepository,
+      required this.inspectionRepository});
 
   List<OfflineOperation> _operations = [];
   List<OfflineOperation> get operations => _operations;
@@ -134,7 +139,7 @@ class OfflineOperationsProvider with ChangeNotifier {
           operation.id, operation.retryCount + 1, e.toString());
 
       Snackbars.showSnackbarError(
-          'Error al reintentar (${operation.retryCount + 1}/3): ${e.toString()}');
+          'Error al reintentar operación: ${e.toString()}');
     } finally {
       _isLoading = false;
       await loadOperations();
@@ -171,6 +176,26 @@ class OfflineOperationsProvider with ChangeNotifier {
         case OfflineOperationType.routeFinish:
           await retryRouteFinish(id);
           break;
+        case OfflineOperationType.routeCancel:
+          await retryRouteCancel(id);
+          break;
+        case OfflineOperationType.routeSos:
+          await retryRouteSos(id);
+          break;
+        case OfflineOperationType.emergencyCall:
+          await retryEmergencyCall(id);
+          break;
+        // case OfflineOperationType.maintenance:
+        //   await retryMaintenance(context, id);
+        //   break;
+        // case OfflineOperationType.inspection:
+        //   await retryInspection(context, id);
+        //   break;
+        case OfflineOperationType.routeRecovery:
+          // No se reintenta automáticamente, se maneja manualmente
+          Snackbars.showSnackbarError(
+              'Operación de recuperación de ruta no reintentable');
+          return;
         // ... otros casos
         default:
           await retryOperation(updatedOp);
@@ -203,7 +228,7 @@ class OfflineOperationsProvider with ChangeNotifier {
           id, operation.retryCount + 1, error.toString());
 
       Snackbars.showSnackbarError(
-          'Error al reintentar (${operation.retryCount + 1}/3): ${error.toString()}');
+          'Error al reintentar operación: ${error.toString()}');
     }
   }
 
@@ -280,7 +305,7 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
   }
 
-  Future<void> retryRouteCancel(BuildContext context, String id) async {
+  Future<void> retryRouteCancel(String id) async {
     final operation = await repository.getOperationById(id);
     if (operation == null ||
         operation.type != OfflineOperationType.routeCancel) {
@@ -289,17 +314,15 @@ class OfflineOperationsProvider with ChangeNotifier {
 
     try {
       final route = CancelRouteEntity.fromJson(operation.data);
-      await routeRepository.cancelRoute(route);
-      await repository.removeOperation(id);
+      await routeRepository.retryCancelRoute(route);
+      // await repository.removeOperation(id);
       await loadOperations();
     } catch (e) {
-      await repository.updateRetryCount(
-          id, operation.retryCount + 1, e.toString());
       rethrow;
     }
   }
 
-  Future<void> retryRouteSos(BuildContext context, String id) async {
+  Future<void> retryRouteSos(String id) async {
     final operation = await repository.getOperationById(id);
     if (operation == null || operation.type != OfflineOperationType.routeSos) {
       return;
@@ -307,13 +330,50 @@ class OfflineOperationsProvider with ChangeNotifier {
 
     try {
       final event = EmergencyEventEntity.fromJson(operation.data);
-      await routeRepository.sendSos(event);
-      await repository.removeOperation(id);
+      await routeRepository.retrySendSos(event);
+      // await repository.removeOperation(id);
       await loadOperations();
     } catch (e) {
-      await repository.updateRetryCount(
-          id, operation.retryCount + 1, e.toString());
       rethrow;
+    }
+  }
+
+  Future<void> retryEmergencyCall(String id) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final operation = await repository.getOperationById(id);
+    if (operation == null ||
+        operation.type != OfflineOperationType.emergencyCall) return;
+
+    try {
+      // 1. Obtener número de emergencia
+      final phoneNumber = await routeRepository.retryEmergencyPhoneNumber();
+
+      // 2. Intentar llamada
+      final url = Uri(scheme: 'tel', path: phoneNumber);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
+
+        // 3. Marcar como sincronizado
+        final updatedData = {...operation.data, 'synced': true};
+        await repository.updateOperation(
+          operation.copyWith(data: updatedData),
+        );
+
+        Snackbars.showSnackbarSuccess('Llamada de emergencia realizada');
+      } else {
+        throw Exception('No se pudo iniciar la llamada');
+      }
+    } catch (e) {
+      // await repository.updateRetryCount(
+      //     id, (operation?.retryCount ?? 0) + 1, e.toString());
+      Snackbars.showSnackbarError(
+          'Error al reintentar llamada: ${e.toString()}');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      await loadOperations();
     }
   }
 
@@ -390,7 +450,7 @@ class OfflineOperationsProvider with ChangeNotifier {
     await loadOperations();
   }
 
-  Future<void> retryMaintenance(BuildContext context, String id) async {
+  Future<void> retryMaintenance(String id) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -404,10 +464,8 @@ class OfflineOperationsProvider with ChangeNotifier {
       final maintenance = MaintenanceEntity.fromJson(operation.data);
 
       // Se intenta enviar la data
-      await context
-          .read<MaintenanceProvider>()
-          .submitMaintenanceData(maintenance, isRetry: true);
-
+      await maintenanceRepository.retryMaintenance(maintenance);
+      Snackbars.showSnackbarSuccess('Operación sincronizada correctamente');
       // Si todo es exitoso, se elimina la operación de offline
       await repository.removeOperation(id);
       await loadOperations();
@@ -420,6 +478,8 @@ class OfflineOperationsProvider with ChangeNotifier {
         await loadOperations();
       }
       _error = 'Error al reintentar mantenimiento: ${e.toString()}';
+      Snackbars.showSnackbarError(
+          'Error al reintentar mantenimiento: ${e.toString()}');
       notifyListeners();
       rethrow;
     } finally {
@@ -428,7 +488,7 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
   }
 
-  Future<void> retryInspection(BuildContext context, String id) async {
+  Future<void> retryInspection(String id) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -444,10 +504,8 @@ class OfflineOperationsProvider with ChangeNotifier {
       final inspection = InspectionEntity.fromJson(operation.data);
 
       // Se intenta enviar la data
-      await context
-          .read<InspectionProvider>()
-          .submitInspectionData(inspection, isRetry: true);
-
+      await inspectionRepository.retryInspection(inspection);
+      Snackbars.showSnackbarSuccess('Operación sincronizada correctamente');
       // Si todo es exitoso, se elimina la operación de offline
       await repository.removeOperation(id);
       await loadOperations();
@@ -460,6 +518,8 @@ class OfflineOperationsProvider with ChangeNotifier {
         await loadOperations();
       }
       _error = 'Error al reintentar inspección: ${e.toString()}';
+      Snackbars.showSnackbarError(
+          'Error al reintentar inspección: ${e.toString()}');
       notifyListeners();
       rethrow;
     } finally {
@@ -501,6 +561,8 @@ class OfflineOperationsProvider with ChangeNotifier {
     final routeOperations = _operations.where((op) =>
         op.type == OfflineOperationType.routeCreation ||
         op.type == OfflineOperationType.routePositions ||
+        op.type == OfflineOperationType.routeSos ||
+        op.type == OfflineOperationType.emergencyCall ||
         op.type == OfflineOperationType.routeFinish ||
         op.type == OfflineOperationType.routeCancel);
 

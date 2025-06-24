@@ -69,6 +69,13 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
   }
 
   @override
+  Future<void> saveFailedRouteCancel(
+      CancelRouteEntity route, String offlineRouteId) async {
+    final operation = OfflineOperation.routeCancel(route, offlineRouteId);
+    await saveOperation(operation);
+  }
+
+  @override
   Future<Map<String, List<OfflineOperation>>>
       getGroupedRouteOperations() async {
     final operations = await database.query('offline_operations');
@@ -372,5 +379,17 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
       whereArgs: [offlineRouteId],
     );
     return maps.map((map) => OfflineOperation.fromJson(map)).toList();
+  }
+
+  @override
+  Future<void> saveFailedEmergencyCall(String offlineRouteId) async {
+    final operation = OfflineOperation(
+      type: OfflineOperationType.emergencyCall,
+      data: {
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+      offlineRouteId: offlineRouteId,
+    );
+    await saveOperation(operation);
   }
 }

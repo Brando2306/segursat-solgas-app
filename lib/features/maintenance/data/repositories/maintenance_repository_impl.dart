@@ -15,32 +15,30 @@ class MaintenanceRepositoryImpl implements MaintenanceRepository {
   });
 
   @override
-  Future<void> submitMaintenance(
-    MaintenanceEntity maintenance, {
-    bool isRetry = false,
-  }) async {
+  Future<void> submitMaintenance(MaintenanceEntity maintenance) async {
     try {
       await remoteDataSource.uploadMaintenance(maintenance);
     } catch (e) {
       // Solo maneja offline si NO es un reintento
-      if (!isRetry) {
-        final existingOperation = await offlineOperationsRepository
-            .getMaintenanceOperationByUniqueKey(maintenance.id);
-        if (existingOperation == null) {
-          await offlineOperationsRepository.saveOperation(
-            OfflineOperation(
-              type: OfflineOperationType.maintenance,
-              data: maintenance.toJson(),
-            ),
-          );
-        } else {
-          await offlineOperationsRepository.updateRetryCount(
-              existingOperation.id,
-              existingOperation.retryCount + 1,
-              e.toString());
-        }
+      final existingOperation = await offlineOperationsRepository
+          .getMaintenanceOperationByUniqueKey(maintenance.id);
+      if (existingOperation == null) {
+        await offlineOperationsRepository.saveOperation(
+          OfflineOperation(
+            type: OfflineOperationType.maintenance,
+            data: maintenance.toJson(),
+          ),
+        );
+      } else {
+        await offlineOperationsRepository.updateRetryCount(existingOperation.id,
+            existingOperation.retryCount + 1, e.toString());
       }
       rethrow;
     }
+  }
+
+  @override
+  Future<void> retryMaintenance(MaintenanceEntity maintenance) async {
+    await remoteDataSource.uploadMaintenance(maintenance);
   }
 }

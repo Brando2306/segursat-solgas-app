@@ -341,7 +341,7 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
         await provider.retryRouteCreation(operation.id);
         break;
       case OfflineOperationType.maintenance:
-        await provider.retryMaintenance(context, operation.id);
+        await provider.retryMaintenance(operation.id);
         break;
       // case OfflineOperationType.inspection:
       //   await provider.retryInspection(operation.id);
