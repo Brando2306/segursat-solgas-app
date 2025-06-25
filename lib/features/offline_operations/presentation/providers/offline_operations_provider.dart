@@ -279,6 +279,20 @@ class OfflineOperationsProvider with ChangeNotifier {
           data: finish.copyWith(routeId: newRouteId).toJson(),
           routeId: newRouteId.toString(),
         ));
+      } else if (op.type == OfflineOperationType.routeCancel) {
+        // Actualizar el cancel con el nuevo routeId
+        final cancel = CancelRouteEntity.fromJson(op.data);
+        await repository.updateOperation(op.copyWith(
+          data: cancel.copyWith(routeId: newRouteId).toJson(),
+          routeId: newRouteId.toString(),
+        ));
+      } else if (op.type == OfflineOperationType.routeSos) {
+        // Actualizar el SOS con el nuevo routeId
+        final sos = EmergencyEventEntity.fromJson(op.data);
+        await repository.updateOperation(op.copyWith(
+          data: sos.copyWith(routeId: newRouteId).toJson(),
+          routeId: newRouteId.toString(),
+        ));
       }
     }
 

@@ -134,6 +134,15 @@ class RouteRepositoryImpl implements RouteRepository {
   Future<RouteEntity> createRoute(CreateRouteEntity route) async {
     try {
       final createdRoute = await remoteDataSource.createRoute(route);
+
+      // Guardar en offline de todas formas
+      final offlineId =
+          '${StorageKeys.offlineRoutePrefix}${DateTime.now().millisecondsSinceEpoch}';
+      await writeStorage(StorageKeys.currentOfflineRouteId, offlineId);
+
+      await offlineOperationsRepository.saveFailedRouteCreation(
+          route, offlineId);
+
       return createdRoute;
     } catch (e) {
       final offlineId =
@@ -159,6 +168,11 @@ class RouteRepositoryImpl implements RouteRepository {
 
       final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
       if (offlineId != null) {
+        final ops = await offlineOperationsRepository
+            .getOperationsByOfflineId(offlineId);
+        for (final op in ops) {
+          await offlineOperationsRepository.removeOperation(op.id);
+        }
         await removeStorage(StorageKeys.currentOfflineRouteId);
       }
     } catch (e) {
@@ -179,6 +193,11 @@ class RouteRepositoryImpl implements RouteRepository {
 
       final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
       if (offlineId != null) {
+        final ops = await offlineOperationsRepository
+            .getOperationsByOfflineId(offlineId);
+        for (final op in ops) {
+          await offlineOperationsRepository.removeOperation(op.id);
+        }
         await removeStorage(StorageKeys.currentOfflineRouteId);
       }
     } catch (e) {
@@ -255,6 +274,16 @@ class RouteRepositoryImpl implements RouteRepository {
   @override
   Future<void> retryRouteFinish(FinishRouteEntity route) async {
     await remoteDataSource.finishRoute(route);
+
+    final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+    if (offlineId != null) {
+      final ops =
+          await offlineOperationsRepository.getOperationsByOfflineId(offlineId);
+      for (final op in ops) {
+        await offlineOperationsRepository.removeOperation(op.id);
+      }
+      await removeStorage(StorageKeys.currentOfflineRouteId);
+    }
   }
 
   @override
@@ -265,6 +294,16 @@ class RouteRepositoryImpl implements RouteRepository {
   @override
   Future<void> retryCancelRoute(CancelRouteEntity event) async {
     await remoteDataSource.cancelRoute(event);
+
+    final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+    if (offlineId != null) {
+      final ops =
+          await offlineOperationsRepository.getOperationsByOfflineId(offlineId);
+      for (final op in ops) {
+        await offlineOperationsRepository.removeOperation(op.id);
+      }
+      await removeStorage(StorageKeys.currentOfflineRouteId);
+    }
   }
 
   @override

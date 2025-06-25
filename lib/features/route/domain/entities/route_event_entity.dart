@@ -32,4 +32,20 @@ class EmergencyEventEntity {
       longitude: json['longitude'],
     );
   }
+
+  EmergencyEventEntity copyWith({
+    dynamic routeId,
+    dynamic unitId,
+    dynamic timestamp,
+    dynamic latitude,
+    dynamic longitude,
+  }) {
+    return EmergencyEventEntity(
+      routeId: routeId ?? this.routeId,
+      unitId: unitId ?? this.unitId,
+      timestamp: timestamp ?? this.timestamp,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+    );
+  }
 }

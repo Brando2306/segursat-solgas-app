@@ -103,6 +103,22 @@ class CancelRouteEntity {
       time: json['time'],
     );
   }
+
+  CancelRouteEntity copyWith({
+    dynamic routeId,
+    dynamic cancelTimestamp,
+    dynamic cancelLatitude,
+    dynamic cancelLongitude,
+    dynamic time,
+  }) {
+    return CancelRouteEntity(
+      routeId: routeId ?? this.routeId,
+      cancelTimestamp: cancelTimestamp ?? this.cancelTimestamp,
+      cancelLatitude: cancelLatitude ?? this.cancelLatitude,
+      cancelLongitude: cancelLongitude ?? this.cancelLongitude,
+      time: time ?? this.time,
+    );
+  }
 }
 
 class FinishRouteEntity {
