@@ -126,30 +126,29 @@ class SpeedometerProvider with ChangeNotifier {
 
   Future<void> createOrResumeRoute() async {
     try {
-      if (isNotEmptyString(readStorage('root.cronometer'))) {
-        // Resumir ruta existente
-        final lastRouteId = readStorage('personal.lastRoute');
-        if (isNotEmptyString(lastRouteId)) {
-          writeStorage('root.createRoute.id', lastRouteId);
-          return;
+      if (isNotEmptyString(readStorage('root.cronometer')) &&
+          isNotEmptyString(readStorage('root.finalPosition'))) {
+        if (isNotEmptyString(readStorage('personal.lastRoute'))) {
+          writeStorage(
+              'root.createRoute.id', readStorage('personal.lastRoute'));
         }
+      } else {
+        final initialPosition =
+            json.decode(readStorage('root.initialPosition'));
+        final finalPosition = json.decode(readStorage('root.finalPosition'));
+
+        final route = CreateRouteEntity(
+          unitName: readStorage('personal.licensePlate'),
+          timestamp: getDate(),
+          sourceLatitude: initialPosition['latitude'],
+          sourceLongitude: initialPosition['longitude'],
+          destinationLatitude: finalPosition['latitude'],
+          destinationLongitude: finalPosition['longitude'],
+        );
+
+        final createdRoute = await routeRepository.createRoute(route);
+        writeStorage('root.createRoute.id', createdRoute.id);
       }
-
-      // Crear nueva ruta
-      final initialPosition = json.decode(readStorage('root.initialPosition'));
-      final finalPosition = json.decode(readStorage('root.finalPosition'));
-
-      final route = CreateRouteEntity(
-        unitName: readStorage('personal.licensePlate'),
-        timestamp: getDate(),
-        sourceLatitude: initialPosition['latitude'],
-        sourceLongitude: initialPosition['longitude'],
-        destinationLatitude: finalPosition['latitude'],
-        destinationLongitude: finalPosition['longitude'],
-      );
-
-      final createdRoute = await routeRepository.createRoute(route);
-      writeStorage('root.createRoute.id', createdRoute.id);
     } catch (e) {
       log('Error creating/resuming route: $e');
       Snackbars.showSnackbarSuccess(

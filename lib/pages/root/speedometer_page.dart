@@ -27,12 +27,12 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
   @override
   void initState() {
     super.initState();
-    EasyLoading.show(status: 'Iniciando ruta...');
+    // EasyLoading.show(status: 'Iniciando ruta...');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<SpeedometerProvider>();
       provider.initialize();
     });
-    EasyLoading.dismiss();
+    // EasyLoading.dismiss();
   }
 
   @override
@@ -302,7 +302,10 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
           'Realizar parada',
           '/root/controlStop',
           true,
-          () {},
+          () {
+            Provider.of<SpeedometerProvider>(context, listen: false)
+                .stopLocationUpdates();
+          },
           11,
         ),
         const SizedBox(height: 20),

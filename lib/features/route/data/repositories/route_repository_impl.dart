@@ -328,15 +328,5 @@ class RouteRepositoryImpl implements RouteRepository {
   @override
   Future<void> retrySendIncident(IncidentRouteEntity incident) async {
     await remoteDataSource.sendIncident(incident);
-
-    final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
-    if (offlineId != null) {
-      final ops =
-          await offlineOperationsRepository.getOperationsByOfflineId(offlineId);
-      for (final op
-          in ops.where((o) => o.type == OfflineOperationType.incidentReport)) {
-        await offlineOperationsRepository.removeOperation(op.id);
-      }
-    }
   }
 }

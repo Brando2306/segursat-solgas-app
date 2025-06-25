@@ -232,7 +232,7 @@ class OfflineOperationsProvider with ChangeNotifier {
     try {
       // Convierte la data a tu entidad de incidente
       final incident = IncidentRouteEntity.fromJson(operation.data);
-      await routeRepository.sendIncident(incident); // Usa el método de tu repo
+      await routeRepository.retrySendIncident(incident); // Usa el método de tu repo
       // await repository.removeOperation(id);
       await loadOperations();
     } catch (e) {
@@ -273,8 +273,7 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _updateRelatedOperationsWithNewRouteId(
-      String offlineRouteId, int newRouteId) async {
+  Future<void> _updateRelatedOperationsWithNewRouteId(String offlineRouteId, int newRouteId) async {
     // Obtener todas las operaciones del mismo grupo
     final operations =
         await repository.getOperationsByOfflineId(offlineRouteId);
