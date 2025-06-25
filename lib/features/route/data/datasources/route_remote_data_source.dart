@@ -23,6 +23,8 @@ abstract class RouteRemoteDataSource {
   Future<void> sendRoutePositions(List<RoutePositionEntity> positions);
 
   Future<String> getEmergencyPhoneNumber();
+
+  Future<void> sendIncident(IncidentRouteEntity incident);
 }
 
 class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
@@ -262,5 +264,26 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
 
     final data = json.decode(response.body);
     return data['emergency_phone'] as String;
+  }
+
+  @override
+  Future<void> sendIncident(IncidentRouteEntity incident) async {
+    final response = await _client.post(
+      Uri.http(ENDPOINTS.HOST, ENDPOINTS.CREATE_ROUTE_INCIDENTS),
+      body: json.encode([incident.toJson()]),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": ENDPOINTS.auth()
+      },
+    );
+
+    final jsonResponse = json.decode(response.body);
+    if (jsonResponse is Map && jsonResponse.containsKey('errors')) {
+      throw Exception(handleApiError(jsonResponse));
+    }
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to send incident');
+    }
   }
 }

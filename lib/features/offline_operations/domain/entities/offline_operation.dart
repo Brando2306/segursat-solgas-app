@@ -139,4 +139,13 @@ class OfflineOperation {
       offlineRouteId: offlineRouteId,
     );
   }
+
+  static OfflineOperation incidentReport(
+      IncidentRouteEntity incident, String offlineRouteId) {
+    return OfflineOperation(
+      type: OfflineOperationType.incidentReport,
+      data: incident.toJson(),
+      offlineRouteId: offlineRouteId,
+    );
+  }
 }

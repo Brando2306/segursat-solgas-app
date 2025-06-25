@@ -47,4 +47,7 @@ abstract class OfflineOperationsRepository {
   Future<List<OfflineOperation>> getOperationsByOfflineId(String offlineId);
 
   Future<void> saveFailedEmergencyCall(String offlineRouteId);
+
+  Future<void> saveFailedIncident(
+      IncidentRouteEntity incident, String offlineRouteId);
 }

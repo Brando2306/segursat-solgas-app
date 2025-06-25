@@ -185,6 +185,9 @@ class OfflineOperationsProvider with ChangeNotifier {
         case OfflineOperationType.emergencyCall:
           await retryEmergencyCall(id);
           break;
+        case OfflineOperationType.incidentReport: // <-- Agrega este caso
+          await retryIncidentReport(id);
+          break;
         // case OfflineOperationType.maintenance:
         //   await retryMaintenance(context, id);
         //   break;
@@ -218,6 +221,22 @@ class OfflineOperationsProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       await loadOperations();
+    }
+  }
+
+  Future<void> retryIncidentReport(String id) async {
+    final operation = await repository.getOperationById(id);
+    if (operation == null ||
+        operation.type != OfflineOperationType.incidentReport) return;
+
+    try {
+      // Convierte la data a tu entidad de incidente
+      final incident = IncidentRouteEntity.fromJson(operation.data);
+      await routeRepository.sendIncident(incident); // Usa el método de tu repo
+      // await repository.removeOperation(id);
+      await loadOperations();
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -291,6 +310,13 @@ class OfflineOperationsProvider with ChangeNotifier {
         final sos = EmergencyEventEntity.fromJson(op.data);
         await repository.updateOperation(op.copyWith(
           data: sos.copyWith(routeId: newRouteId).toJson(),
+          routeId: newRouteId.toString(),
+        ));
+      } else if (op.type == OfflineOperationType.incidentReport) {
+        // Actualizar el incidente con el nuevo routeId
+        final incident = IncidentRouteEntity.fromJson(op.data);
+        await repository.updateOperation(op.copyWith(
+          data: incident.copyWith(routeId: newRouteId).toJson(),
           routeId: newRouteId.toString(),
         ));
       }
@@ -577,6 +603,7 @@ class OfflineOperationsProvider with ChangeNotifier {
         op.type == OfflineOperationType.routePositions ||
         op.type == OfflineOperationType.routeSos ||
         op.type == OfflineOperationType.emergencyCall ||
+        op.type == OfflineOperationType.incidentReport ||
         op.type == OfflineOperationType.routeFinish ||
         op.type == OfflineOperationType.routeCancel);
 

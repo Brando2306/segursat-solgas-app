@@ -183,6 +183,8 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
         MaterialButton(
           onPressed: () {
             writeStorage('root.type', ROOT_TYPE.SOS);
+            Provider.of<SpeedometerProvider>(context, listen: false)
+                .stopLocationUpdates();
             Navigator.pushNamed(context, '/root/incidentReport');
           },
           color: Colors.amber,
@@ -388,7 +390,8 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
             child: const Text('Sí'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext, rootNavigator: true).pop(),
+            onPressed: () =>
+                Navigator.of(dialogContext, rootNavigator: true).pop(),
             style: ElevatedButton.styleFrom(primary: Colors.deepOrange),
             child: const Text('No'),
           ),

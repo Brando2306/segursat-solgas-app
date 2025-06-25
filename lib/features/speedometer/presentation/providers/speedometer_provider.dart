@@ -483,17 +483,24 @@ class SpeedometerProvider with ChangeNotifier {
     }
   }
 
-  void _cleanup() {
+  void stopLocationUpdates() {
     _positionStream?.cancel();
     _dateTimer?.cancel();
     _durationTimer?.cancel();
     _dataSendTimer?.cancel();
     _internetCheckTimer?.cancel();
+  }
 
+  void clearStorages() {
     cleanQuestionStorage();
     cleanResumeRoute();
     cleanRoot();
     cleanRootRecurringStop();
+  }
+
+  void _cleanup() {
+    stopLocationUpdates();
+    clearStorages();
   }
 
   @override

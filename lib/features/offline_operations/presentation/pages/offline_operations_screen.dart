@@ -284,6 +284,11 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
       ),
     );
 
+    // 7. Buscar operación de incidente (puede haber varias, aquí solo la primera)
+    final incidentOps = operations
+        .where((op) => op.type == OfflineOperationType.incidentReport)
+        .toList();
+
     // Calcular total de posiciones pendientes
     final pendingPositions = (positionOp.data['positions'] as List).length;
     final isPositionsSynced = positionOp.data['synced'] == true;
@@ -361,6 +366,17 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                 icon: Icons.phone,
                 color: Colors.purple,
                 isSynced: emergencyCallOp.data['synced'] == true,
+                onRetry: (id) => provider.retryOperationById(id),
+              ),
+
+            for (int i = 0; i < incidentOps.length; i++)
+              _buildOperationItem(
+                context: context,
+                operation: incidentOps[i],
+                title: 'Incidente reportado #${i + 1}',
+                icon: Icons.report,
+                color: Colors.redAccent,
+                isSynced: incidentOps[i].data['synced'] == true,
                 onRetry: (id) => provider.retryOperationById(id),
               ),
 

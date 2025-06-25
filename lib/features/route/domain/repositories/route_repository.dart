@@ -23,4 +23,7 @@ abstract class RouteRepository {
   Future<String> retryEmergencyPhoneNumber();
   Future<void> retryCancelRoute(CancelRouteEntity event);
   Future<void> retryRouteFinish(FinishRouteEntity route);
+
+  Future<void> sendIncident(IncidentRouteEntity incident);
+  Future<void> retrySendIncident(IncidentRouteEntity incident);
 }

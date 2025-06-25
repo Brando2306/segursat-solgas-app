@@ -11,6 +11,7 @@ import 'package:safe_driving_app/features/maintenance/data/datasources/maintenan
 import 'package:safe_driving_app/features/maintenance/data/repositories/maintenance_repository_impl.dart';
 import 'package:safe_driving_app/features/maintenance/presentation/providers/maintenance_provider.dart';
 import 'package:safe_driving_app/features/offline_operations/presentation/providers/offline_operations_provider.dart';
+import 'package:safe_driving_app/features/route/presentation/providers/incident_provider.dart';
 import 'package:safe_driving_app/features/speedometer/presentation/providers/select_destination_provider.dart';
 import 'package:safe_driving_app/features/speedometer/presentation/providers/select_source_provider.dart';
 import 'package:safe_driving_app/features/speedometer/presentation/providers/speedometer_provider.dart';
@@ -166,6 +167,9 @@ void main() async {
           create: (_) => SpeedometerProvider(
               routeRepository: routeRepository,
               offlineOperationsRepository: offlineOperationRepo),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => IncidentProvider(repository: routeRepository),
         ),
       ],
       child: MyApp(),

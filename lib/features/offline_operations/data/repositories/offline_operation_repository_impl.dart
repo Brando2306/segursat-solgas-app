@@ -392,4 +392,15 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
     );
     await saveOperation(operation);
   }
+
+  @override
+  Future<void> saveFailedIncident(
+      IncidentRouteEntity incident, String offlineRouteId) async {
+    final operation = OfflineOperation(
+      type: OfflineOperationType.incidentReport,
+      data: incident.toJson(),
+      offlineRouteId: offlineRouteId,
+    );
+    await saveOperation(operation);
+  }
 }
