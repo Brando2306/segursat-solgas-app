@@ -101,7 +101,7 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _buildDebugCard(context, provider),
+                // _buildDebugCard(context, provider),
                 if (routeGroups.isNotEmpty)
                   _buildRouteOperationsSection(context, routeGroups),
                 SizedBox(height: 16),
@@ -289,6 +289,11 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
         .where((op) => op.type == OfflineOperationType.incidentReport)
         .toList();
 
+    // 8. Buscar operación de ruta stop (puede haber varias, aquí solo la primera)
+    final stopOps = operations
+        .where((op) => op.type == OfflineOperationType.routeStop)
+        .toList();
+
     // Calcular total de posiciones pendientes
     final pendingPositions = (positionOp.data['positions'] as List).length;
     final isPositionsSynced = positionOp.data['synced'] == true;
@@ -377,6 +382,17 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                 icon: Icons.report,
                 color: Colors.redAccent,
                 isSynced: incidentOps[i].data['synced'] == true,
+                onRetry: (id) => provider.retryOperationById(id),
+              ),
+
+            for (int i = 0; i < stopOps.length; i++)
+              _buildOperationItem(
+                context: context,
+                operation: stopOps[i],
+                title: 'Parada de ruta #${i + 1}',
+                icon: Icons.stop,
+                color: Colors.blueGrey,
+                isSynced: stopOps[i].data['synced'] == true,
                 onRetry: (id) => provider.retryOperationById(id),
               ),
 
@@ -617,12 +633,12 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                 color: color,
               ),
 
-            IconButton(
-              icon: const Icon(Icons.delete, size: 20),
-              onPressed: () => _showDeleteConfirmation(context, operation.id),
-              tooltip: 'Eliminar',
-              color: Colors.red,
-            ),
+            // IconButton(
+            //   icon: const Icon(Icons.delete, size: 20),
+            //   onPressed: () => _showDeleteConfirmation(context, operation.id),
+            //   tooltip: 'Eliminar',
+            //   color: Colors.red,
+            // ),
           ],
         ),
       ),

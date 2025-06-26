@@ -4,6 +4,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
+import 'package:safe_driving_app/features/route/presentation/providers/control_stop_provider.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/providers/index.dart';
 import 'package:safe_driving_app/utils/constants.dart';
@@ -555,27 +559,62 @@ class _ControlStopPageState extends State<ControlStopPage> {
     try {
       stopTimers();
 
-      Map<String, dynamic> response = await insertRouteStops(context);
+      final provider = Provider.of<ControlStopProvider>(context, listen: false);
+      final position = await Geolocator.getCurrentPosition();
 
-      print('finishRecurringStop.response: $response');
+      final stop = StopRouteEntity(
+        routeId: readStorage('root.createRoute.id'),
+        unitId: readStorage('personal.unitId'),
+        timestamp: getDate(),
+        latitude: position.latitude,
+        longitude: position.longitude,
+        type: readStorage('personal.type') ?? '',
+        description: "Ninguno",
+        address: readStorage('root.address') ?? 'No Encontrado',
+        time: readStorage('root.stop.cronometer') ?? 0,
+        questions: [
+          {
+            'question': QUESTIONSTOP.ONE,
+            'answer': json
+                .decode(readStorage('root.recurringStop.questionOne'))['one'],
+            'type': 'bool',
+          },
+          {
+            'question': QUESTIONSTOP.TWO,
+            'answer': json
+                .decode(readStorage('root.recurringStop.questionOne'))['two'],
+            'type': 'bool',
+          },
+          {
+            'question': QUESTIONSTOP.THREE,
+            'answer': json
+                .decode(readStorage('root.recurringStop.questionOne'))['three'],
+            'type': 'bool',
+          },
+          {
+            'question': QUESTIONSTOP.FOUR,
+            'answer': json
+                .decode(readStorage('root.recurringStop.questionTwo'))['one'],
+            'type': 'bool',
+          },
+          {
+            'question': QUESTIONSTOP.FIVE,
+            'answer': json
+                .decode(readStorage('root.recurringStop.questionTwo'))['two'],
+            'type': 'bool',
+          },
+        ],
+      );
 
-      if (!response.containsKey('errors')) {
-        cleanRootRecurringStop();
-
-        EasyLoading.dismiss();
-
-        Navigator.pushNamed(context, '/root/speedometer');
-      } else {
-        notificationAlert(context, handleApiError(response));
-
-        setState(() => buttonFinish = true);
-      }
+      await provider.submitStop(stop);
+      cleanRootRecurringStop();
     } catch (e) {
       notificationError(context, e.toString());
-
       setState(() => buttonFinish = true);
-
       print(e);
+    } finally {
+      EasyLoading.dismiss();
+      Navigator.pushNamed(context, '/root/speedometer');
     }
 
     EasyLoading.dismiss();

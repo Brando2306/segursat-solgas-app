@@ -403,4 +403,15 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
     );
     await saveOperation(operation);
   }
+
+  @override
+  Future<void> saveFailedRouteStop(
+      StopRouteEntity stop, String offlineRouteId) async {
+    final operation = OfflineOperation(
+      type: OfflineOperationType.routeStop,
+      data: stop.toJson(),
+      offlineRouteId: offlineRouteId,
+    );
+    await saveOperation(operation);
+  }
 }

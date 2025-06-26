@@ -50,4 +50,6 @@ abstract class OfflineOperationsRepository {
 
   Future<void> saveFailedIncident(
       IncidentRouteEntity incident, String offlineRouteId);
+
+  Future<void> saveFailedRouteStop(StopRouteEntity stop, String offlineRouteId);
 }

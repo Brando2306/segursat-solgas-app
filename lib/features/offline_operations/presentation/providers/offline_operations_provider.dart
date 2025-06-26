@@ -188,6 +188,9 @@ class OfflineOperationsProvider with ChangeNotifier {
         case OfflineOperationType.incidentReport: // <-- Agrega este caso
           await retryIncidentReport(id);
           break;
+        case OfflineOperationType.routeStop:
+          await retryRouteStop(id);
+          break;
         // case OfflineOperationType.maintenance:
         //   await retryMaintenance(context, id);
         //   break;
@@ -232,7 +235,24 @@ class OfflineOperationsProvider with ChangeNotifier {
     try {
       // Convierte la data a tu entidad de incidente
       final incident = IncidentRouteEntity.fromJson(operation.data);
-      await routeRepository.retrySendIncident(incident); // Usa el método de tu repo
+      await routeRepository
+          .retrySendIncident(incident); // Usa el método de tu repo
+      // await repository.removeOperation(id);
+      await loadOperations();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> retryRouteStop(String id) async {
+    final operation = await repository.getOperationById(id);
+    if (operation == null || operation.type != OfflineOperationType.routeStop) {
+      return;
+    }
+
+    try {
+      final stop = StopRouteEntity.fromJson(operation.data);
+      await routeRepository.retrySendRouteStop(stop);
       // await repository.removeOperation(id);
       await loadOperations();
     } catch (e) {
@@ -273,7 +293,8 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _updateRelatedOperationsWithNewRouteId(String offlineRouteId, int newRouteId) async {
+  Future<void> _updateRelatedOperationsWithNewRouteId(
+      String offlineRouteId, int newRouteId) async {
     // Obtener todas las operaciones del mismo grupo
     final operations =
         await repository.getOperationsByOfflineId(offlineRouteId);
@@ -316,6 +337,13 @@ class OfflineOperationsProvider with ChangeNotifier {
         final incident = IncidentRouteEntity.fromJson(op.data);
         await repository.updateOperation(op.copyWith(
           data: incident.copyWith(routeId: newRouteId).toJson(),
+          routeId: newRouteId.toString(),
+        ));
+      } else if (op.type == OfflineOperationType.routeStop) {
+        // Actualizar el stop con el nuevo routeId
+        final stop = StopRouteEntity.fromJson(op.data);
+        await repository.updateOperation(op.copyWith(
+          data: stop.copyWith(routeId: newRouteId).toJson(),
           routeId: newRouteId.toString(),
         ));
       }
@@ -603,6 +631,7 @@ class OfflineOperationsProvider with ChangeNotifier {
         op.type == OfflineOperationType.routeSos ||
         op.type == OfflineOperationType.emergencyCall ||
         op.type == OfflineOperationType.incidentReport ||
+        op.type == OfflineOperationType.routeStop ||
         op.type == OfflineOperationType.routeFinish ||
         op.type == OfflineOperationType.routeCancel);
 

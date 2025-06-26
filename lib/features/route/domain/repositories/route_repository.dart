@@ -26,4 +26,7 @@ abstract class RouteRepository {
 
   Future<void> sendIncident(IncidentRouteEntity incident);
   Future<void> retrySendIncident(IncidentRouteEntity incident);
+
+  Future<void> sendRouteStop(StopRouteEntity stop);
+  Future<void> retrySendRouteStop(StopRouteEntity stop);
 }

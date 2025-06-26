@@ -8,7 +8,8 @@ enum OfflineOperationType {
   inspection, // Inspecciones
   incidentReport, // Reportes de incidente
   routeRecovery, // Recuperación de ruta
-  emergencyCall; // Llamada de emergencia
+  emergencyCall, // Llamada de emergencia
+  routeStop; // Parada de ruta fallida
 
   String get displayName {
     switch (this) {
@@ -32,6 +33,8 @@ enum OfflineOperationType {
         return 'Cancelación de ruta';
       case OfflineOperationType.incidentReport:
         return 'Reporte de incidente';
+      case OfflineOperationType.routeStop:
+        return 'Parada de ruta';
       default:
         return 'Operación desconocida';
     }

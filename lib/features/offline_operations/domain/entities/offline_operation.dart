@@ -148,4 +148,13 @@ class OfflineOperation {
       offlineRouteId: offlineRouteId,
     );
   }
+
+  static OfflineOperation routeStop(
+      StopRouteEntity stop, String offlineRouteId) {
+    return OfflineOperation(
+      type: OfflineOperationType.routeStop,
+      data: stop.toJson(),
+      offlineRouteId: offlineRouteId,
+    );
+  }
 }
