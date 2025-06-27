@@ -26,7 +26,6 @@ import 'package:safe_driving_app/pages/root/select_source_page.dart';
 import 'package:safe_driving_app/pages/sesion_page.dart';
 import 'package:safe_driving_app/pages/start_page.dart';
 import 'package:safe_driving_app/pages/statement_page.dart';
-import 'package:safe_driving_app/services/notification_services.dart';
 import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
@@ -54,8 +53,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   Future<void> main() async {
     WidgetsFlutterBinding.ensureInitialized();
-
-    await initNotifications();
 
     runApp(
       MaterialApp(
