@@ -15,6 +15,7 @@ class DriverProvider with ChangeNotifier {
 
   dynamic _error;
   dynamic get error => _error;
+  bool get hasError => _error != null;
 
   Future<void> fetchDriver(String idNumber) async {
     try {

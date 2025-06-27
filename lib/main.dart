@@ -37,7 +37,6 @@ import 'package:safe_driving_app/features/unit/data/repositories/unit_repository
 import 'package:safe_driving_app/features/unit/presentation/providers/unit_provider.dart';
 
 // Route y Offline Operations
-import 'package:safe_driving_app/features/route/data/datasources/route_local_data_source.dart';
 import 'package:safe_driving_app/features/route/data/datasources/route_remote_data_source.dart';
 import 'package:safe_driving_app/features/route/data/repositories/route_repository_impl.dart';
 import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
@@ -97,17 +96,13 @@ void main() async {
   final driverRepository =
       DriverRepositoryImpl(remoteDataSource: driverRemoteDataSource);
 
-  // Dependencias de Route
-  final routeLocalDataSource = RouteLocalDataSource(database: database);
   // Importante: inicializar las tablas locales de rutas
-  await routeLocalDataSource.init();
 
   final routeRemoteDataSource =
       RouteRemoteDataSourceImpl(client: http.Client(), dio: Dio());
   final offlineOperationRepo =
       OfflineOperationsRepositoryImpl(database: database);
   final RouteRepository routeRepository = RouteRepositoryImpl(
-    localDataSource: routeLocalDataSource,
     remoteDataSource: routeRemoteDataSource,
     offlineOperationsRepository: offlineOperationRepo,
   );

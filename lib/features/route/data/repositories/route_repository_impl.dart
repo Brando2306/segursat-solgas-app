@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 
 import 'package:safe_driving_app/core/constants/storage_keys.dart';
@@ -7,7 +8,6 @@ import 'package:safe_driving_app/features/route/domain/entities/route_entity.dar
 import 'package:safe_driving_app/features/route/domain/entities/route_event_entity.dart';
 import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
-import 'package:safe_driving_app/features/route/data/datasources/route_local_data_source.dart';
 import 'package:safe_driving_app/features/route/data/datasources/route_remote_data_source.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
@@ -15,12 +15,10 @@ import 'package:safe_driving_app/features/offline_operations/domain/repositories
 
 class RouteRepositoryImpl implements RouteRepository {
   final RouteRemoteDataSource remoteDataSource;
-  final RouteLocalDataSource localDataSource;
   final OfflineOperationsRepository offlineOperationsRepository;
 
   RouteRepositoryImpl(
       {required this.remoteDataSource,
-      required this.localDataSource,
       required this.offlineOperationsRepository});
 
   @override
@@ -30,7 +28,6 @@ class RouteRepositoryImpl implements RouteRepository {
       final activeRoutes = await remoteDataSource.getActiveRoutes();
       if (activeRoutes.isNotEmpty) {
         final activeRoute = activeRoutes.first;
-        await localDataSource.cacheRoute(activeRoute);
         return activeRoute;
       }
 
@@ -39,95 +36,15 @@ class RouteRepositoryImpl implements RouteRepository {
       if (lastRouteId != null) {
         final route = await remoteDataSource.getRoute(lastRouteId);
         if (route.toRoute().status == RouteStatus.running) {
-          await localDataSource.cacheRoute(route.toRoute());
           return route.toRoute();
         }
       }
 
       // 3. Finalmente, verificar en caché local
-      final cachedRoute = await localDataSource.getLastCachedRoute();
-      if (cachedRoute != null && cachedRoute.status == RouteStatus.running) {
-        return cachedRoute;
-      }
-
       throw Exception('No active route found');
     } catch (e) {
-      // En caso de error, intentar con la caché local
-      final cachedRoute = await localDataSource.getLastCachedRoute();
-      if (cachedRoute != null) return cachedRoute;
       rethrow;
     }
-  }
-
-  @override
-  Future<Route> resumeRoute(int routeId) async {
-    try {
-      // 1. Obtener la ruta del servidor
-      final route = await remoteDataSource.getRoute(routeId.toString());
-
-      // 2. Actualizar almacenamiento local
-      await writeStorage('personal.lastRoute', routeId);
-      await writeStorage('root.createRoute.id', routeId);
-      await writeStorage('personal.lastRouteStatus', 'running');
-
-      // 3. Guardar en caché local
-      await localDataSource.cacheRoute(route.toRoute());
-
-      // 4. Guardar posición final en storage
-      await writeStorage(
-        'root.finalPosition',
-        json.encode({
-          'latitude': route.toRoute().destination.latitude,
-          'longitude': route.toRoute().destination.longitude,
-        }),
-      );
-
-      return route.toRoute();
-    } catch (e) {
-      // En caso de error, guardar como operación pendiente
-      await offlineOperationsRepository.saveOperation(
-        OfflineOperation(
-          type: OfflineOperationType.routeRecovery,
-          data: {
-            'routeId': routeId,
-            'action': 'resume',
-            'timestamp': DateTime.now().toIso8601String(),
-          },
-        ),
-      );
-
-      // Intentar con la caché local
-      final cachedRoute = await localDataSource.getLastCachedRoute();
-      if (cachedRoute != null && cachedRoute.id == routeId) {
-        return cachedRoute;
-      }
-
-      rethrow;
-    }
-  }
-
-  @override
-  Future<void> saveRoutePosition(RoutePosition position) async {
-    try {
-      await remoteDataSource.saveRoutePosition(position);
-    } catch (e) {
-      await localDataSource.savePendingPosition(position);
-      await offlineOperationsRepository.saveOperation(
-        OfflineOperation(
-          type: OfflineOperationType.routeRecovery,
-          data: {
-            ...position.toJson(),
-            'action': 'save_position',
-            'timestamp': DateTime.now().toIso8601String(),
-          },
-        ),
-      );
-    }
-  }
-
-  @override
-  Future<List<RoutePosition>> getPendingPositions() async {
-    return await localDataSource.getPendingPositions();
   }
 
   @override
@@ -181,6 +98,8 @@ class RouteRepositoryImpl implements RouteRepository {
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedRouteFinish(
             route, offlineId);
+        Snackbars.showSnackbarSuccess(
+            'Modo offline activado. La finalización de la ruta se guardó y lo podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -206,6 +125,8 @@ class RouteRepositoryImpl implements RouteRepository {
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedRouteCancel(
             route, offlineId);
+        Snackbars.showSnackbarSuccess(
+            'Modo offline activado. La cancelación de la ruta se guardó y lo podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -226,6 +147,8 @@ class RouteRepositoryImpl implements RouteRepository {
             offlineRouteId: offlineId,
           ),
         );
+        Snackbars.showSnackbarSuccess(
+            'Modo offline activado. El evento SOS se guardó y lo podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -241,6 +164,8 @@ class RouteRepositoryImpl implements RouteRepository {
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedPositions(
             positions, offlineId);
+        Snackbars.showSnackbarSuccess(
+            'Modo offline activado. Las posiciones de la ruta se guardaron y las podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -255,6 +180,8 @@ class RouteRepositoryImpl implements RouteRepository {
       final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedEmergencyCall(offlineId);
+        Snackbars.showSnackbarSuccess(
+            'Modo offline activado. El número de emergencia se guardó y lo podrás sincronizar luego.');
       }
       throw Exception('Failed to get emergency number: $e');
     }
@@ -320,6 +247,8 @@ class RouteRepositoryImpl implements RouteRepository {
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedIncident(
             incident, offlineId);
+        Snackbars.showSnackbarSuccess(
+            'Modo offline activado. El incidente se guardó y lo podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -338,6 +267,8 @@ class RouteRepositoryImpl implements RouteRepository {
       final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedRouteStop(stop, offlineId);
+        Snackbars.showSnackbarSuccess(
+            'Modo offline activado. La parada de la ruta se guardó y la podrás sincronizar luego.');
       }
       rethrow;
     }

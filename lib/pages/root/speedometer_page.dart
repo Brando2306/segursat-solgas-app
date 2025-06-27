@@ -354,6 +354,7 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
       }
     } catch (e) {
       notificationError(context, e.toString());
+      Navigator.pushNamed(context, '/root/finish');
     }
   }
 

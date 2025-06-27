@@ -13,9 +13,12 @@ import 'package:safe_driving_app/features/driver/presentation/providers/driver_p
 import 'package:safe_driving_app/features/route/presentation/providers/route_provider.dart';
 import 'package:safe_driving_app/features/unit/domain/entities/unit_entity.dart';
 import 'package:safe_driving_app/features/unit/presentation/providers/unit_provider.dart';
+import 'package:safe_driving_app/helpers/functions.dart';
+import 'package:safe_driving_app/helpers/gps.dart';
 import 'package:safe_driving_app/shared/button_widget.dart';
 import 'package:safe_driving_app/shared/form_field_widget.dart';
 import 'package:safe_driving_app/utils/constants.dart';
+import 'package:safe_driving_app/utils/errors.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/style.dart';
 import 'package:safe_driving_app/widgets/next_button.dart';
@@ -49,16 +52,13 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed &&
-        readStorage('sesionPageValidation') != null) {
-      _handleResumeRoute();
+    if (state == AppLifecycleState.resumed) {
+      context.read<RouteProvider>().handleAppResumed(context);
     }
   }
 
   Future<void> _checkPendingSession() async {
-    if (readStorage('sesionPageValidation') != null) {
-      await _handleResumeRoute();
-    }
+    await context.read<RouteProvider>().handleAppResumed(context);
   }
 
   @override
@@ -71,7 +71,7 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
           appBar: _buildAppBar(),
           backgroundColor: Colors.white,
           resizeToAvoidBottomInset: false,
-          body: _buildBody(),
+          body: _buildBody(context),
         ),
       ),
     );
@@ -88,14 +88,14 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
     return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
+      builder: (contextProvider, authProvider, _) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
-              _buildForm(authProvider),
+              _buildForm(authProvider, context),
               if (authProvider.nextButtonValidation) _buildUserInfoCard(),
               const Spacer(),
               if (authProvider.nextButtonValidation) _buildNextButton(),
@@ -107,7 +107,7 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildForm(AuthProvider authProvider) {
+  Widget _buildForm(AuthProvider authProvider, BuildContext context) {
     return Form(
       key: _formKey,
       child: Column(
@@ -139,32 +139,30 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
             helperText: '*Ingresar la placa con guión, por ejemplo: ABC-123',
           ),
           const SizedBox(height: 40),
-          if (!authProvider.nextButtonValidation) _buildValidationButton(),
+          if (!authProvider.nextButtonValidation)
+            _buildValidationButton(context),
         ],
       ),
     );
   }
 
-  Widget _buildValidationButton() {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
-        return Center(
-          child: ButtonWidget(
-            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-            text: 'Validar información',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-            ),
-            color: CustomColors.primary,
-            onPressed: () {
-              if (authProvider.submitValidation) {
-                _submitForm(context);
-              }
-            },
-          ),
-        );
-      },
+  Widget _buildValidationButton(BuildContext context) {
+    final authProvider = context.read<AuthProvider>();
+    return Center(
+      child: ButtonWidget(
+        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        text: 'Validar información',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 15,
+        ),
+        color: CustomColors.primary,
+        onPressed: () {
+          if (authProvider.submitValidation) {
+            _submitForm(context);
+          }
+        },
+      ),
     );
   }
 
@@ -233,162 +231,135 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
   }
 
   Future<void> _submitForm(BuildContext context) async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-
     final authProvider = context.read<AuthProvider>();
     final driverProvider = context.read<DriverProvider>();
     final unitProvider = context.read<UnitProvider>();
-    final routeProvider = context.read<RouteProvider>();
 
-    try {
-      EasyLoading.show(status: 'Validando...');
-      FocusManager.instance.primaryFocus?.unfocus();
+    if (_formKey.currentState?.validate() ?? false) {
+      try {
+        EasyLoading.show(status: 'Validando...');
+        FocusManager.instance.primaryFocus?.unfocus();
+        // Fetch con providers (como pediste)
+        await driverProvider.fetchDriver(_documentController.text);
+        await unitProvider.fetchUnit(_licensePlateController.text);
 
-      await _validateUserCredentials(driverProvider, unitProvider);
+        final driver = driverProvider.driver;
+        final unit = unitProvider.unit;
 
-      final driver = driverProvider.driver!;
-      final unit = unitProvider.unit!;
+        bool validationDriver = driver != null && !driverProvider.hasError;
+        bool validationUnit = unit != null && !unitProvider.hasError;
 
-      await _saveUserSession(authProvider, driver, unit);
+        if (validationDriver && validationUnit) {
+          // Guardar sesión con provider (como pediste)
+          authProvider.setNextButtonValidation(true);
+          await authProvider.login(
+            name: driver.firstName,
+            lastName: driver.lastName,
+            document: driver.idNumber,
+            licensePlate: unit.name,
+            unitId: unit.id,
+            lastInitialInspectionDate: unit.lastInitialInspectionDate,
+            lastOdometer: unit.lastOdometer,
+            technicalReviewExpirationDate: unit.technicalReviewExpiration,
+            soatExpirationDate: unit.soatExpiration,
+            insuranceExpirationDate: unit.insuranceExpiration,
+            lastRoute: unit.lastRoute,
+            lastRouteStatus: unit.lastRouteStatus,
+          );
 
-      await _handlePendingRoute(routeProvider, unit);
+          // FLUJO REGULAR
+          if (unit.lastRouteStatus != SESION.RUNNING ||
+              unit.lastRoute == null) {
+            // Mostrar anotaciones si existen
+            EasyLoading.dismiss();
+            await _showUserAnnotations(driver, unit);
+          } else {
+            // FLUJO CONTINUAR RUTA
+            await writeStorage('personal.lastRoute', unit.lastRoute);
+            await writeStorage('root.createRoute.id', unit.lastRoute);
+            await writeStorage(
+                'personal.lastRouteStatus', unit.lastRouteStatus);
 
-      await _showUserAnnotations(driver, unit);
-    } catch (e) {
-      Dialogs.showErrorDialog(context, 'Error', e.toString());
-    } finally {
+            bool validation = await checkGps();
+
+            EasyLoading.dismiss();
+
+            // Usar un nuevo contexto seguro
+            if (mounted) {
+              final safeContext = context;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                notificationInfoWithoutWillPopScope(
+                  context: safeContext,
+                  onWillPop: true,
+                  barrierDismissible: true,
+                  content:
+                      'Tienes una ruta activa en curso.\n¿Deseas recuperar la ruta?',
+                  callBack: () async {
+                    if (validation) {
+                      await writeStorage('personal.pushRouteSpeedometer', true);
+                      await safeContext
+                          .read<RouteProvider>()
+                          .resumeRouteFlow(safeContext);
+                    } else {
+                      await writeStorage('sesionPageValidation', true);
+                      safeContext
+                          .read<RouteProvider>()
+                          .showLocationSettingsDialog(safeContext);
+                    }
+                  },
+                );
+              });
+            }
+            return;
+          }
+        } else {
+          authProvider.setSubmitValidation(true);
+
+          if (driverProvider.hasError) {
+            notificationAlert(
+                context,
+                errorTranslations[handleApiError(driverProvider.error)] ??
+                    handleApiError(driver));
+          } else if (unitProvider.hasError) {
+            notificationAlert(
+                context,
+                errorTranslations[handleApiError(unitProvider.error)] ??
+                    handleApiError(driver));
+          }
+        }
+      } catch (e) {
+        // Dialogs.showErrorDialog(context, 'Error', e.toString());
+        notificationError(context, e.toString());
+      } finally {
+        EasyLoading.dismiss();
+      }
+    } else {
       EasyLoading.dismiss();
     }
   }
 
-  Future<void> _validateUserCredentials(
-      DriverProvider driverProvider, UnitProvider unitProvider) async {
-    try {
-      final connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
-        throw 'No hay conexión a internet. Por favor, conectate para iniciar sesión.';
-      }
-
-      await driverProvider.fetchDriver(_documentController.text);
-      await unitProvider.fetchUnit(_licensePlateController.text);
-
-      if (driverProvider.error != null) {
-        throw driverProvider.error!;
-      }
-
-      if (unitProvider.error != null) {
-        throw unitProvider.error!;
-      }
-
-      if (driverProvider.driver == null || unitProvider.unit == null) {
-        throw 'No se pudo obtener la información del usuario o vehículo';
-      }
-    } catch (e) {
-      throw 'Error de conexión: $e';
-    }
-  }
-
-  Future<void> _saveUserSession(
-      AuthProvider authProvider, DriverEntity driver, UnitEntity unit) async {
-    authProvider.setNextButtonValidation(true);
-
-    await authProvider.login(
-      name: driver.firstName,
-      lastName: driver.lastName,
-      document: driver.idNumber,
-      licensePlate: unit.name,
-      unitId: unit.id,
-      lastInitialInspectionDate: unit.lastInitialInspectionDate,
-      lastOdometer: unit.lastOdometer,
-      technicalReviewExpirationDate: unit.technicalReviewExpiration,
-      soatExpirationDate: unit.soatExpiration,
-      insuranceExpirationDate: unit.insuranceExpiration,
-      lastRoute: unit.lastRoute,
-      lastRouteStatus: unit.lastRouteStatus,
-    );
-  }
-
-  Future<void> _handlePendingRoute(
-      RouteProvider routeProvider, UnitEntity unit) async {
-    final hasPendingRoute =
-        unit.lastRouteStatus == SESION.RUNNING && unit.lastRoute != null;
-
-    if (hasPendingRoute) {
-      final lastRoute = unit.lastRoute?.toString() ?? '';
-      await _showResumeRouteDialog(routeProvider, lastRoute);
-    }
-  }
-
-  Future<void> _showResumeRouteDialog(
-      RouteProvider routeProvider, String lastRoute) async {
-    await writeStorage('personal.lastRoute', lastRoute);
-    await writeStorage('root.createRoute.id', lastRoute);
-    await writeStorage('personal.lastRouteStatus', SESION.RUNNING);
-
-    EasyLoading.dismiss();
-
-    await Dialogs.showConfirmationDialog(
-      context: context,
-      title: 'Ruta pendiente',
-      message: 'Tienes una ruta activa en curso. ¿Deseas recuperar la ruta?',
-      onConfirm: () async {
-        await _tryResumeRoute(routeProvider, lastRoute);
-      },
-    );
-  }
-
-  Future<void> _tryResumeRoute(
-      RouteProvider routeProvider, String lastRoute) async {
-    try {
-      EasyLoading.show(status: 'Verificando GPS...');
-      final hasLocation = await LocationUtils.checkLocationPermission();
-
-      if (!hasLocation) {
-        await writeStorage('sesionPageValidation', true);
-        LocationUtils.showLocationSettingsDialog(context);
-        return;
-      }
-
-      await writeStorage('personal.pushRouteSpeedometer', true);
-      await routeProvider.tryResumePendingRoute(context);
-    } catch (e) {
-      EasyLoading.dismiss();
-      Dialogs.showErrorDialog(context, 'Error al recuperar ruta', e.toString());
-    }
-  }
-
-  Future<void> _handleResumeRoute() async {
-    try {
-      final routeProvider = context.read<RouteProvider>();
-      await writeStorage('sesionPageValidation', null);
-      await routeProvider.tryResumePendingRoute(context);
-    } catch (e) {
-      Navigator.pushReplacementNamed(context, '/menu');
-    }
-  }
-
-  Future<void> _showUserAnnotations(
-      DriverEntity driver, UnitEntity unit) async {
-    final annotations = <String>[];
-
+  Future<void> _showUserAnnotations(dynamic driver, dynamic unit) async {
     if (unit.annotations is List) {
-      annotations.addAll(_extractAnnotations(unit.annotations as List));
+      List<dynamic> annotations = unit.annotations;
+      if (annotations.isNotEmpty) {
+        if (annotations[0] is Map<String, dynamic> &&
+            annotations[0].containsKey('description')) {
+          var list = annotations.map((e) => e['description'] as String);
+          var newList = list.join('\n\n');
+          notificationInfo(context, newList, () {});
+        }
+      }
     }
-
     if (driver.annotations is List) {
-      annotations.addAll(_extractAnnotations(driver.annotations as List));
+      List<dynamic> annotations = driver.annotations;
+      if (annotations.isNotEmpty) {
+        if (annotations[0] is Map<String, dynamic> &&
+            annotations[0].containsKey('description')) {
+          var list = annotations.map((e) => e['description'] as String);
+          var newList = list.join('\n\n');
+          notificationInfo(context, newList, () {});
+        }
+      }
     }
-
-    if (annotations.isNotEmpty) {
-      await Dialogs.showInfoDialog(
-          context, 'Anotaciones', annotations.join('\n\n'));
-    }
-  }
-
-  List<String> _extractAnnotations(List<dynamic> annotations) {
-    return annotations
-        .where((a) => a is Map<String, dynamic> && a.containsKey('description'))
-        .map((a) => a['description'] as String)
-        .toList();
   }
 }

@@ -150,9 +150,7 @@ class SpeedometerProvider with ChangeNotifier {
         writeStorage('root.createRoute.id', createdRoute.id);
       }
     } catch (e) {
-      log('Error creating/resuming route: $e');
-      Snackbars.showSnackbarSuccess(
-          'Modo offline activado. La ruta se sincronizará cuando haya conexión.');
+      log('Error creating or resuming route: $e');
     }
   }
 
@@ -330,8 +328,7 @@ class SpeedometerProvider with ChangeNotifier {
     } catch (e) {
       _buttonFinishEnabled = true;
       notifyListeners();
-      Snackbars.showSnackbarSuccess(
-          'Modo offline activado. La ruta se sincronizará cuando haya conexión.');
+
       _cleanup();
       // rethrow;
     }

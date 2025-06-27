@@ -15,6 +15,7 @@ class UnitProvider with ChangeNotifier {
 
   dynamic _error;
   dynamic get error => _error;
+  bool get hasError => _error != null;
 
   Future<void> fetchUnit(String licensePlate) async {
     try {

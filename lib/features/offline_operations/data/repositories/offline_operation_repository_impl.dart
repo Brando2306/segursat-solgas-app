@@ -16,7 +16,6 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
 
   @override
   Future<void> saveOperation(OfflineOperation operation) async {
-    log('[DEBUG] Guardando operación offline: ${operation.type} offlineRouteId=${operation.offlineRouteId}');
     await database.insert(
       tableName,
       operation.toJson(),

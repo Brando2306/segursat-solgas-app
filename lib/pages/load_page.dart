@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:safe_driving_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:safe_driving_app/features/route/presentation/providers/route_provider.dart';
+import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/widgets/background.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 
@@ -44,8 +45,24 @@ class _LoadPageState extends State<LoadPage> {
       return;
     }
 
-    final hasPendingRoute = await routeProvider.checkPendingRoute();
-    _navigateTo(hasPendingRoute ? '/root/speedometer' : '/menu');
+    try {
+      //TODO: Validar que tambien funcione para offline, que verifique si hay una ruta sin cancelar o sin finalizar, ya que cuando no es offline si podemos validar el readStorage('root.finalPosition');
+      final hasPendingRoute = await routeProvider.checkPendingRoute();
+
+      // Verificación adicional para asegurar que realmente hay una ruta activa
+      if (hasPendingRoute) {
+        final lastRouteId = readStorage('root.finalPosition');
+        if (lastRouteId == null) {
+          _navigateTo('/menu');
+          return;
+        }
+      }
+
+      _navigateTo(hasPendingRoute ? '/root/speedometer' : '/menu');
+    } catch (e) {
+      // En caso de error, redirigir al menú principal
+      _navigateTo('/menu');
+    }
   }
 
   void _navigateTo(String route) {

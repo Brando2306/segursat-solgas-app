@@ -71,9 +71,6 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
 
   Future<void> validationResume() async {
     try {
-      print(
-          'personal.pushRouteSpeedometer: ${readStorage('personal.pushRouteSpeedometer')}');
-
       if (readStorage('personal.pushRouteSpeedometer') != null) {
         EasyLoading.show(status: 'Verificando GPS...');
         bool validationGps = await checkGps();
@@ -83,25 +80,13 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
           EasyLoading.show(status: 'Redireccionando...');
           int lastRoute = readStorage('personal.lastRoute');
 
-          print(lastRoute);
-
           Map<String, dynamic> route = await getRoute(lastRoute);
 
           if (route['status'] == STATUSCODE.OK) {
             List<dynamic> positions = route['positions'];
-            print('GetLatRoute: $route');
-
-            print('positions $positions');
-
-            print('isNotEmptyString(positions) ${isNotEmptyString(positions)}');
-            print(
-                'isNotEmptyString(route[destination_latitude] ${isNotEmptyString(route['destination_latitude'])}');
-            print(
-                'isNotEmptyString(route[destination_longitude]) ${isNotEmptyString(route['destination_longitude'])}');
 
             if (isNotEmptyString(positions)) {
               Map<String, dynamic> lastObject = positions.last;
-              print('lastObject $lastObject');
 
               if (isNotEmptyString(lastObject) &&
                   isNotEmptyString(lastObject['angle'])) {
@@ -113,8 +98,6 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
 
             if (isNotEmptyString(route['destination_latitude']) &&
                 isNotEmptyString(route['destination_longitude'])) {
-              print('destination_latitude ${route['destination_latitude']}');
-              print('destination_longitude ${route['destination_longitude']}');
 
               await writeStorage(
                   'root.finalPosition',
@@ -152,8 +135,6 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
         }
       }
     } catch (e) {
-      print('Ocurrio algun error al traer la ruta $e');
-
       cleanResumeRoute();
 
       setState(() {

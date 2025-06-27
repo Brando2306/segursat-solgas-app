@@ -5,10 +5,7 @@ import 'package:safe_driving_app/features/route/domain/entities/route_position_e
 
 abstract class RouteRepository {
   Future<Route> getLastActiveRoute();
-  Future<Route> resumeRoute(int routeId);
-  Future<void> saveRoutePosition(RoutePosition position);
-  Future<List<RoutePosition>> getPendingPositions();
-
+  
   Future<RouteEntity> createRoute(CreateRouteEntity route);
   Future<RouteEntity> getRoute(String routeId);
   Future<void> finishRoute(FinishRouteEntity route);
