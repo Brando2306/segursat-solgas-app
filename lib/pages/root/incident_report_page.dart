@@ -71,7 +71,7 @@ class _IncidentReportPageState extends State<IncidentReportPage> {
                     child: FormBuilderDropdown(
                       name: 'categoria',
                       decoration: InputDecoration(
-                        labelText: 'Seleccionar categoría',
+                        labelText: 'Seleccione una categoría',
                         // contentPadding: EdgeInsets.symmetric(
                         //     horizontal: 16.0),
                       ),

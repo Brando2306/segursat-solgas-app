@@ -295,7 +295,7 @@ class _ControlStopPageState extends State<ControlStopPage> {
               color: Color.fromARGB(255, 9, 43, 145),
             ),
           ),
-          content: Text('Está seguro que quiere finalizar la ruta.'),
+          content: Text('¿Está seguro de que quiere finalizar la ruta?'),
           actions: <Widget>[
             ElevatedButton(
               onPressed: () {

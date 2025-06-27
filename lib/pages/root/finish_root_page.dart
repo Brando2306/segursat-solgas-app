@@ -31,7 +31,7 @@ class _FinishRootPageState extends State<FinishRootPage> {
         SizedBox(
           width: getWidth(context, 80),
           child: Text(
-            'La unidad llegó a su destino',
+            'La unidad ha llegado su destino',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),

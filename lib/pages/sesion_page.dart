@@ -136,7 +136,7 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
               FilteringTextInputFormatter.deny(RegExp(r'[ ]')),
             ],
             onChanged: (_) => _updateValidationState(),
-            helperText: '*Ingresar la placa con guión, por ejemplo: ABC-123',
+            helperText: '*Ingrese la placa con guion, por ejemplo: ABC-123',
           ),
           const SizedBox(height: 40),
           if (!authProvider.nextButtonValidation)

@@ -87,7 +87,7 @@ class _OdometerMaintancePageState extends State<OdometerMaintancePage> {
                 ElevatedButton.icon(
                   onPressed: captureImage,
                   label: Text(
-                    'Tomar fotografia',
+                    'Tomar fotografía',
                     style: TextStyle(color: Color(0xff00a86b)),
                   ),
                   icon: Icon(Icons.camera_alt, color: Color(0xff00a86b)),
@@ -97,7 +97,7 @@ class _OdometerMaintancePageState extends State<OdometerMaintancePage> {
                           MaterialStateProperty.all(Color(0xffcffaea))),
                 ),
                 Expanded(child: Container()),
-                nextButton(context, 'siguiente', '/maintance/form',
+                nextButton(context, 'Siguiente', '/maintance/form',
                     validationNextButton && (fileImage == null ? false : true),
                     () {
                   writeStorage('maintance.odometer.odometerNumber',
@@ -184,11 +184,11 @@ class _OdometerMaintancePageState extends State<OdometerMaintancePage> {
                 readStorage('inspection.lastOdometer') ?? 0;
 
             if (newOdometerValue == previousOdometerValue) {
-              return 'La cantidad no puede ser igual al registro anterior';
+              return 'El valor del odómetro no puede ser igual al registro anterior';
             }
 
             if (newOdometerValue < previousOdometerValue) {
-              return 'La cantidad no puede ser menor al registro anterior';
+              return 'El valor del odómetro no puede ser menor al registro anterior';
             }
 
             return null;

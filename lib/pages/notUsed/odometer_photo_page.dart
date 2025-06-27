@@ -57,7 +57,7 @@ class _OdometerPhotoPageState extends State<OdometerPhotoPage> {
               ElevatedButton.icon(
                 onPressed: captureImage,
                 label: Text(
-                  'Tomar fotografia',
+                  'Tomar fotografía',
                   style: TextStyle(color: Color(0xff00a86b)),
                 ),
                 icon: Icon(Icons.camera_alt, color: Color(0xff00a86b)),

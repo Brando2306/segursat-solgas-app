@@ -87,7 +87,7 @@ class _OdometerPageState extends State<OdometerPage> {
                 ElevatedButton.icon(
                   onPressed: captureImage,
                   label: Text(
-                    'Tomar fotografia',
+                    'Tomar fotografía',
                     style: TextStyle(color: Color(0xff00a86b)),
                   ),
                   icon: Icon(Icons.camera_alt, color: Color(0xff00a86b)),
@@ -97,7 +97,7 @@ class _OdometerPageState extends State<OdometerPage> {
                           MaterialStateProperty.all(Color(0xffcffaea))),
                 ),
                 Expanded(child: Container()),
-                nextButton(context, 'siguiente', '/inspection/selfie',
+                nextButton(context, 'Siguiente', '/inspection/selfie',
                     validationNextButton && (fileImage == null ? false : true),
                     () {
                   writeStorage(
@@ -175,7 +175,7 @@ class _OdometerPageState extends State<OdometerPage> {
           controller: _odometerInpuController,
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Se require el odometro';
+              return 'Se requiere el odómetro';
             }
 
             int newOdometerValue = int.tryParse(value) ?? 0;
@@ -184,11 +184,11 @@ class _OdometerPageState extends State<OdometerPage> {
                     0; // Valor anterior del odómetro
 
             if (newOdometerValue == previousOdometerValue) {
-              return 'La cantidad no puede ser igual al registro anterior';
+              return 'El valor del odómetro no puede ser igual al registro anterior';
             }
 
             if (newOdometerValue < previousOdometerValue) {
-              return 'La cantidad no puede ser menor al registro anterior';
+              return 'El valor del odómetro no puede ser menor al registro anterior';
             }
             return null;
           }),

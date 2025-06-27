@@ -104,7 +104,7 @@ class _UploadPageState extends State<UploadPage> {
                   ElevatedButton.icon(
                     onPressed: () => _takePhoto('one'),
                     label: Text(
-                      'Tomar fotografia',
+                      'Tomar fotografía',
                       style: TextStyle(color: Color(0xff00a86b)),
                     ),
                     icon: Icon(Icons.camera_alt, color: Color(0xff00a86b)),
@@ -163,7 +163,7 @@ class _UploadPageState extends State<UploadPage> {
                   ElevatedButton.icon(
                     onPressed: () => _takePhoto('thow'),
                     label: Text(
-                      'Tomar fotografia',
+                      'Tomar fotografía',
                       style: TextStyle(color: Color(0xff00a86b)),
                     ),
                     icon: Icon(Icons.camera_alt, color: Color(0xff00a86b)),
@@ -222,7 +222,7 @@ class _UploadPageState extends State<UploadPage> {
                   ElevatedButton.icon(
                     onPressed: () => _takePhoto('three'),
                     label: Text(
-                      'Tomar fotografia',
+                      'Tomar fotografía',
                       style: TextStyle(color: Color(0xff00a86b)),
                     ),
                     icon: Icon(Icons.camera_alt, color: Color(0xff00a86b)),

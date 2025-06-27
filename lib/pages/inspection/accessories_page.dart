@@ -55,7 +55,7 @@ class _AccessoriesPageState extends State<AccessoriesPage> {
               ElevatedButton.icon(
                 onPressed: captureImage,
                 label: Text(
-                  'Tomar fotografia',
+                  'Tomar fotografía',
                   style: TextStyle(color: Color(0xff00a86b)),
                 ),
                 icon: Icon(Icons.camera_alt, color: Color(0xff00a86b)),
