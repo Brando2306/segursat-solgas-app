@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
-
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,8 +6,9 @@ import 'package:provider/provider.dart';
 import 'package:safe_driving_app/core/constants/storage_keys.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
+import 'package:safe_driving_app/features/offline_operations/presentation/pages/route_groups_list_screen.dart';
 import 'package:safe_driving_app/features/offline_operations/presentation/providers/offline_operations_provider.dart';
-import 'package:safe_driving_app/features/offline_operations/presentation/widgets/offline_operations_list_widget.dart';
+import 'package:safe_driving_app/features/offline_operations/presentation/pages/offline_operations_list_widget.dart';
 import 'package:safe_driving_app/utils/snackbars.dart';
 
 class OfflineOperationsPage extends StatefulWidget {
@@ -104,17 +103,15 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                 // _buildDebugCard(context, provider),
                 if (routeGroups.isNotEmpty)
                   _buildRouteOperationsSection(context, routeGroups),
-                SizedBox(height: 16),
-                _buildSection(
-                  context,
-                  title: 'Mantenimientos',
-                  operations: provider.maintenanceOperations,
-                  onRetry: (String id) async {
-                    await provider.retryMaintenance(id);
-                  },
-                  icon: Icons.build,
-                  color: Colors.orange,
-                ),
+                _buildSection(context,
+                    title: 'Mantenimientos',
+                    operations: provider.maintenanceOperations,
+                    onRetry: (String id) async {
+                  await provider.retryMaintenance(id);
+                },
+                    icon: Icons.build,
+                    color:
+                        _getOperationColor(OfflineOperationType.maintenance)),
                 _buildSection(
                   context,
                   title: 'Inspecciones',
@@ -123,7 +120,7 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                     await provider.retryInspection(id);
                   },
                   icon: Icons.assignment,
-                  color: Colors.teal,
+                  color: _getOperationColor(OfflineOperationType.inspection),
                 ),
               ],
             ),
@@ -181,42 +178,97 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
   Widget _buildRouteOperationsSection(
       BuildContext context, Map<String, List<OfflineOperation>> routeGroups) {
     return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Rutas Pendientes',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  // child: Icon(icon, color: color, size: 20),
+                  child: Icon(Icons.route, color: Colors.blue),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Rutas Pendientes',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${routeGroups.length}',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
-            ...routeGroups.entries.map((entry) {
+            ...routeGroups.entries.take(2).map((entry) {
               final offlineId = entry.key;
               final operations = entry.value;
-
-              // Extraer el timestamp del offlineId para mostrar información útil
-              final timestamp = int.tryParse(offlineId.replaceAll(
-                      StorageKeys.offlineRoutePrefix, '')) ??
-                  0;
-              final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
-              final formattedDate =
-                  DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
-
               return _buildRouteGroupCard(
                 context,
-                'Ruta iniciada: $formattedDate',
+                'Ruta iniciada: ${_formatGroupDate(offlineId)}',
                 operations,
                 offlineId: offlineId,
               );
             }).toList(),
+            if (routeGroups.length > 2) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const RouteGroupsListPage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_forward, size: 16),
+                  label: Text('Ver ${routeGroups.length - 2} más'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.blue,
+                    textStyle: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  String _formatGroupDate(String offlineId) {
+    final timestamp = int.tryParse(
+            offlineId.replaceAll(StorageKeys.offlineRoutePrefix, '')) ??
+        0;
+    final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
   }
 
   Widget _buildRouteGroupCard(
@@ -298,130 +350,145 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
     final pendingPositions = (positionOp.data['positions'] as List).length;
     final isPositionsSynced = positionOp.data['synced'] == true;
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
       margin: const EdgeInsets.only(top: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: ExpansionTile(
+        backgroundColor: Colors.white,
+        collapsedBackgroundColor: Colors.grey[50],
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.route,
+            color: Colors.blue,
+            size: 20,
+          ),
+        ),
+        title: Row(
           children: [
-            // Título de la ruta
-            Row(
-              children: [
-                Icon(Icons.route, color: Colors.blue),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
                 ),
-              ],
+              ),
             ),
-            const SizedBox(height: 12),
-
-            // Creación de ruta
-            _buildOperationItem(
-              context: context,
-              operation: creationOp,
-              title: 'Creación de ruta',
-              icon: Icons.route,
-              color: Colors.blue,
-              isSynced: creationOp.data['synced'] == true,
-              onRetry: (id) => provider.retryOperationById(id),
-            ),
-
-            // Posiciones pendientes (¡Ahora muestra el total!)
-            if (pendingPositions > 0)
-              _buildOperationItem(
-                context: context,
-                operation: positionOp,
-                title:
-                    '$pendingPositions posiciones pendientes', // Ej: "23 posiciones"
-                icon: Icons.location_on,
-                color: Colors.green,
-                isSynced: isPositionsSynced,
-                onRetry: (id) => provider
-                    .retryRoutePositions(id), // Reintenta TODAS las posiciones
-              ),
-
-            // Evento SOS
-            // if (sosOp != null)
-            if (sosOp.data.isNotEmpty)
-              _buildOperationItem(
-                context: context,
-                operation: sosOp,
-                title: 'Alerta de emergencia enviada',
-                icon: Icons.warning,
-                color: Colors.red,
-                isSynced: sosOp.data['synced'] == true,
-                onRetry: (id) => provider.retryOperationById(id),
-              ),
-
-            // Llamada de emergencia
-            // if (emergencyCallOp != null)
-            if (emergencyCallOp.data.isNotEmpty)
-              _buildOperationItem(
-                context: context,
-                operation: emergencyCallOp,
-                title: 'Llamada a emergencia',
-                icon: Icons.phone,
-                color: Colors.purple,
-                isSynced: emergencyCallOp.data['synced'] == true,
-                onRetry: (id) => provider.retryOperationById(id),
-              ),
-
-            for (int i = 0; i < incidentOps.length; i++)
-              _buildOperationItem(
-                context: context,
-                operation: incidentOps[i],
-                title: 'Incidente reportado #${i + 1}',
-                icon: Icons.report,
-                color: Colors.redAccent,
-                isSynced: incidentOps[i].data['synced'] == true,
-                onRetry: (id) => provider.retryOperationById(id),
-              ),
-
-            for (int i = 0; i < stopOps.length; i++)
-              _buildOperationItem(
-                context: context,
-                operation: stopOps[i],
-                title: 'Parada de ruta #${i + 1}',
-                icon: Icons.stop,
-                color: Colors.blueGrey,
-                isSynced: stopOps[i].data['synced'] == true,
-                onRetry: (id) => provider.retryOperationById(id),
-              ),
-
-            // // Cancelación de ruta
-            // if (cancelOp != null)
-            if (cancelOp.data.isNotEmpty)
-              _buildOperationItem(
-                context: context,
-                operation: cancelOp,
-                title: 'Cancelación de ruta',
-                icon: Icons.cancel,
-                color: Colors.orange,
-                isSynced: cancelOp.data['synced'] == true,
-                onRetry: (id) => provider.retryOperationById(id),
-              ),
-
-            // Finalización de ruta
-            if (finishOp.data.isNotEmpty)
-              _buildOperationItem(
-                context: context,
-                operation: finishOp,
-                title: 'Finalización de ruta',
-                icon: Icons.flag,
-                color: Colors.orange,
-                isSynced: finishOp.data['synced'] == true,
-                onRetry: (id) => provider.retryOperationById(id),
-              ),
           ],
         ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Creación de ruta
+                _buildOperationItem(
+                  context: context,
+                  operation: creationOp,
+                  title: 'Creación de ruta',
+                  icon: Icons.route,
+                  color: Colors.blue,
+                  isSynced: creationOp.data['synced'] == true,
+                  onRetry: (id) => provider.retryOperationById(id),
+                ),
+
+                // Posiciones pendientes (¡Ahora muestra el total!)
+                if (pendingPositions > 0)
+                  _buildOperationItem(
+                    context: context,
+                    operation: positionOp,
+                    title: '$pendingPositions posiciones pendientes',
+                    icon: Icons.location_on,
+                    color: Colors.green,
+                    isSynced: isPositionsSynced,
+                    onRetry: (id) => provider.retryRoutePositions(id),
+                  ),
+
+                // Evento SOS
+                if (sosOp.data.isNotEmpty)
+                  _buildOperationItem(
+                    context: context,
+                    operation: sosOp,
+                    title: 'Alerta de emergencia enviada',
+                    icon: Icons.warning,
+                    color: Colors.red,
+                    isSynced: sosOp.data['synced'] == true,
+                    onRetry: (id) => provider.retryOperationById(id),
+                  ),
+
+                // Llamada de emergencia
+                if (emergencyCallOp.data.isNotEmpty)
+                  _buildOperationItem(
+                    context: context,
+                    operation: emergencyCallOp,
+                    title: 'Llamada a emergencia',
+                    icon: Icons.phone,
+                    color: Colors.purple,
+                    isSynced: emergencyCallOp.data['synced'] == true,
+                    onRetry: (id) => provider.retryOperationById(id),
+                  ),
+
+                for (int i = 0; i < incidentOps.length; i++)
+                  _buildOperationItem(
+                    context: context,
+                    operation: incidentOps[i],
+                    title: 'Incidente reportado #${i + 1}',
+                    icon: Icons.report,
+                    color: Colors.redAccent,
+                    isSynced: incidentOps[i].data['synced'] == true,
+                    onRetry: (id) => provider.retryOperationById(id),
+                  ),
+
+                for (int i = 0; i < stopOps.length; i++)
+                  _buildOperationItem(
+                    context: context,
+                    operation: stopOps[i],
+                    title: 'Parada de ruta #${i + 1}',
+                    icon: Icons.stop,
+                    color: Colors.blueGrey,
+                    isSynced: stopOps[i].data['synced'] == true,
+                    onRetry: (id) => provider.retryOperationById(id),
+                  ),
+
+                // // Cancelación de ruta
+                if (cancelOp.data.isNotEmpty)
+                  _buildOperationItem(
+                    context: context,
+                    operation: cancelOp,
+                    title: 'Cancelación de ruta',
+                    icon: Icons.cancel,
+                    color: Colors.orange,
+                    isSynced: cancelOp.data['synced'] == true,
+                    onRetry: (id) => provider.retryOperationById(id),
+                  ),
+
+                // Finalización de ruta
+                if (finishOp.data.isNotEmpty)
+                  _buildOperationItem(
+                    context: context,
+                    operation: finishOp,
+                    title: 'Finalización de ruta',
+                    icon: Icons.flag,
+                    color: Colors.orange,
+                    isSynced: finishOp.data['synced'] == true,
+                    onRetry: (id) => provider.retryOperationById(id),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -534,8 +601,6 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
         return Icons.location_on;
       case OfflineOperationType.routeFinish:
         return Icons.flag;
-      case OfflineOperationType.routeRecovery:
-        return Icons.restore;
       case OfflineOperationType.maintenance:
         return Icons.build;
       case OfflineOperationType.inspection:
@@ -553,8 +618,6 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
         return Colors.green;
       case OfflineOperationType.routeFinish:
         return Colors.orange;
-      case OfflineOperationType.routeRecovery:
-        return Colors.purple;
       case OfflineOperationType.maintenance:
         return Colors.teal;
       case OfflineOperationType.inspection:
@@ -633,12 +696,12 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                 color: color,
               ),
 
-            // IconButton(
-            //   icon: const Icon(Icons.delete, size: 20),
-            //   onPressed: () => _showDeleteConfirmation(context, operation.id),
-            //   tooltip: 'Eliminar',
-            //   color: Colors.red,
-            // ),
+            IconButton(
+              icon: const Icon(Icons.delete, size: 20),
+              onPressed: () => _showDeleteConfirmation(context, operation.id),
+              tooltip: 'Eliminar',
+              color: Colors.red,
+            ),
           ],
         ),
       ),

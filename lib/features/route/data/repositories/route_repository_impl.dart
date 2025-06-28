@@ -1,11 +1,15 @@
-import 'dart:convert';
+import 'package:safe_driving_app/features/route/domain/entities/cancel_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/create_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/finish_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/incident_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/stop_route_entity.dart';
+import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 
 import 'package:safe_driving_app/core/constants/storage_keys.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_event_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_response_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/emergency_event_entity.dart';
 import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
 import 'package:safe_driving_app/features/route/data/datasources/route_remote_data_source.dart';
@@ -22,21 +26,21 @@ class RouteRepositoryImpl implements RouteRepository {
       required this.offlineOperationsRepository});
 
   @override
-  Future<Route> getLastActiveRoute() async {
+  Future<RouteEntity> getLastActiveRoute() async {
     try {
       // 1. Intentar obtener la última ruta activa del servidor
-      final activeRoutes = await remoteDataSource.getActiveRoutes();
-      if (activeRoutes.isNotEmpty) {
-        final activeRoute = activeRoutes.first;
-        return activeRoute;
-      }
+      // final activeRoutes = await remoteDataSource.getActiveRoutes();
+      // if (activeRoutes.isNotEmpty) {
+      //   final activeRoute = activeRoutes.first;
+      //   return activeRoute;
+      // }
 
       // 2. Si no hay rutas activas, verificar si hay una en almacenamiento local
       final lastRouteId = readStorage('personal.lastRoute');
       if (lastRouteId != null) {
         final route = await remoteDataSource.getRoute(lastRouteId);
-        if (route.toRoute().status == RouteStatus.running) {
-          return route.toRoute();
+        if (route.status == SESION.RUNNING) {
+          return route;
         }
       }
 
@@ -188,6 +192,37 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
+  Future<void> sendIncident(IncidentRouteEntity incident) async {
+    try {
+      await remoteDataSource.sendIncident(incident);
+    } catch (e) {
+      final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+      if (offlineId != null) {
+        await offlineOperationsRepository.saveFailedIncident(
+            incident, offlineId);
+        Snackbars.showSnackbarSuccess(
+            'Modo offline activado. El incidente se guardó y lo podrás sincronizar luego.');
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> sendRouteStop(StopRouteEntity stop) async {
+    try {
+      await remoteDataSource.sendRouteStop(stop);
+    } catch (e) {
+      final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+      if (offlineId != null) {
+        await offlineOperationsRepository.saveFailedRouteStop(stop, offlineId);
+        Snackbars.showSnackbarSuccess(
+            'Modo offline activado. La parada de la ruta se guardó y la podrás sincronizar luego.');
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<RouteEntity> retryRouteCreation(CreateRouteEntity route) async {
     final createdRoute = await remoteDataSource.createRoute(route);
     return createdRoute;
@@ -214,11 +249,6 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  Future<void> retrySendSos(EmergencyEventEntity event) async {
-    await remoteDataSource.sendSos(event);
-  }
-
-  @override
   Future<void> retryCancelRoute(CancelRouteEntity event) async {
     await remoteDataSource.cancelRoute(event);
 
@@ -234,44 +264,18 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
+  Future<void> retrySendSos(EmergencyEventEntity event) async {
+    await remoteDataSource.sendSos(event);
+  }
+
+  @override
   Future<String> retryEmergencyPhoneNumber() async {
     return await remoteDataSource.getEmergencyPhoneNumber();
   }
 
   @override
-  Future<void> sendIncident(IncidentRouteEntity incident) async {
-    try {
-      await remoteDataSource.sendIncident(incident);
-    } catch (e) {
-      final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
-      if (offlineId != null) {
-        await offlineOperationsRepository.saveFailedIncident(
-            incident, offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. El incidente se guardó y lo podrás sincronizar luego.');
-      }
-      rethrow;
-    }
-  }
-
-  @override
   Future<void> retrySendIncident(IncidentRouteEntity incident) async {
     await remoteDataSource.sendIncident(incident);
-  }
-
-  @override
-  Future<void> sendRouteStop(StopRouteEntity stop) async {
-    try {
-      await remoteDataSource.sendRouteStop(stop);
-    } catch (e) {
-      final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
-      if (offlineId != null) {
-        await offlineOperationsRepository.saveFailedRouteStop(stop, offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. La parada de la ruta se guardó y la podrás sincronizar luego.');
-      }
-      rethrow;
-    }
   }
 
   @override

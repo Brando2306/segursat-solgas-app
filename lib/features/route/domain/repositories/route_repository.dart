@@ -1,11 +1,15 @@
-import 'package:safe_driving_app/features/route/domain/entities/route.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_event_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/cancel_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/create_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/finish_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/incident_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_response_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/emergency_event_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/stop_route_entity.dart';
 
 abstract class RouteRepository {
-  Future<Route> getLastActiveRoute();
-  
+  Future<RouteEntity> getLastActiveRoute();
+
   Future<RouteEntity> createRoute(CreateRouteEntity route);
   Future<RouteEntity> getRoute(String routeId);
   Future<void> finishRoute(FinishRouteEntity route);

@@ -1,11 +1,14 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/cancel_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/create_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/finish_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/incident_route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/stop_route_entity.dart';
 import 'package:sqflite/sqflite.dart';
 
 class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
@@ -73,35 +76,6 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
     final operation = OfflineOperation.routeCancel(route, offlineRouteId);
     await saveOperation(operation);
   }
-
-  @override
-  Future<Map<String, List<OfflineOperation>>>
-      getGroupedRouteOperations() async {
-    final operations = await database.query('offline_operations');
-    final offlineOps =
-        operations.map((e) => OfflineOperation.fromJson(e)).toList();
-
-    final grouped = <String, List<OfflineOperation>>{};
-
-    for (final op in offlineOps.where((o) => o.offlineRouteId != null)) {
-      grouped.putIfAbsent(op.offlineRouteId!, () => []).add(op);
-    }
-
-    return grouped;
-  }
-
-  // @override
-  // Future<Map<String, List<OfflineOperation>>>
-  //     getGroupedRouteOperations() async {
-  //   final operations = await getPendingOperations();
-  //   final grouped = <String, List<OfflineOperation>>{};
-
-  //   for (final op in operations.where((o) => o.offlineRouteId != null)) {
-  //     grouped.putIfAbsent(op.offlineRouteId!, () => []).add(op);
-  //   }
-
-  //   return grouped;
-  // }
 
   @override
   Future<List<OfflineOperation>> getPendingOperations() async {
@@ -232,18 +206,6 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
   }
 
   @override
-  Future<bool> hasPendingRouteOperation() async {
-    final count = Sqflite.firstIntValue(await database.rawQuery(
-      '''
-      SELECT COUNT(*) FROM $tableName 
-      WHERE type = ? AND lastError IS NULL
-      ''',
-      [OfflineOperationType.routeRecovery.toString()],
-    ));
-    return count != null && count > 0;
-  }
-
-  @override
   Future<void> retryOperation(String id) async {
     final operation = await getOperationById(id);
     if (operation == null) return;
@@ -282,11 +244,6 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
       where: 'id = ?',
       whereArgs: [id],
     );
-  }
-
-  @override
-  Future<List<OfflineOperation>> getRouteRecoveryOperations() async {
-    return getOperationsByType(OfflineOperationType.routeRecovery);
   }
 
   @override

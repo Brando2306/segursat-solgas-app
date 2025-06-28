@@ -39,7 +39,6 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _checkPendingSession();
   }
 
   @override
@@ -52,13 +51,10 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed &&
+        readStorage('sesionPageValidation') != null) {
       context.read<RouteProvider>().handleAppResumed(context);
     }
-  }
-
-  Future<void> _checkPendingSession() async {
-    await context.read<RouteProvider>().handleAppResumed(context);
   }
 
   @override
@@ -268,8 +264,9 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
           );
 
           // FLUJO REGULAR
-          if (unit.lastRouteStatus != SESION.RUNNING ||
-              unit.lastRoute == null) {
+          if (!isNotEmptyString(unit.lastRouteStatus) ||
+              !isNotEmptyString(unit.lastRoute) ||
+              unit.lastRouteStatus != SESION.RUNNING) {
             // Mostrar anotaciones si existen
             EasyLoading.dismiss();
             await _showUserAnnotations(driver, unit);

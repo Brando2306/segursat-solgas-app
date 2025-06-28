@@ -5,15 +5,16 @@ import 'package:provider/provider.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/offline_operations/presentation/providers/offline_operations_provider.dart';
-import 'package:safe_driving_app/utils/snackbars.dart';
 
 class OfflineOperationsListPage extends StatefulWidget {
   final String title;
   final List<OfflineOperation> operations;
+  final bool isRouteGroup;
 
   const OfflineOperationsListPage({
     required this.title,
     required this.operations,
+    this.isRouteGroup = false,
     Key? key,
   }) : super(key: key);
 
@@ -39,14 +40,6 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
             color: Colors.grey[200],
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () =>
-                context.read<OfflineOperationsProvider>().loadOperations(),
-            tooltip: 'Actualizar',
-          ),
-        ],
       ),
       body: _buildContent(),
     );
@@ -68,10 +61,14 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
           );
         }
 
-        // Obtener la lista actualizada del provider basada en el tipo
-        final updatedOperations = _getUpdatedOperations(provider);
+        // Usar las operaciones actualizadas del provider si están disponibles
+        final operations = widget.isRouteGroup
+            ? provider.groupedRouteOperations[
+                    widget.operations.first.offlineRouteId ?? ''] ??
+                []
+            : widget.operations;
 
-        if (updatedOperations.isEmpty) {
+        if (operations.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -103,10 +100,10 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
           onRefresh: () => provider.loadOperations(),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: updatedOperations.length,
+            itemCount: operations.length,
             itemBuilder: (context, index) => _buildOperationItem(
               context,
-              updatedOperations[index],
+              operations[index],
               provider,
             ),
           ),
@@ -120,6 +117,8 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
     OfflineOperation operation,
     OfflineOperationsProvider provider,
   ) {
+    final isSynced = operation.data['synced'] == true;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -131,42 +130,67 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
           children: [
             Row(
               children: [
-                Expanded(
-                  child: Text(
-                    _getOperationTitle(operation.type),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isSynced
+                        ? Colors.green[50]
+                        : _getOperationColor(operation.type).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _getOperationIcon(operation.type),
+                    color: isSynced
+                        ? Colors.green
+                        : _getOperationColor(operation.type),
+                    size: 20,
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.refresh, size: 22),
-                      onPressed: () =>
-                          _handleRetry(context, operation, provider),
-                      tooltip: 'Reintentar envío',
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.green[50],
-                        foregroundColor: Colors.green[700],
-                        padding: const EdgeInsets.all(8),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        operation.type.displayName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 22),
-                      onPressed: () => _showDeleteConfirmation(
-                          context, operation.id, provider),
-                      tooltip: 'Eliminar operación',
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.red[50],
-                        foregroundColor: Colors.red[700],
-                        padding: const EdgeInsets.all(8),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatDate(operation.createdAt),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+                if (!isSynced) ...[
+                  IconButton(
+                    icon: const Icon(Icons.refresh, size: 22),
+                    onPressed: () => _handleRetry(context, operation, provider),
+                    tooltip: 'Reintentar envío',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.green[50],
+                      foregroundColor: Colors.green[700],
+                      padding: const EdgeInsets.all(8),
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                IconButton(
+                  icon: const Icon(Icons.info_outline, size: 22),
+                  onPressed: () => _showOperationDetails(context, operation),
+                  tooltip: 'Ver detalles',
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.blue[50],
+                    foregroundColor: Colors.blue[700],
+                    padding: const EdgeInsets.all(8),
+                  ),
                 ),
               ],
             ),
@@ -181,12 +205,6 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildInfoRow(
-                    Icons.access_time,
-                    'Creado',
-                    _formatDate(operation.createdAt),
-                  ),
-                  const SizedBox(height: 8),
                   _buildInfoRow(
                     Icons.repeat,
                     'Intentos',
@@ -206,45 +224,64 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () => _showOperationDetails(context, operation),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.blue[200]!),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.visibility_outlined,
-                        size: 16,
-                        color: Colors.blue[700],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Ver detalles',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue[700],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
     );
+  }
+
+  IconData _getOperationIcon(OfflineOperationType type) {
+    switch (type) {
+      case OfflineOperationType.routeCreation:
+        return Icons.route;
+      case OfflineOperationType.routePositions:
+        return Icons.location_on;
+      case OfflineOperationType.routeFinish:
+        return Icons.flag;
+      case OfflineOperationType.maintenance:
+        return Icons.build;
+      case OfflineOperationType.inspection:
+        return Icons.assignment;
+      case OfflineOperationType.routeSos:
+        return Icons.warning;
+      case OfflineOperationType.emergencyCall:
+        return Icons.phone;
+      case OfflineOperationType.incidentReport:
+        return Icons.report;
+      case OfflineOperationType.routeStop:
+        return Icons.stop;
+      case OfflineOperationType.routeCancel:
+        return Icons.cancel;
+      default:
+        return Icons.warning;
+    }
+  }
+
+  Color _getOperationColor(OfflineOperationType type) {
+    switch (type) {
+      case OfflineOperationType.routeCreation:
+        return Colors.blue;
+      case OfflineOperationType.routePositions:
+        return Colors.green;
+      case OfflineOperationType.routeFinish:
+        return Colors.orange;
+      case OfflineOperationType.maintenance:
+        return Colors.teal;
+      case OfflineOperationType.inspection:
+        return Colors.indigo;
+      case OfflineOperationType.routeSos:
+        return Colors.red;
+      case OfflineOperationType.emergencyCall:
+        return Colors.purple;
+      case OfflineOperationType.incidentReport:
+        return Colors.redAccent;
+      case OfflineOperationType.routeStop:
+        return Colors.blueGrey;
+      case OfflineOperationType.routeCancel:
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
   }
 
   Widget _buildInfoRow(
@@ -337,9 +374,6 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
   Future<void> _performRetry(
       OfflineOperation operation, OfflineOperationsProvider provider) async {
     switch (operation.type) {
-      case OfflineOperationType.routeRecovery:
-        await provider.retryRouteCreation(operation.id);
-        break;
       case OfflineOperationType.maintenance:
         await provider.retryMaintenance(operation.id);
         break;
@@ -416,8 +450,6 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
 
   String _getOperationTitle(OfflineOperationType type) {
     switch (type) {
-      case OfflineOperationType.routeRecovery:
-        return 'Recuperación de ruta';
       case OfflineOperationType.maintenance:
         return 'Mantenimiento';
       case OfflineOperationType.inspection:
@@ -504,61 +536,5 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
         ],
       ),
     );
-  }
-
-  void _showDeleteConfirmation(
-    BuildContext context,
-    String id,
-    OfflineOperationsProvider provider,
-  ) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text('Confirmar eliminación'),
-        content: Text('¿Estás seguro de eliminar esta operación pendiente?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await provider.removeOperation(id);
-                Snackbars.showSnackbarSuccess(
-                    'Operación eliminada correctamente');
-              } catch (e) {
-                Snackbars.showSnackbarError('Error al eliminar: $e');
-              }
-            },
-            child: Text('Eliminar', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _prettyPrintJson(Map<String, dynamic> json) {
-    final encoder = JsonEncoder.withIndent('  ');
-    return encoder.convert(json);
-  }
-
-  List<OfflineOperation> _getUpdatedOperations(
-      OfflineOperationsProvider provider) {
-    // Retornar la lista actualizada basada en el título
-    switch (widget.title) {
-      case 'Recuperaciones de Ruta':
-        return provider.routeRecoveryOperations;
-      case 'Mantenimientos':
-        return provider.maintenanceOperations;
-      case 'Posiciones de Ruta':
-        return provider.routePositionsOperations;
-      case 'Inspecciones':
-        return provider.inspectionOperations;
-      default:
-        return widget.operations;
-    }
   }
 }

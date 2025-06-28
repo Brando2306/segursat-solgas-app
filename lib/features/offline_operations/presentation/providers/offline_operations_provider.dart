@@ -1,14 +1,17 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:safe_driving_app/features/route/domain/entities/cancel_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/create_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/finish_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/incident_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/stop_route_entity.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 
 import 'package:safe_driving_app/utils/snackbars.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_event_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/emergency_event_entity.dart';
 import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_recovery_entity.dart';
 import 'package:safe_driving_app/features/inspection/domain/entities/inspection_entity.dart';
 import 'package:safe_driving_app/features/maintenance/domain/entities/maintenance_entity.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
@@ -39,10 +42,6 @@ class OfflineOperationsProvider with ChangeNotifier {
   String? get error => _error;
 
   // Filtros por tipo de operación
-  List<OfflineOperation> get routeRecoveryOperations => _operations
-      .where((op) => op.type == OfflineOperationType.routeRecovery)
-      .toList();
-
   List<OfflineOperation> get maintenanceOperations => _operations
       .where((op) => op.type == OfflineOperationType.maintenance)
       .toList();
@@ -191,18 +190,6 @@ class OfflineOperationsProvider with ChangeNotifier {
         case OfflineOperationType.routeStop:
           await retryRouteStop(id);
           break;
-        // case OfflineOperationType.maintenance:
-        //   await retryMaintenance(context, id);
-        //   break;
-        // case OfflineOperationType.inspection:
-        //   await retryInspection(context, id);
-        //   break;
-        case OfflineOperationType.routeRecovery:
-          // No se reintenta automáticamente, se maneja manualmente
-          Snackbars.showSnackbarError(
-              'Operación de recuperación de ruta no reintentable');
-          return;
-        // ... otros casos
         default:
           await retryOperation(updatedOp);
       }
@@ -606,23 +593,6 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> hasPendingRouteOperation() async {
-    return await repository.hasPendingRouteOperation();
-  }
-
-  Future<void> saveRouteRecoveryAttempt(
-      int routeId, Map<String, dynamic> routeData) async {
-    final operation = OfflineOperation(
-      type: OfflineOperationType.routeRecovery,
-      data: RouteRecoveryEntity(
-        routeId: routeId,
-        timestamp: DateTime.now(),
-        routeData: routeData,
-      ).toJson(),
-    );
-    await saveOperation(operation);
-  }
-
   // Agrupa operaciones por ruta
   Map<String, List<OfflineOperation>> get groupedRouteOperations {
     final routeOperations = _operations.where((op) =>
@@ -654,47 +624,5 @@ class OfflineOperationsProvider with ChangeNotifier {
     );
 
     return sorted;
-  }
-
-  // Método para reintentar todas las operaciones de una ruta
-  Future<void> retryRouteOperations(String routeId) async {
-    final operations = groupedRouteOperations[routeId] ?? [];
-
-    // Ordenar: primero creación, luego posiciones, luego finalización
-    operations.sort((a, b) {
-      if (a.type == OfflineOperationType.routeCreation) return -1;
-      if (b.type == OfflineOperationType.routeCreation) return 1;
-      if (a.type == OfflineOperationType.routePositions) return -1;
-      if (b.type == OfflineOperationType.routePositions) return 1;
-      return 0;
-    });
-
-    for (final op in operations) {
-      try {
-        switch (op.type) {
-          case OfflineOperationType.routeCreation:
-            final route = CreateRouteEntity.fromJson(op.data);
-            await routeRepository.createRoute(route);
-            break;
-          case OfflineOperationType.routePositions:
-            final positions = (op.data['positions'] as List)
-                .map((p) => RoutePositionEntity.fromJson(p))
-                .toList();
-            await routeRepository.sendRoutePositions(positions);
-            break;
-          case OfflineOperationType.routeFinish:
-            final finish = FinishRouteEntity.fromJson(op.data);
-            await routeRepository.finishRoute(finish);
-            break;
-          default:
-            continue;
-        }
-        await repository.removeOperation(op.id);
-      } catch (e) {
-        await repository.updateRetryCount(
-            op.id, op.retryCount + 1, e.toString());
-        rethrow;
-      }
-    }
   }
 }

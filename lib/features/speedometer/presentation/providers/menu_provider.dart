@@ -19,7 +19,7 @@ class MenuProvider with ChangeNotifier {
     try {
       final unit = await _getUnit();
 
-      await writeStorage('personal.lastInitialInpectionDate',
+      await writeStorage('personal.lastInitialInspectionDate',
           unit['last_initial_inspection_date']);
       await writeStorage('inspection.lastOdometer', unit['last_odometer']);
 

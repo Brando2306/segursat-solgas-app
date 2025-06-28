@@ -1,8 +1,12 @@
 import 'dart:convert';
 
-import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/cancel_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/create_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/finish_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/incident_route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
+import 'package:safe_driving_app/features/route/domain/entities/stop_route_entity.dart';
 
 class OfflineOperation {
   final String id;

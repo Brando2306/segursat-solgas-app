@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:safe_driving_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:safe_driving_app/features/auth/domain/entities/auth_user_entity.dart';
 import 'package:safe_driving_app/features/auth/domain/repositories/auth_repository.dart';
 

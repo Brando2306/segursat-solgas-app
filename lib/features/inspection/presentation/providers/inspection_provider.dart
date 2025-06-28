@@ -1,4 +1,3 @@
-// features/inspection/presentation/providers/inspection_provider.dart
 import 'package:flutter/material.dart';
 import 'package:safe_driving_app/features/inspection/domain/entities/inspection_entity.dart';
 import 'package:safe_driving_app/features/inspection/domain/repositories/inspection_repository.dart';

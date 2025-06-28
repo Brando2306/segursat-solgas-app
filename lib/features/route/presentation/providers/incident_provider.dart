@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/incident_route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
 
 class IncidentProvider with ChangeNotifier {

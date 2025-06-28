@@ -7,7 +7,6 @@ enum OfflineOperationType {
   maintenance, // Mantenimientos
   inspection, // Inspecciones
   incidentReport, // Reportes de incidente
-  routeRecovery, // Recuperación de ruta
   emergencyCall, // Llamada de emergencia
   routeStop; // Parada de ruta fallida
 
@@ -19,8 +18,6 @@ enum OfflineOperationType {
         return 'Posiciones de ruta';
       case OfflineOperationType.routeFinish:
         return 'Finalización de ruta';
-      case OfflineOperationType.routeRecovery:
-        return 'Recuperación de ruta';
       case OfflineOperationType.maintenance:
         return 'Mantenimiento';
       case OfflineOperationType.inspection:

@@ -1,365 +1,43 @@
-import 'dart:convert';
-
-import 'package:safe_driving_app/features/route/domain/entities/route.dart';
-
 class RouteEntity {
   final int id;
-  final dynamic unitName;
-  final dynamic timestamp;
-  final dynamic sourceLatitude;
-  final dynamic sourceLongitude;
-  final dynamic destinationLatitude;
-  final dynamic destinationLongitude;
-  final dynamic isFinished;
-  final dynamic isCancelled;
-  final dynamic duration;
+  final String unitName;
+  final String status;
+  final DateTime timestamp;
 
   RouteEntity({
     required this.id,
     required this.unitName,
+    required this.status,
     required this.timestamp,
-    required this.sourceLatitude,
-    required this.sourceLongitude,
-    required this.destinationLatitude,
-    required this.destinationLongitude,
-    this.isFinished = false,
-    this.isCancelled = false,
-    this.duration,
   });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'unit_name': unitName,
-      'timestamp': timestamp,
-      'source_latitude': sourceLatitude,
-      'source_longitude': sourceLongitude,
-      'destination_latitude': destinationLatitude,
-      'destination_longitude': destinationLongitude,
-      'is_finished': isFinished,
-      'is_cancelled': isCancelled,
-      'duration': duration,
-    };
-  }
 
   factory RouteEntity.fromJson(Map<String, dynamic> json) {
     return RouteEntity(
       id: json['id'],
-      unitName: json['unit_name'],
-      timestamp: json['timestamp'],
-      sourceLatitude: json['source_latitude'],
-      sourceLongitude: json['source_longitude'],
-      destinationLatitude: json['destination_latitude'],
-      destinationLongitude: json['destination_longitude'],
-      isFinished: json['is_finished'] ?? false,
-      isCancelled: json['is_cancelled'] ?? false,
-      duration: json['duration'],
+      unitName: json['unitName'],
+      status: json['status'],
+      timestamp: DateTime.parse(json['timestamp']),
     );
   }
-
-  Route toRoute() {
-    return Route(
-      id: this.id,
-      unitName: this.unitName,
-      status: RouteStatus.running, // You'll need to handle status properly
-      timestamp: this.timestamp,
-      source: Position(latitude: sourceLatitude, longitude: sourceLongitude),
-      destination: Position(
-          latitude: destinationLatitude, longitude: destinationLongitude),
-      positions: null, // You'll need to handle positions if needed
-    );
-  }
-}
-
-class CancelRouteEntity {
-  final dynamic routeId;
-  final dynamic cancelTimestamp;
-  final dynamic cancelLatitude;
-  final dynamic cancelLongitude;
-  final dynamic time;
-
-  CancelRouteEntity({
-    required this.routeId,
-    required this.cancelTimestamp,
-    required this.cancelLatitude,
-    required this.cancelLongitude,
-    required this.time,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'routeid': routeId,
-      'cancel_timestamp': cancelTimestamp,
-      'cancel_latitude': cancelLatitude,
-      'cancel_longitude': cancelLongitude,
-      'time': time,
-    };
-  }
-
-  factory CancelRouteEntity.fromJson(Map<String, dynamic> json) {
-    return CancelRouteEntity(
-      routeId: json['routeid'],
-      cancelTimestamp: json['cancel_timestamp'],
-      cancelLatitude: json['cancel_latitude'],
-      cancelLongitude: json['cancel_longitude'],
-      time: json['time'],
-    );
-  }
-
-  CancelRouteEntity copyWith({
-    dynamic routeId,
-    dynamic cancelTimestamp,
-    dynamic cancelLatitude,
-    dynamic cancelLongitude,
-    dynamic time,
-  }) {
-    return CancelRouteEntity(
-      routeId: routeId ?? this.routeId,
-      cancelTimestamp: cancelTimestamp ?? this.cancelTimestamp,
-      cancelLatitude: cancelLatitude ?? this.cancelLatitude,
-      cancelLongitude: cancelLongitude ?? this.cancelLongitude,
-      time: time ?? this.time,
-    );
-  }
-}
-
-class FinishRouteEntity {
-  final dynamic routeId;
-  final dynamic finishTimestamp;
-  final dynamic finishLatitude;
-  final dynamic finishLongitude;
-  final dynamic time;
-
-  FinishRouteEntity({
-    required this.routeId,
-    required this.finishTimestamp,
-    required this.finishLatitude,
-    required this.finishLongitude,
-    required this.time,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'routeid': routeId,
-      'finish_timestamp': finishTimestamp,
-      'finish_latitude': finishLatitude,
-      'finish_longitude': finishLongitude,
-      'time': time,
-    };
-  }
-
-  factory FinishRouteEntity.fromJson(Map<String, dynamic> json) {
-    return FinishRouteEntity(
-      routeId: json['routeid'],
-      finishTimestamp: json['finish_timestamp'],
-      finishLatitude: json['finish_latitude'],
-      finishLongitude: json['finish_longitude'],
-      time: json['time'],
-    );
-  }
-
-  FinishRouteEntity copyWith({
-    dynamic routeId,
-    dynamic finishTimestamp,
-    dynamic finishLatitude,
-    dynamic finishLongitude,
-    dynamic time,
-  }) {
-    return FinishRouteEntity(
-      routeId: routeId ?? this.routeId,
-      finishTimestamp: finishTimestamp ?? this.finishTimestamp,
-      finishLatitude: finishLatitude ?? this.finishLatitude,
-      finishLongitude: finishLongitude ?? this.finishLongitude,
-      time: time ?? this.time,
-    );
-  }
-}
-
-class CreateRouteEntity {
-  final dynamic unitName;
-  final dynamic timestamp;
-  final dynamic sourceLatitude;
-  final dynamic sourceLongitude;
-  final dynamic destinationLatitude;
-  final dynamic destinationLongitude;
-
-  CreateRouteEntity({
-    required this.unitName,
-    required this.timestamp,
-    required this.sourceLatitude,
-    required this.sourceLongitude,
-    required this.destinationLatitude,
-    required this.destinationLongitude,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'unit_name': unitName,
-      'timestamp': timestamp,
-      'source_latitude': sourceLatitude,
-      'source_longitude': sourceLongitude,
-      'destination_latitude': destinationLatitude,
-      'destination_longitude': destinationLongitude,
-    };
-  }
-
-  factory CreateRouteEntity.fromJson(Map<String, dynamic> json) {
-    return CreateRouteEntity(
-      unitName: json['unit_name'],
-      timestamp: json['timestamp'],
-      sourceLatitude: json['source_latitude'],
-      sourceLongitude: json['source_longitude'],
-      destinationLatitude: json['destination_latitude'],
-      destinationLongitude: json['destination_longitude'],
-    );
-  }
-}
-
-class IncidentRouteEntity {
-  final dynamic routeId;
-  final dynamic timestamp;
-  final dynamic latitude;
-  final dynamic longitude;
-  final dynamic type;
-  final dynamic description;
-  final dynamic address;
-  final dynamic unitId;
-
-  IncidentRouteEntity({
-    required this.routeId,
-    required this.timestamp,
-    required this.latitude,
-    required this.longitude,
-    required this.type,
-    required this.description,
-    required this.address,
-    required this.unitId,
-  });
 
   Map<String, dynamic> toJson() => {
-        "routeid": routeId,
-        "timestamp": timestamp,
-        "latitude": latitude,
-        "longitude": longitude,
-        "type": type,
-        "description": description,
-        "address": address,
-        "unitid": unitId,
+        'id': id,
+        'unitName': unitName,
+        'status': status,
+        'timestamp': timestamp.toIso8601String(),
       };
 
-  factory IncidentRouteEntity.fromJson(Map<String, dynamic> json) {
-    return IncidentRouteEntity(
-      routeId: json['routeid'],
-      timestamp: json['timestamp'],
-      latitude: json['latitude'],
-      longitude: json['longitude'],
-      type: json['type'],
-      description: json['description'],
-      address: json['address'],
-      unitId: json['unitid'],
-    );
-  }
-
-  IncidentRouteEntity copyWith({
-    dynamic routeId,
-    dynamic timestamp,
-    dynamic latitude,
-    dynamic longitude,
-    dynamic type,
-    dynamic description,
-    dynamic address,
-    dynamic unitId,
+  RouteEntity copyWith({
+    int? id,
+    String? unitName,
+    String? status,
+    DateTime? timestamp,
   }) {
-    return IncidentRouteEntity(
-      routeId: routeId ?? this.routeId,
+    return RouteEntity(
+      id: id ?? this.id,
+      unitName: unitName ?? this.unitName,
+      status: status ?? this.status,
       timestamp: timestamp ?? this.timestamp,
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
-      type: type ?? this.type,
-      description: description ?? this.description,
-      address: address ?? this.address,
-      unitId: unitId ?? this.unitId,
-    );
-  }
-}
-
-class StopRouteEntity {
-  final dynamic routeId;
-  final dynamic unitId;
-  final dynamic timestamp;
-  final dynamic latitude;
-  final dynamic longitude;
-  final dynamic type;
-  final dynamic description;
-  final dynamic address;
-  final dynamic time;
-  final List<Map<String, dynamic>> questions;
-
-  StopRouteEntity({
-    required this.routeId,
-    required this.unitId,
-    required this.timestamp,
-    required this.latitude,
-    required this.longitude,
-    required this.type,
-    required this.description,
-    required this.address,
-    required this.time,
-    required this.questions,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'routeid': routeId,
-        'unitid': unitId,
-        'timestamp': timestamp,
-        'latitude': latitude,
-        'longitude': longitude,
-        'type': type,
-        'description': description,
-        'address': address,
-        'time': time,
-        'questions': json.encode(questions),
-      };
-
-  factory StopRouteEntity.fromJson(Map<String, dynamic> json) {
-    return StopRouteEntity(
-      routeId: json['routeid'],
-      unitId: json['unitid'],
-      timestamp: json['timestamp'],
-      latitude: json['latitude'],
-      longitude: json['longitude'],
-      type: json['type'],
-      description: json['description'],
-      address: json['address'],
-      time: json['time'],
-      questions: List<Map<String, dynamic>>.from(
-          jsonDecode(json['questions'] ?? '[]')),
-    );
-  }
-
-  StopRouteEntity copyWith({
-    dynamic routeId,
-    dynamic unitId,
-    dynamic timestamp,
-    dynamic latitude,
-    dynamic longitude,
-    dynamic type,
-    dynamic description,
-    dynamic address,
-    dynamic time,
-    List<Map<String, dynamic>>? questions,
-  }) {
-    return StopRouteEntity(
-      routeId: routeId ?? this.routeId,
-      unitId: unitId ?? this.unitId,
-      timestamp: timestamp ?? this.timestamp,
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
-      type: type ?? this.type,
-      description: description ?? this.description,
-      address: address ?? this.address,
-      time: time ?? this.time,
-      questions: questions ?? this.questions,
     );
   }
 }

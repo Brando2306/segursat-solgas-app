@@ -3,7 +3,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:safe_driving_app/features/offline_operations/presentation/pages/offline_operations_screen.dart';
-import 'package:safe_driving_app/features/offline_operations/presentation/widgets/offline_operations_list_widget.dart';
+import 'package:safe_driving_app/features/offline_operations/presentation/pages/offline_operations_list_widget.dart';
 import 'package:safe_driving_app/pages/inspection/accessories_page.dart';
 import 'package:safe_driving_app/pages/inspection/finish_page.dart';
 import 'package:safe_driving_app/pages/inspection/odometer_page.dart';

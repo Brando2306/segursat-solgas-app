@@ -4,11 +4,7 @@ import 'package:app_settings/app_settings.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route.dart'
-    as entity;
 import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/helpers/gps.dart';
@@ -45,11 +41,11 @@ class RouteProvider with ChangeNotifier {
           await connectivity.checkConnectivity() != ConnectivityResult.none;
       if (hasInternet) {
         final lastRoute = await routeRepository.getLastActiveRoute();
-        return lastRoute.status == entity.RouteStatus.running;
+        return lastRoute.status == SESION.RUNNING;
       }
     } catch (e) {
       // 4. Verificar offline
-      return await offlineRepo.hasPendingRouteOperation();
+      // return await offlineRepo.hasPendingRouteOperation();
     }
 
     return false;

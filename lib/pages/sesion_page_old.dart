@@ -98,7 +98,6 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
 
             if (isNotEmptyString(route['destination_latitude']) &&
                 isNotEmptyString(route['destination_longitude'])) {
-
               await writeStorage(
                   'root.finalPosition',
                   json.encode({
