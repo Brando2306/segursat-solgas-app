@@ -8,6 +8,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:safe_driving_app/helpers/gps.dart';
+import 'package:safe_driving_app/shared/button_widget.dart';
 import 'package:safe_driving_app/utils/style.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/constants.dart';
@@ -39,7 +40,7 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
   Widget build(BuildContext context) {
     return Consumer<SpeedometerProvider>(
       builder: (context, provider, child) {
-        return WillPopScope(
+        final content = WillPopScope(
           onWillPop: () async => false,
           child: Scaffold(
             appBar: AppBar(
@@ -60,7 +61,93 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
             body: _buildBody(context, provider),
           ),
         );
+
+        // Solo para Android, envolver con PiPSwitcher
+        if (Platform.isAndroid) {
+          return PiPSwitcher(
+            childWhenEnabled: _buildMinimizedGauge(provider),
+            childWhenDisabled: content,
+          );
+        }
+
+        return content;
       },
+    );
+  }
+
+  Widget _buildMinimizedGauge(SpeedometerProvider provider) {
+    return SfRadialGauge(
+      axes: <RadialAxis>[
+        RadialAxis(
+          minimum: 0,
+          maximum: 200,
+          labelOffset: 30,
+          axisLineStyle: const AxisLineStyle(
+            thicknessUnit: GaugeSizeUnit.factor,
+            thickness: 0.03,
+          ),
+          majorTickStyle: const MajorTickStyle(
+            length: 6,
+            thickness: 4,
+            color: Colors.black,
+          ),
+          minorTickStyle: const MinorTickStyle(
+            length: 3,
+            thickness: 3,
+            color: Colors.black,
+          ),
+          axisLabelStyle: const GaugeTextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+          ranges: <GaugeRange>[
+            GaugeRange(
+              startValue: 0,
+              endValue: 200,
+              sizeUnit: GaugeSizeUnit.factor,
+              startWidth: 0.03,
+              endWidth: 0.03,
+              gradient: const SweepGradient(
+                colors: <Color>[Colors.green, Colors.yellow, Colors.red],
+                stops: <double>[0.0, 0.5, 1],
+              ),
+            ),
+          ],
+          pointers: <GaugePointer>[
+            NeedlePointer(
+              value: provider.speed,
+              needleLength: 0.95,
+              enableAnimation: true,
+              animationType: AnimationType.ease,
+              needleStartWidth: 1.5,
+              needleEndWidth: 6,
+              needleColor: Colors.red,
+              knobStyle: const KnobStyle(knobRadius: 0.09),
+            ),
+          ],
+          annotations: <GaugeAnnotation>[
+            GaugeAnnotation(
+              widget: Center(
+                child: Column(
+                  children: <Widget>[
+                    const SizedBox(height: 10),
+                    Text(
+                      '${provider.speed.round().toString()} KM/H',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              angle: 90,
+              positionFactor: 1.55,
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -111,7 +198,6 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
                 padding: const EdgeInsets.all(8.0),
                 child: GestureDetector(
                   onTap: () {
-                    // Navegar a la pantalla de operaciones offline
                     Navigator.pushNamed(context, '/offline-operations');
                   },
                   child: Container(
@@ -129,7 +215,7 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
                             color: Colors.orange[800], size: 16),
                         const SizedBox(width: 8),
                         Text(
-                          '$count posiciones pendientes',
+                          '$count ${count == 1 ? 'posición pendiente' : 'posiciones pendientes'}',
                           style: TextStyle(color: Colors.orange[800]),
                         ),
                       ],
@@ -297,38 +383,69 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
   Widget _controlButtons(BuildContext context, SpeedometerProvider provider) {
     return Column(
       children: [
-        nextButton(
-          context,
-          'Realizar parada',
-          '/root/controlStop',
-          true,
-          () {
-            Provider.of<SpeedometerProvider>(context, listen: false)
-                .stopLocationUpdates();
-          },
-          11,
-        ),
-        const SizedBox(height: 20),
-        MaterialButton(
-          onPressed: provider.buttonFinishEnabled
-              ? () => _handleFinishRoute(context, provider)
-              : null,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+        ButtonWidget(
+          width: double.infinity,
+          // loading: provider.isLoading,
+          // disabled: provider.isLoading,
+          padding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          margin: EdgeInsets.symmetric(horizontal: 40),
+          text: 'Realizar parada',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15,
           ),
-          color: provider.buttonFinishEnabled
+          color: (provider.buttonFinishEnabled && _hasValidPositions())
               ? CustomColors.primary
               : CustomColors.primaryOff,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-            child: const Text(
-              'Finalizar ruta',
-              style: TextStyle(color: Colors.white),
-            ),
+          onPressed: provider.buttonFinishEnabled && _hasValidPositions()
+              ? () {
+                  Provider.of<SpeedometerProvider>(context, listen: false)
+                      .stopLocationUpdates();
+                  Navigator.pushNamed(context, '/root/controlStop');
+                }
+              : null,
+        ),
+        const SizedBox(height: 20),
+        ButtonWidget(
+          width: double.infinity,
+          // loading: provider.isLoading,
+          // disabled: provider.isLoading,
+          padding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          margin: EdgeInsets.symmetric(horizontal: 40),
+          text: 'Finalizar ruta',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15,
           ),
+          color: (provider.buttonFinishEnabled && _hasValidPositions())
+              ? CustomColors.primary
+              : CustomColors.primaryOff,
+          onPressed: provider.buttonFinishEnabled && _hasValidPositions()
+              ? () => _handleFinishRoute(context, provider)
+              : null,
         ),
       ],
     );
+  }
+
+  bool _hasValidPositions() {
+    try {
+      final currentPos = readStorage('root.currentPosition');
+      final finalPos = readStorage('root.finalPosition');
+
+      if (currentPos == null || finalPos == null) return false;
+
+      // Verifica que el JSON sea válido y tenga lat/long
+      final currentJson = json.decode(currentPos) as Map<String, dynamic>;
+      final finalJson = json.decode(finalPos) as Map<String, dynamic>;
+
+      return currentJson['latitude'] != null &&
+          currentJson['longitude'] != null &&
+          finalJson['latitude'] != null &&
+          finalJson['longitude'] != null;
+    } catch (e) {
+      return false;
+    }
   }
 
   Future<void> _handleFinishRoute(
@@ -336,8 +453,15 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
     SpeedometerProvider provider,
   ) async {
     try {
-      final currentPosition = json.decode(readStorage('root.currentPosition'));
-      final finalPosition = json.decode(readStorage('root.finalPosition'));
+      final currentPositionStr = readStorage('root.currentPosition');
+      final finalPositionStr = readStorage('root.finalPosition');
+
+      if (currentPositionStr == null || finalPositionStr == null) {
+        throw Exception('Posiciones no encontradas en el almacenamiento');
+      }
+
+      final currentPosition = json.decode(currentPositionStr);
+      final finalPosition = json.decode(finalPositionStr);
 
       final distance = calcularDistanciaEnMetros(
         currentPosition['latitude'],
@@ -459,7 +583,7 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
               } catch (e) {
                 // Si hay error, lo mostramos (solo si el widget sigue activo)
                 if (mounted) {
-                  // notificationError(context, 'Error al finalizar: $e');
+                  notificationError(context, 'Error al finalizar: $e');
                 }
               } finally {
                 // Cerramos el loading

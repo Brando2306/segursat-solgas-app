@@ -52,7 +52,7 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+              children: const [
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
                 Text('Actualizando operaciones...'),
@@ -343,7 +343,7 @@ class _OfflineOperationsListPageState extends State<OfflineOperationsListPage> {
               padding: EdgeInsets.all(16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
+                children: const [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
                   Text('Reintentando operación...'),

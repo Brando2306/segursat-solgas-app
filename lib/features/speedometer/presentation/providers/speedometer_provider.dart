@@ -1,4 +1,3 @@
-// lib/providers/speedometer_provider.dart
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
@@ -6,7 +5,6 @@ import 'dart:developer';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:safe_driving_app/core/constants/storage_keys.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
@@ -15,15 +13,11 @@ import 'package:safe_driving_app/features/offline_operations/domain/repositories
 import 'package:safe_driving_app/features/route/domain/entities/cancel_route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/create_route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/finish_route_entity.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_response_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/emergency_event_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
 import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
-import 'package:safe_driving_app/providers/index.dart';
 import 'package:safe_driving_app/utils/constants.dart';
-import 'package:safe_driving_app/utils/endpoints.dart';
-import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:collection/collection.dart';
@@ -64,9 +58,15 @@ class SpeedometerProvider with ChangeNotifier {
   String get formattedTime =>
       DateFormat('dd/MM/yyyy HH:mm:ss').format(_currentTime);
   String get formattedDuration {
-    String twoDigits(int n) => n >= 10 ? "$n" : "0$n";
-    return "${twoDigits(_currentDuration.inMinutes.remainder(60))}:"
-        "${twoDigits(_currentDuration.inSeconds.remainder(60))}";
+    try {
+      final duration =
+          _currentDuration; // Copia local para evitar condiciones de carrera
+      String twoDigits(int n) => n >= 10 ? "$n" : "0$n";
+      return "${twoDigits(duration.inMinutes.remainder(60))}:"
+          "${twoDigits(duration.inSeconds.remainder(60))}";
+    } catch (e) {
+      return "00:00"; // Valor por defecto en caso de error
+    }
   }
 
   // Initialization
@@ -159,14 +159,23 @@ class SpeedometerProvider with ChangeNotifier {
 
   void _initializeTimers() {
     // Initialize duration from storage or zero
-    final savedTime = readStorage('root.cronometer') ?? 0;
-    _currentDuration = Duration(seconds: savedTime);
+    try {
+      final savedTime =
+          int.tryParse(readStorage('root.cronometer') ?? '0') ?? 0;
+      _currentDuration = Duration(seconds: savedTime);
+    } catch (e) {
+      _currentDuration = Duration.zero;
+    }
 
     // Timer for duration
     _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      _currentDuration += const Duration(seconds: 1);
-      writeStorage('root.cronometer', _currentDuration.inSeconds);
-      notifyListeners();
+      try {
+        _currentDuration += const Duration(seconds: 1);
+        writeStorage('root.cronometer', _currentDuration.inSeconds.toString());
+        notifyListeners();
+      } catch (e) {
+        debugPrint('Error updating duration: $e');
+      }
     });
 
     // Timer for current time
@@ -509,6 +518,13 @@ class SpeedometerProvider with ChangeNotifier {
     _durationTimer?.cancel();
     _dataSendTimer?.cancel();
     _internetCheckTimer?.cancel();
+
+    _positionStream = null;
+    _dateTimer = null;
+    _durationTimer = null;
+    _dataSendTimer = null;
+    _internetCheckTimer = null;
+
     super.dispose();
   }
 }

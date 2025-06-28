@@ -354,7 +354,7 @@ console(String e) {
   // List<String> division = e.split(': ');
 
   // if (division[1] != 'null') {
-  print('Storage ==> ${e}');
+  // print('Storage ==> ${e}');
   // }
 }
 

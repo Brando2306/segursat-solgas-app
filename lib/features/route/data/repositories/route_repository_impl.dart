@@ -161,6 +161,7 @@ class RouteRepositoryImpl implements RouteRepository {
   @override
   @override
   Future<void> sendRoutePositions(List<RoutePositionEntity> positions) async {
+    //TODO: probar cuando no hay red, se crea la ruta, y luego la activo, actualmente se envian las posiciones por q backend no valida el routeid, entonces front debe validar eso y si no tiene routeid mandarlo a guardar, no se si desde el entity podemos hacer eso con un required en routeid
     try {
       await remoteDataSource.sendRoutePositions(positions);
     } catch (e) {
@@ -168,8 +169,13 @@ class RouteRepositoryImpl implements RouteRepository {
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedPositions(
             positions, offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. Las posiciones de la ruta se guardaron y las podrás sincronizar luego.');
+        if (positions.length == 1) {
+          Snackbars.showSnackbarSuccess(
+              'Modo offline activado. La posición de la ruta se guardó y la podrás sincronizar luego.');
+        } else {
+          Snackbars.showSnackbarSuccess(
+              'Modo offline activado. Las posiciones de la ruta se guardaron y las podrás sincronizar luego.');
+        }
       }
       rethrow;
     }
