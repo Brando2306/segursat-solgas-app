@@ -1,35 +1,60 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
+import 'package:safe_driving_app/core/constants/storage_keys.dart';
 import 'package:safe_driving_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:safe_driving_app/features/speedometer/presentation/providers/menu_provider.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
+import 'package:safe_driving_app/helpers/gps.dart';
+import 'package:safe_driving_app/providers/route.dart';
 import 'package:safe_driving_app/shared/button_widget.dart';
 import 'package:safe_driving_app/shared/loading_item_widget.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/style.dart';
 
-class MenuPage extends StatelessWidget {
+class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => MenuProvider(),
-      child: _MenuPageContent(),
-    );
-  }
+  State<MenuPage> createState() => _MenuPageState();
 }
 
-class _MenuPageContent extends StatelessWidget {
+class _MenuPageState extends State<MenuPage> {
+  bool _dialogShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    final menuProvider = Provider.of<MenuProvider>(context, listen: false);
+    await menuProvider.init();
+
+    if (!mounted) return;
+
+    if (menuProvider.hasPendingRoute && !_dialogShown) {
+      _dialogShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showRecoverRouteDialog(context);
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final menuProvider = Provider.of<MenuProvider>(context);
 
     final inspectionEnabled = menuProvider.buttonInspectionEnabled;
     final rootEnabled = menuProvider.buttonRootEnabled;
-
     final isLoading = inspectionEnabled == null || rootEnabled == null;
 
     return WillPopScope(
@@ -74,6 +99,154 @@ class _MenuPageContent extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showRecoverRouteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text('Ruta activa'),
+        content: Text(
+            'Tienes una ruta activa en curso.\n¿Deseas recuperar la ruta?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              // Si cancela, puedes limpiar la marca si lo deseas
+            },
+            child: Text('No'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              Provider.of<MenuProvider>(context, listen: false)
+                  .clearPendingRoute();
+              await _resumeRouteFlow(context);
+            },
+            child: Text('Sí, recuperar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _resumeRouteFlow(BuildContext context) async {
+    try {
+      EasyLoading.show(status: 'Verificando GPS...');
+      final validationGps = await checkGps();
+      EasyLoading.dismiss();
+
+      if (!validationGps) {
+        await writeStorage('sesionPageValidation', true);
+        // Mostrar diálogo para activar ubicación
+        // Puedes mostrar un diálogo para activar ubicación aquí si lo deseas
+        return;
+      }
+
+      EasyLoading.show(status: 'Redireccionando...');
+
+      // 1. Primero intentar con el backend si hay lastRoute
+      final lastRoute = readStorage('personal.lastRoute');
+      if (lastRoute != null) {
+        try {
+          // Debes tener una función getRoute similar a la de RouteProvider
+          final route = await getRoute(lastRoute);
+          await _handleBackendRouteResponse(route);
+          EasyLoading.dismiss();
+          Navigator.pushNamed(context, '/root/speedometer');
+          return;
+        } catch (e) {
+          // log('Error al recuperar ruta del backend: $e');
+          EasyLoading.show(status: 'Modo offline activado');
+          await Future.delayed(const Duration(seconds: 1));
+        }
+      }
+
+      // 2. Lógica offline
+      final success = await _handleOfflineRoute();
+      EasyLoading.dismiss();
+
+      if (success) {
+        Navigator.pushNamed(context, '/root/speedometer');
+      } else {
+        // await _showRouteRecoveryError(context);
+        // cleanAll();
+      }
+    } catch (e) {
+      // cleanAll();
+      await _handleOfflineRoute();
+      Navigator.pushNamed(context, '/menu');
+    }
+  }
+
+  Future<void> _handleBackendRouteResponse(dynamic route) async {
+    if (route['status'] == STATUSCODE.OK) {
+      final positions = route['positions'];
+      if (isNotEmptyString(positions)) {
+        final lastObject = positions.last;
+        await writeStorage('root.cronometer',
+            isNotEmptyString(lastObject['angle']) ? lastObject['angle'] : 0);
+      }
+
+      if (isNotEmptyString(route['destination_latitude']) &&
+          isNotEmptyString(route['destination_longitude'])) {
+        await writeStorage(
+            'root.finalPosition',
+            json.encode({
+              'latitude': route['destination_latitude'],
+              'longitude': route['destination_longitude']
+            }));
+        await writeStorage('personal.pushRouteSpeedometer', null);
+      }
+    }
+  }
+
+  Future<bool> _handleOfflineRoute() async {
+    try {
+      // 1. Verificar posición final (obligatoria)
+      final finalPos = readStorage('root.finalPosition');
+      if (finalPos == null) {
+        // log('No hay posición final guardada');
+        return false;
+      }
+
+      // 2. Obtener posición actual (intentar GPS o usar última guardada)
+      if (readStorage('root.currentPosition') == null) {
+        try {
+          final position = await Geolocator.getCurrentPosition();
+          await writeStorage(
+              'root.currentPosition',
+              json.encode({
+                'latitude': position.latitude,
+                'longitude': position.longitude
+              }));
+        } catch (e) {
+          // log('No se pudo obtener posición actual: $e');
+          return false;
+        }
+      }
+
+      var cronometer = readStorage('root.cronometer');
+      log('Cronómetro inicial: $cronometer');
+
+      // 3. Inicializar cronómetro si no existe
+      if (readStorage('root.cronometer') == null) {
+        await writeStorage('root.cronometer', '0');
+      }
+
+      // 4. Verificar si hay una ruta offline activa
+      // final offlineRouteId = readStorage(StorageKeys.currentOfflineRouteId);
+      // if (offlineRouteId == null) {
+      //   // Crear nueva ruta offline si no existe
+      //   await _createOfflineRoute();
+      // }
+
+      return true;
+    } catch (e) {
+      // log('Error en _handleOfflineRoute: $e');
+      return false;
+    }
   }
 
   AppBar _buildAppBar(BuildContext context) {

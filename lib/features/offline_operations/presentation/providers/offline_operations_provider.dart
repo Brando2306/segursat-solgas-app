@@ -337,9 +337,9 @@ class OfflineOperationsProvider with ChangeNotifier {
     }
 
     // Actualizar el ID en el almacenamiento local si es la ruta actual
-    if (readStorage('root.createRoute.id') == offlineRouteId) {
-      writeStorage('root.createRoute.id', newRouteId);
-    }
+    // if (readStorage('root.createRoute.id') == offlineRouteId) {
+    writeStorage('root.createRoute.id', newRouteId);
+    // }
   }
 
   Future<void> retryRouteFinish(String id) async {
@@ -441,25 +441,49 @@ class OfflineOperationsProvider with ChangeNotifier {
           .map((p) => RoutePositionEntity.fromJson(p))
           .toList();
 
-      // Enviar en lotes de 25
+      // Separar válidas e inválidas
+      final validPositions = positions.where((p) => p.routeId != null).toList();
+      final invalidPositions = positions.where((p) => p.routeId == null).toList();
+
+      // Enviar válidas en lotes de 25
       const batchSize = 25;
-      for (int i = 0; i < positions.length; i += batchSize) {
-        final end = (i + batchSize < positions.length)
+      for (int i = 0; i < validPositions.length; i += batchSize) {
+        final end = (i + batchSize < validPositions.length)
             ? i + batchSize
-            : positions.length;
-        final batch = positions.sublist(i, end);
+            : validPositions.length;
+        final batch = validPositions.sublist(i, end);
         await routeRepository.retryRoutePositions(batch);
       }
 
-      // Actualizar como sincronizado en lugar de eliminar
-      final updatedData = {...operation.data, 'synced': true};
-      await repository.updateOperation(
-        operation.copyWith(data: updatedData),
-      );
-      // Eliminar operación exitosa
-      // await repository.removeOperation(operation.id);
-
-      Snackbars.showSnackbarSuccess('Posiciones sincronizadas correctamente');
+      if (invalidPositions.isEmpty) {
+        // Todas sincronizadas, marcar como synced
+        final updatedData = {
+          ...operation.data,
+          'positions': [],
+          'synced': true
+        };
+        await repository.updateOperation(
+          operation.copyWith(data: updatedData),
+        );
+        Snackbars.showSnackbarSuccess('Posiciones sincronizadas correctamente');
+      } else {
+        // Solo quedan las inválidas, actualizar operación
+        final updatedData = {
+          ...operation.data,
+          'positions': invalidPositions.map((p) => p.toJson()).toList(),
+          'synced': false
+        };
+        await repository.updateOperation(
+          operation.copyWith(data: updatedData),
+        );
+        await repository.updateRetryCount(
+          operation.id,
+          operation.retryCount + 1,
+          'Solo se sincronizaron las posiciones válidas. Las restantes quedarán pendientes.',
+        );
+        Snackbars.showSnackbarSuccess(
+            'Solo se sincronizaron las posiciones válidas. Las restantes quedarán pendientes.');
+      }
     } catch (e) {
       await repository.updateRetryCount(
         operation.id,
@@ -484,7 +508,9 @@ class OfflineOperationsProvider with ChangeNotifier {
 
     for (final op in operations) {
       final position = RoutePositionEntity.fromJson(op.data);
-      positionsByRoute.putIfAbsent(position.routeId, () => []).add(position);
+      positionsByRoute
+          .putIfAbsent(position.routeId.toString(), () => [])
+          .add(position);
     }
 
     // Enviar cada lote

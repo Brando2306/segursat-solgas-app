@@ -160,8 +160,8 @@ class SpeedometerProvider with ChangeNotifier {
   void _initializeTimers() {
     // Initialize duration from storage or zero
     try {
-      final savedTime =
-          int.tryParse(readStorage('root.cronometer') ?? '0') ?? 0;
+      final savedTime = (readStorage('root.cronometer')) ?? 0;
+      log('Saved time from storage: $savedTime');
       _currentDuration = Duration(seconds: savedTime);
     } catch (e) {
       _currentDuration = Duration.zero;

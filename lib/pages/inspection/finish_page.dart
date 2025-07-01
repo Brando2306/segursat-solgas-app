@@ -34,7 +34,7 @@ class _FinishPageState extends State<FinishPage> {
   Widget build(BuildContext context) {
     final message = wasSavedOnline == true
         ? FINISH.TEXT_CENTER
-        : 'Sin conexión: datos guardados localmente';
+        : 'Datos guardados en el dispositivo correctamente';
 
     return Scaffold(
         body: Column(children: [

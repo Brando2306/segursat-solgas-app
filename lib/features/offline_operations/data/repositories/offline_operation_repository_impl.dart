@@ -38,8 +38,9 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
       List<RoutePositionEntity> positions, String offlineRouteId) async {
     if (positions.isEmpty) return;
 
-    // 1. Buscar si ya existe una operación de posiciones para esta ruta
+    // Asumimos que todas las posiciones ya están validadas
     final existingOps = await getOperationsByOfflineId(offlineRouteId);
+
     final existingPositionsOp = existingOps.firstWhere(
       (op) => op.type == OfflineOperationType.routePositions,
       orElse: () => OfflineOperation(
@@ -49,18 +50,25 @@ class OfflineOperationsRepositoryImpl implements OfflineOperationsRepository {
       ),
     );
 
-    // 2. Fusionar las nuevas posiciones con las existentes
+    final existingTimestamps = (existingPositionsOp.data['positions'] as List?)
+            ?.map((p) => p['timestamp'])
+            .toList() ??
+        [];
+
+    final newPositions = positions
+        .where((p) => !existingTimestamps.contains(p.timestamp))
+        .toList();
+
+    if (newPositions.isEmpty) return;
+
     final List<Map<String, dynamic>> allPositions = [
       ...(existingPositionsOp.data['positions'] as List? ?? []),
-      ...positions.map((p) => p.toJson()).toList(),
+      ...newPositions.map((p) => p.toJson()),
     ];
 
-    // 3. Actualizar o crear la operación consolidada
-    final updatedOp = existingPositionsOp.copyWith(
+    await saveOperation(existingPositionsOp.copyWith(
       data: {'positions': allPositions},
-    );
-
-    await saveOperation(updatedOp);
+    ));
   }
 
   @override

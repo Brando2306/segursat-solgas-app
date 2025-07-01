@@ -34,7 +34,7 @@ class _FinishMaintancePageState extends State<FinishMaintancePage> {
   Widget build(BuildContext context) {
     final message = wasSavedOnline == true
         ? 'Datos enviados correctamente al servidor'
-        : 'Sin conexión: datos guardados localmente';
+        : 'Datos guardados en el dispositivo correctamente';
 
     return WillPopScope(
       onWillPop: (() async => false),

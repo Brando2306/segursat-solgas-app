@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:safe_driving_app/features/route/domain/entities/cancel_route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/create_route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/finish_route_entity.dart';
@@ -159,25 +161,47 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  @override
   Future<void> sendRoutePositions(List<RoutePositionEntity> positions) async {
     //TODO: probar cuando no hay red, se crea la ruta, y luego la activo, actualmente se envian las posiciones por q backend no valida el routeid, entonces front debe validar eso y si no tiene routeid mandarlo a guardar, no se si desde el entity podemos hacer eso con un required en routeid
-    try {
-      await remoteDataSource.sendRoutePositions(positions);
-    } catch (e) {
-      final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
-      if (offlineId != null) {
-        await offlineOperationsRepository.saveFailedPositions(
-            positions, offlineId);
-        if (positions.length == 1) {
-          Snackbars.showSnackbarSuccess(
-              'Modo offline activado. La posición de la ruta se guardó y la podrás sincronizar luego.');
-        } else {
-          Snackbars.showSnackbarSuccess(
-              'Modo offline activado. Las posiciones de la ruta se guardaron y las podrás sincronizar luego.');
-        }
+    // Validación adicional en el repositorio
+    if (positions.isEmpty) {
+      throw Exception('No se pueden enviar posiciones vacías');
+    }
+
+    // Filtramos posiciones sin routeId
+    final invalidPositions = positions.where((p) => p.routeId == null).toList();
+    final validPositions = positions.where((p) => p.routeId != null).toList();
+
+    // Guardamos inmediatamente las inválidas
+    if (invalidPositions.isNotEmpty) {
+      await _storeInvalidPositions(invalidPositions);
+    }
+
+    if (validPositions.isNotEmpty) {
+      try {
+        await remoteDataSource.sendRoutePositions(validPositions);
+      } catch (e) {
+        await _storeInvalidPositions(validPositions); // Guardar como fallidas
+        rethrow;
       }
-      rethrow;
+    } else {
+      throw Exception('No se pueden enviar posiciones válidas sin un routeId');
+    }
+  }
+
+  Future<void> _storeInvalidPositions(
+      List<RoutePositionEntity> positions) async {
+    final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+    if (offlineId != null && positions.isNotEmpty) {
+      await offlineOperationsRepository.saveFailedPositions(
+          positions, offlineId);
+      if (positions.length == 1) {
+        Snackbars.showSnackbarSuccess(
+            'Modo offline activado. La posición de la ruta se guardó y la podrás sincronizar luego.');
+      } else {
+        Snackbars.showSnackbarSuccess(
+            'Modo offline activado. Las posiciones de la ruta se guardaron y las podrás sincronizar luego.');
+      }
     }
   }
 

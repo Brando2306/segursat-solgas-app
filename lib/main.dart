@@ -13,6 +13,7 @@ import 'package:safe_driving_app/features/maintenance/presentation/providers/mai
 import 'package:safe_driving_app/features/offline_operations/presentation/providers/offline_operations_provider.dart';
 import 'package:safe_driving_app/features/route/presentation/providers/control_stop_provider.dart';
 import 'package:safe_driving_app/features/route/presentation/providers/incident_provider.dart';
+import 'package:safe_driving_app/features/speedometer/presentation/providers/menu_provider.dart';
 import 'package:safe_driving_app/features/speedometer/presentation/providers/select_destination_provider.dart';
 import 'package:safe_driving_app/features/speedometer/presentation/providers/select_source_provider.dart';
 import 'package:safe_driving_app/features/speedometer/presentation/providers/speedometer_provider.dart';
@@ -169,6 +170,11 @@ void main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => ControlStopProvider(repository: routeRepository),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => MenuProvider(
+            offlineOperationsRepository: offlineOperationRepo,
+          ),
         ),
       ],
       child: MyApp(),

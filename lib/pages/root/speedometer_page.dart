@@ -472,7 +472,8 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
 
       if (distance < 100) {
         await provider.finishRoute();
-        Navigator.pushNamed(context, '/root/finish');
+        Navigator.pushNamed(context, '/root/finish',
+            arguments: 'La unidad ha llegado a su destino');
       } else {
         _showDistanceWarningDialog(context, provider);
       }
@@ -508,7 +509,9 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
               try {
                 await provider.triggerEmergency();
                 if (!mounted) return;
-                Navigator.pushNamed(context, '/root/finish');
+                Navigator.pushNamed(context, '/root/finish',
+                    arguments:
+                        'Hemos enviado tu solicitud de SOS a tu supervisor');
               } catch (e) {
                 notificationError(context, 'Error en emergencia: $e');
               }
@@ -574,7 +577,11 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
                 // **¡Importante!** Usamos `if (mounted)` para evitar el error.
                 if (mounted) {
                   Navigator.pop(context);
-                  Navigator.pushNamed(context, '/root/finish');
+                  Navigator.pushNamed(
+                    context,
+                    '/root/finish',
+                    arguments: 'Has finalizado la ruta sin llegar a tu destino',
+                  );
                   // Navigator.push(
                   //   context,
                   //   MaterialPageRoute(builder: (_) => FinishRootPage()),
