@@ -176,7 +176,7 @@ class _OdometerMaintancePageState extends State<OdometerMaintancePage> {
           controller: _odometerInpuController,
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'se require el odometro';
+              return 'Se requiere el odómetro';
             }
 
             int newOdometerValue = int.tryParse(value) ?? 0;

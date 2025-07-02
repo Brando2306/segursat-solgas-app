@@ -148,7 +148,7 @@ class _IncidentReportPageState extends State<IncidentReportPage> {
                 ),
                 Expanded(child: Container()),
                 Text(
-                  'La ultima ubicación del carro será enviada',
+                  'La última ubicación del carro será enviada',
                   style: TextStyle(fontSize: 16),
                 ),
                 SizedBox(

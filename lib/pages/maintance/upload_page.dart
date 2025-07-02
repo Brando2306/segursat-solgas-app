@@ -78,7 +78,7 @@ class _UploadPageState extends State<UploadPage> {
                 child: Align(
                   // alignment: Alignment.centerLeft,
                   child: Text(
-                    'Evidencia - Imagen 01 (opciónal)',
+                    'Evidencia - Imagen 01 (opcional)',
                     style: TextStyle(fontSize: 16),
                   ),
                 ),
@@ -137,7 +137,7 @@ class _UploadPageState extends State<UploadPage> {
                 child: Align(
                   // alignment: Alignment.centerLeft,
                   child: Text(
-                    'Evidencia - Imagen 02 (opciónal)',
+                    'Evidencia - Imagen 02 (opcional)',
                     style: TextStyle(fontSize: 16),
                   ),
                 ),
@@ -196,7 +196,7 @@ class _UploadPageState extends State<UploadPage> {
                 child: Align(
                   // alignment: Alignment.centerLeft,
                   child: Text(
-                    'Evidencia - Imagen 03 (opciónal)',
+                    'Evidencia - Imagen 03 (opcional)',
                     style: TextStyle(fontSize: 16),
                   ),
                 ),

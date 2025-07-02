@@ -302,7 +302,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
               validator: (value) {
                 print(value);
                 if (value == null || value.isEmpty) {
-                  return 'Se require el documento de indentidad';
+                  return 'Se requiere el documento de indentidad';
                 }
                 return null;
               }),
@@ -392,7 +392,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
           controller: _textInpuController,
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Se require el documento de indentidad';
+              return 'Se requiere el documento de indentidad';
             }
             return null;
           }),
