@@ -8,7 +8,7 @@ import 'package:safe_driving_app/features/offline_operations/domain/repositories
 import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/helpers/gps.dart';
-import 'package:safe_driving_app/providers/route.dart';
+// import 'package:safe_driving_app/providers/route.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 
@@ -84,6 +84,29 @@ class RouteProvider with ChangeNotifier {
     } catch (e) {
       cleanResumeRoute();
       Navigator.pushNamed(context, '/menu');
+    }
+  }
+
+  Future<Map<String, dynamic>> getRoute(int id) async {
+    try {
+      final routeEntity = await routeRepository.getRoute(id);
+
+      // Convertir la entidad al formato esperado por el código existente
+      return {
+        'status': STATUSCODE.OK,
+        'id': routeEntity.id,
+        'unitid': routeEntity.unitId,
+        'unit_name': routeEntity.unitName,
+        'route_status': routeEntity.status,
+        'positions': routeEntity.positions.map((p) => p.toJson()).toList(),
+        'destination_latitude': routeEntity.destinationLatitude,
+        'destination_longitude': routeEntity.destinationLongitude,
+      };
+    } catch (e) {
+      return {
+        'status': STATUSCODE.BAD_REQUEST,
+        'message': 'Failed to get route: $e'
+      };
     }
   }
 

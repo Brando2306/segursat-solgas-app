@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:safe_driving_app/core/constants/storage_keys.dart';
 import 'package:safe_driving_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:safe_driving_app/features/route/presentation/providers/route_provider.dart';
 import 'package:safe_driving_app/features/speedometer/presentation/providers/menu_provider.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/helpers/gps.dart';
@@ -147,7 +148,13 @@ class _MenuPageState extends State<MenuPage> {
       if (lastRoute != null) {
         try {
           // Debes tener una función getRoute similar a la de RouteProvider
-          final route = await getRoute(lastRoute);
+          // final route = await getRoute(lastRoute);
+          final routeProvider =
+              Provider.of<RouteProvider>(context, listen: false);
+          final route = await routeProvider.getRoute(
+            lastRoute is int ? lastRoute : int.parse(lastRoute.toString()),
+          );
+
           await _handleBackendRouteResponse(route);
           EasyLoading.dismiss();
           Navigator.pushNamed(context, '/root/speedometer');

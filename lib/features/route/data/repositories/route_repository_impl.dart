@@ -5,6 +5,7 @@ import 'package:safe_driving_app/features/route/domain/entities/create_route_ent
 import 'package:safe_driving_app/features/route/domain/entities/finish_route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/incident_route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/stop_route_entity.dart';
+import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:safe_driving_app/utils/storage.dart';
@@ -55,7 +56,97 @@ class RouteRepositoryImpl implements RouteRepository {
 
   @override
   Future<RouteEntity> getRoute(int routeId) async {
-    return await remoteDataSource.getRoute(routeId);
+    try {
+      final route = await remoteDataSource.getRoute(routeId);
+
+      // Check if we have an offlineRouteId in storage
+      final offlineRouteId = readStorage(StorageKeys.currentOfflineRouteId);
+
+      if (offlineRouteId == null) {
+        // Create a new offlineRouteId since this is a new device
+        final newOfflineRouteId =
+            '${StorageKeys.offlineRoutePrefix}${DateTime.now().millisecondsSinceEpoch}';
+        await writeStorage(
+            StorageKeys.currentOfflineRouteId, newOfflineRouteId);
+
+        // Create a fake route creation operation for offline consistency
+        final createRouteEntity = CreateRouteEntity(
+          destinationLatitude: route.destinationLatitude.toString(),
+          destinationLongitude: route.destinationLongitude.toString(),
+          unitName: route.unitName, // Assuming route has unitName
+          timestamp: getDate(), // Assuming route has timestamp
+          sourceLatitude: route.sourceLatitude
+              .toString(), // Assuming route has sourceLatitude
+          sourceLongitude: route.sourceLongitude
+              .toString(), // Assuming route has sourceLongitude
+          // Add other required fields based on your CreateRouteEntity
+        );
+
+        final operation = OfflineOperation(
+            type: OfflineOperationType.routeCreation,
+            data: createRouteEntity.toJson(),
+            offlineRouteId: newOfflineRouteId,
+            synced: true,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now());
+
+        await offlineOperationsRepository.saveOperation(operation);
+
+        log('Created new offlineRouteId for existing route: $newOfflineRouteId');
+      }
+
+      return route;
+    } catch (e) {
+      // // Handle offline case
+      // final offlineRouteId = readStorage(StorageKeys.currentOfflineRouteId);
+      // if (offlineRouteId != null) {
+      //   // Try to get any existing positions from offline storage
+      //   final ops = await offlineOperationsRepository
+      //       .getOperationsByOfflineId(offlineRouteId);
+
+      //   // Check if we have a route creation operation
+      //   final hasRouteCreation =
+      //       ops.any((op) => op.type == OfflineOperationType.routeCreation);
+
+      //   if (hasRouteCreation) {
+      //     // Get positions if available
+      //     final positionOps =
+      //         ops.where((op) => op.type == OfflineOperationType.routePositions);
+      //     List<PositionEntity> positions = [];
+
+      //     if (positionOps.isNotEmpty) {
+      //       final lastPositionOp = positionOps.reduce((curr, next) =>
+      //           curr.createdAt.isAfter(next.createdAt) ? curr : next);
+
+      //       positions = (lastPositionOp.data['positions'] as List)
+      //           .map((p) => PositionEntity.fromJson(p))
+      //           .toList();
+      //     }
+
+      //     // Get the creation operation to build a minimal RouteEntity
+      //     final creationOp = ops.firstWhere(
+      //         (op) => op.type == OfflineOperationType.routeCreation);
+
+      //     return RouteEntity(
+      //       id: routeId,
+      //       positions: positions,
+      //       unitId: int.parse(creationOp.data['unit_id']),
+      //       unitName: '', // You might need to store this elsewhere
+      //       sourceLatitude: 0, // Default values
+      //       sourceLongitude: 0,
+      //       sourceAddress: '',
+      //       destinationLatitude:
+      //           double.parse(creationOp.data['destination_latitude']),
+      //       destinationLongitude:
+      //           double.parse(creationOp.data['destination_longitude']),
+      //       destinationAddress: '',
+      //       status: 'R', // Assuming 'R' for running
+      //     );
+      //   }
+      // }
+
+      rethrow;
+    }
   }
 
   @override

@@ -54,7 +54,7 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
   @override
   Future<RouteEntity> getRoute(int routeId) async {
     final response = await _dio.get(
-      'http://${ENDPOINTS.HOST}/${ENDPOINTS.GET_ROUTE.replaceAll('<int:id>', routeId.toString())}',
+      'http://${ENDPOINTS.HOST}/${ENDPOINTS.GET_ROUTE.replaceAll('<int:id>', '$routeId')}',
       options: Options(headers: {
         'Authorization': ENDPOINTS.auth(),
       }),

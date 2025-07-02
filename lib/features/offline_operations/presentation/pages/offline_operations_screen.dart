@@ -696,12 +696,12 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
                 color: color,
               ),
 
-            IconButton(
-              icon: const Icon(Icons.delete, size: 20),
-              onPressed: () => _showDeleteConfirmation(context, operation.id),
-              tooltip: 'Eliminar',
-              color: Colors.red,
-            ),
+            // IconButton(
+            //   icon: const Icon(Icons.delete, size: 20),
+            //   onPressed: () => _showDeleteConfirmation(context, operation.id),
+            //   tooltip: 'Eliminar',
+            //   color: Colors.red,
+            // ),
           ],
         ),
       ),
