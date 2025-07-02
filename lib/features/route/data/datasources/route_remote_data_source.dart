@@ -117,8 +117,7 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
   Future<void> sendRoutePositions(List<RoutePositionEntity> positions) async {
     final data = positions.map((p) => p.toJson()).toList();
     final response = await _dio.post(
-      // 'http://${ENDPOINTS.HOST}/${ENDPOINTS.INSERT_ROUTE_POSITIONS_BATCH}',
-      'http://sfdev.segursat.com/web/api/control/insert-route-positions-batch/',
+      'http://${ENDPOINTS.HOST}/${ENDPOINTS.INSERT_ROUTE_POSITIONS_BATCH}',
       data: data,
       options: Options(headers: {
         'Authorization': ENDPOINTS.auth(),

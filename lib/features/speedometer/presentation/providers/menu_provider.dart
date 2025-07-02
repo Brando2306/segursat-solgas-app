@@ -42,7 +42,17 @@ class MenuProvider with ChangeNotifier {
       buttonInspectionEnabled = !hasValidInspection;
       buttonRootEnabled = hasValidInspection;
 
-      _hasPendingRoute = await _checkPendingRoute(unit);
+      // Verificar primero si hay rutas finalizadas offline
+      final hasFinishedOffline = await _hasOfflineFinishedRoute();
+
+      if (hasFinishedOffline) {
+        _hasPendingRoute = false;
+      } else {
+        // Solo verificar rutas pendientes si no hay finalizaciones offline
+        // _hasPendingRoute =
+        //     await _checkPendingRoute(unit) || await _checkOfflinePendingRoute();
+        _hasPendingRoute = await _checkPendingRoute(unit);
+      }
     } catch (e) {
       _hasPendingRoute = await _checkOfflinePendingRoute();
       // Si hay error, habilita los botones
@@ -51,6 +61,28 @@ class MenuProvider with ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  Future<bool> _hasOfflineFinishedRoute() async {
+    try {
+      // 1. Verificar si hay una ruta activa en almacenamiento local
+      final offlineRouteId = readStorage(StorageKeys.currentOfflineRouteId);
+      if (offlineRouteId == null) return false;
+
+      // 2. Verificar si la ruta fue finalizada/cancelada offline
+      final ops = await offlineOperationsRepository
+          .getOperationsByOfflineId(offlineRouteId);
+
+      final hasUnsyncedFinishOrCancel = ops.any((op) =>
+          (op.type == OfflineOperationType.routeFinish ||
+              op.type == OfflineOperationType.routeCancel) &&
+          op.data['synced'] != true);
+
+      return hasUnsyncedFinishOrCancel;
+    } catch (e) {
+      log('Error checking offline finished routes: $e');
+      return false;
+    }
   }
 
   Future<bool> _checkOfflinePendingRoute() async {

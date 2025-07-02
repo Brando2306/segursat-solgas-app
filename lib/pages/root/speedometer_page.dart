@@ -8,13 +8,12 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:safe_driving_app/helpers/gps.dart';
-import 'package:safe_driving_app/shared/button_widget.dart';
 import 'package:safe_driving_app/utils/style.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
-import 'package:safe_driving_app/widgets/next_button.dart';
+import 'package:safe_driving_app/shared/button_widget.dart';
 import 'package:safe_driving_app/features/speedometer/presentation/providers/speedometer_provider.dart';
 
 class SpeedometerPage extends StatefulWidget {
@@ -190,42 +189,51 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
   Widget _buildPendingPositionsCount() {
     return Consumer<SpeedometerProvider>(
       builder: (context, provider, child) {
-        return Selector<SpeedometerProvider, int>(
-          selector: (_, provider) => provider.pendingPositionsCountValue,
-          builder: (_, count, __) {
-            if (count > 0) {
-              return Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: GestureDetector(
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: provider.pendingPositionsCountValue > 0
+              ? GestureDetector(
                   onTap: () {
                     Navigator.pushNamed(context, '/offline-operations');
                   },
                   child: Container(
+                    margin: const EdgeInsets.all(8),
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.orange[100],
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: Colors.orange),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.warning,
+                        Icon(Icons.wifi_off,
                             color: Colors.orange[800], size: 16),
                         const SizedBox(width: 8),
                         Text(
-                          '$count ${count == 1 ? 'posición pendiente' : 'posiciones pendientes'}',
-                          style: TextStyle(color: Colors.orange[800]),
+                          '${provider.pendingPositionsCountValue} posiciones pendientes',
+                          style: TextStyle(
+                            color: Colors.orange[800],
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
+                        if (provider.hasInternetConnection)
+                          const SizedBox(width: 8),
+                        if (provider.hasInternetConnection)
+                          const Icon(Icons.autorenew, size: 16),
                       ],
                     ),
                   ),
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          },
+                )
+              : const SizedBox.shrink(),
         );
       },
     );

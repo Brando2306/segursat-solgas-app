@@ -102,32 +102,28 @@ class _MenuPageState extends State<MenuPage> {
   }
 
   void _showRecoverRouteDialog(BuildContext context) {
-    showDialog(
+    notificationInfoWithoutWillPopScope(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: Text('Ruta activa'),
-        content: Text(
-            'Tienes una ruta activa en curso.\n¿Deseas recuperar la ruta?'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              // Si cancela, puedes limpiar la marca si lo deseas
-            },
-            child: Text('No'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              Provider.of<MenuProvider>(context, listen: false)
-                  .clearPendingRoute();
-              await _resumeRouteFlow(context);
-            },
-            child: Text('Sí, recuperar'),
-          ),
-        ],
-      ),
+      onWillPop: true,
+      barrierDismissible: true,
+      content: 'Tienes una ruta activa en curso.\n¿Deseas recuperar la ruta?',
+      callBack: () async {
+        final navigatorContext = Navigator.of(context).context;
+        if (mounted) {
+          Provider.of<MenuProvider>(navigatorContext, listen: false)
+              .clearPendingRoute();
+
+          bool validation = await checkGps();
+
+          if (validation) {
+            await writeStorage('personal.pushRouteSpeedometer', true);
+            await _resumeRouteFlow(navigatorContext);
+          } else {
+            await writeStorage('sesionPageValidation', true);
+            // Mostrar diálogo de ubicación usando navigatorContext
+          }
+        }
+      },
     );
   }
 

@@ -219,7 +219,7 @@ void notificationInfoWithoutWillPopScope({
   showDialog(
     barrierDismissible: barrierDismissible,
     context: context,
-    builder: (BuildContext context) {
+    builder: (BuildContext dialogContext) {
       return WillPopScope(
         onWillPop: () async => onWillPop,
         child: Dialog(
@@ -261,7 +261,7 @@ void notificationInfoWithoutWillPopScope({
                   children: [
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context, rootNavigator: true).pop();
+                        Navigator.of(dialogContext, rootNavigator: true).pop();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
@@ -281,7 +281,7 @@ void notificationInfoWithoutWillPopScope({
                     SizedBox(width: 10),
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context, rootNavigator: true).pop();
+                        Navigator.of(dialogContext, rootNavigator: true).pop();
                         callBack();
                       },
                       style: ElevatedButton.styleFrom(

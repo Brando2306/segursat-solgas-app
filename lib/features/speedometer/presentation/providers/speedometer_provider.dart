@@ -76,6 +76,9 @@ class SpeedometerProvider with ChangeNotifier {
     await createOrResumeRoute();
     _initializeTimers();
     _checkConnectivity();
+
+    // Envía la primera posición inmediatamente
+    await _attemptToSendPosition();
   }
 
   Future<void> _setupLocationStream() async {
@@ -240,6 +243,7 @@ class SpeedometerProvider with ChangeNotifier {
       // Intentamos enviar la posición actual y cualquier posición pendiente
       // await _sendPositions([positionData]);
       await routeRepository.sendRoutePositions([positionData]);
+      _updatePendingPositionsCount();
     } catch (e) {
       log('Error sending position: $e');
     }
@@ -250,27 +254,28 @@ class SpeedometerProvider with ChangeNotifier {
   int get pendingPositionsCountValue => _pendingPositionsCountValue;
 
   Future<void> _updatePendingPositionsCount() async {
-    final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
-    if (offlineId == null) {
-      _pendingPositionsCountValue = 0;
+    final newCount = await _getPendingPositionsCount();
+    if (newCount != _pendingPositionsCountValue) {
+      _pendingPositionsCountValue = newCount;
       notifyListeners();
-      return;
     }
+  }
+
+  Future<int> _getPendingPositionsCount() async {
+    final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+    if (offlineId == null) return 0;
 
     final operations =
         await offlineOperationsRepository.getOperationsByOfflineId(offlineId);
-    final positionOps = operations
-        .where((op) => op.type == OfflineOperationType.routePositions);
 
     int total = 0;
-    for (final op in positionOps) {
-      total += (op.data['positions'] as List).length;
+    for (final op in operations) {
+      if (op.type == OfflineOperationType.routePositions) {
+        final positions = op.data['positions'] as List? ?? [];
+        total += positions.length;
+      }
     }
-
-    if (total != _pendingPositionsCountValue) {
-      _pendingPositionsCountValue = total;
-      notifyListeners();
-    }
+    return total;
   }
 
   Future<void> _retrySendingStoredPositions() async {

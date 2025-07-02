@@ -168,9 +168,7 @@ class RouteRepositoryImpl implements RouteRepository {
     final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
     if (offlineId != null && positions.isNotEmpty) {
       await offlineOperationsRepository.saveFailedPositions(
-          //Falta cubrir el caso cuando el usuario entra a un celular nuevo donde ya tienen una ruta guardada de la red y al entrar a la ruta, no se creó la ruta solo se continuó y no hay un offlineRouteId por q no se creó la ruta aqui en este celular entonces debemos hacer q como hay red cuando se consulte a la ruta en progreso como no se va crear ruta se cree un offlineRouteId
-          positions,
-          offlineId);
+          positions, offlineId);
       if (positions.length == 1) {
         Snackbars.showSnackbarSuccess(
             'Modo offline activado. La posición de la ruta se guardó y la podrás sincronizar luego.');
