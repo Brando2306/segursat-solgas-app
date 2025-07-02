@@ -160,8 +160,18 @@ class SpeedometerProvider with ChangeNotifier {
   void _initializeTimers() {
     // Initialize duration from storage or zero
     try {
-      final savedTime = (readStorage('root.cronometer')) ?? 0;
-      log('Saved time from storage: $savedTime');
+      final savedTimeRaw = readStorage('root.cronometer');
+      int savedTime;
+      if (savedTimeRaw == null) {
+        savedTime = 0;
+      } else if (savedTimeRaw is int) {
+        savedTime = savedTimeRaw;
+      } else if (savedTimeRaw is String) {
+        savedTime = int.tryParse(savedTimeRaw) ?? 0;
+      } else {
+        savedTime = 0;
+      }
+      // log('Saved time from storage: $savedTime');
       _currentDuration = Duration(seconds: savedTime);
     } catch (e) {
       _currentDuration = Duration.zero;
@@ -222,8 +232,8 @@ class SpeedometerProvider with ChangeNotifier {
         timestamp: getDate(),
         latitude: position.latitude,
         longitude: position.longitude,
-        altitude: position.altitude,
-        speed: position.speed,
+        altitude: position.altitude.round(),
+        speed: position.speed.round(),
         angle: _currentDuration.inSeconds,
       );
 

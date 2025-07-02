@@ -23,34 +23,6 @@ class RouteProvider with ChangeNotifier {
     required this.connectivity,
   });
 
-  Future<bool> checkPendingRoute() async {
-    // 1. Verificar marca de recuperación en storage
-    if (readStorage('personal.pushRouteSpeedometer') != null) return true;
-
-    // 2. Verificar estado de última ruta
-    final lastRouteStatus = readStorage('personal.lastRouteStatus');
-    final lastRouteId = readStorage('personal.lastRoute');
-
-    if (lastRouteStatus == 'running' && lastRouteId != null) {
-      return true;
-    }
-
-    // 3. Verificar online
-    try {
-      final hasInternet =
-          await connectivity.checkConnectivity() != ConnectivityResult.none;
-      if (hasInternet) {
-        final lastRoute = await routeRepository.getLastActiveRoute();
-        return lastRoute.status == SESION.RUNNING;
-      }
-    } catch (e) {
-      // 4. Verificar offline
-      // return await offlineRepo.hasPendingRouteOperation();
-    }
-
-    return false;
-  }
-
   Future<void> handleAppResumed(BuildContext context) async {
     if (readStorage('sesionPageValidation') != null) {
       await resumeRouteFlow(context);

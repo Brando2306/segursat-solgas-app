@@ -15,7 +15,7 @@ import 'package:safe_driving_app/features/route/domain/entities/route_position_e
 
 abstract class RouteRemoteDataSource {
   Future<RouteEntity> createRoute(CreateRouteEntity route);
-  Future<RouteEntity> getRoute(String routeId);
+  Future<RouteEntity> getRoute(int routeId);
   Future<void> finishRoute(FinishRouteEntity route);
   Future<void> cancelRoute(CancelRouteEntity route);
   Future<void> sendSos(EmergencyEventEntity event);
@@ -52,9 +52,9 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
   }
 
   @override
-  Future<RouteEntity> getRoute(String routeId) async {
+  Future<RouteEntity> getRoute(int routeId) async {
     final response = await _dio.get(
-      'http://${ENDPOINTS.HOST}/${ENDPOINTS.GET_ROUTE.replaceAll('<int:id>', routeId)}',
+      'http://${ENDPOINTS.HOST}/${ENDPOINTS.GET_ROUTE.replaceAll('<int:id>', routeId.toString())}',
       options: Options(headers: {
         'Authorization': ENDPOINTS.auth(),
       }),
@@ -127,6 +127,15 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to send route positions');
+    }
+
+    // Siempre status 200, pero revisar campo errors
+    final responseData = response.data;
+    if (responseData is Map && responseData.containsKey('errors')) {
+      final errors = responseData['errors'];
+      if (errors is List && errors.isNotEmpty) {
+        throw Exception('Failed to send route positions: $errors');
+      }
     }
   }
 

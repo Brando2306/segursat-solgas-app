@@ -8,10 +8,8 @@ import 'package:safe_driving_app/features/route/domain/entities/route_position_e
 import 'package:safe_driving_app/features/route/domain/entities/stop_route_entity.dart';
 
 abstract class RouteRepository {
-  Future<RouteEntity> getLastActiveRoute();
-
   Future<RouteEntity> createRoute(CreateRouteEntity route);
-  Future<RouteEntity> getRoute(String routeId);
+  Future<RouteEntity> getRoute(int routeId);
   Future<void> finishRoute(FinishRouteEntity route);
   Future<void> cancelRoute(CancelRouteEntity route);
   Future<void> sendSos(EmergencyEventEntity event);

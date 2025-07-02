@@ -28,32 +28,6 @@ class RouteRepositoryImpl implements RouteRepository {
       required this.offlineOperationsRepository});
 
   @override
-  Future<RouteEntity> getLastActiveRoute() async {
-    try {
-      // 1. Intentar obtener la última ruta activa del servidor
-      // final activeRoutes = await remoteDataSource.getActiveRoutes();
-      // if (activeRoutes.isNotEmpty) {
-      //   final activeRoute = activeRoutes.first;
-      //   return activeRoute;
-      // }
-
-      // 2. Si no hay rutas activas, verificar si hay una en almacenamiento local
-      final lastRouteId = readStorage('personal.lastRoute');
-      if (lastRouteId != null) {
-        final route = await remoteDataSource.getRoute(lastRouteId);
-        if (route.status == SESION.RUNNING) {
-          return route;
-        }
-      }
-
-      // 3. Finalmente, verificar en caché local
-      throw Exception('No active route found');
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @override
   Future<RouteEntity> createRoute(CreateRouteEntity route) async {
     try {
       final createdRoute = await remoteDataSource.createRoute(route);
@@ -80,7 +54,7 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  Future<RouteEntity> getRoute(String routeId) async {
+  Future<RouteEntity> getRoute(int routeId) async {
     return await remoteDataSource.getRoute(routeId);
   }
 
@@ -194,7 +168,9 @@ class RouteRepositoryImpl implements RouteRepository {
     final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
     if (offlineId != null && positions.isNotEmpty) {
       await offlineOperationsRepository.saveFailedPositions(
-          positions, offlineId);
+          //Falta cubrir el caso cuando el usuario entra a un celular nuevo donde ya tienen una ruta guardada de la red y al entrar a la ruta, no se creó la ruta solo se continuó y no hay un offlineRouteId por q no se creó la ruta aqui en este celular entonces debemos hacer q como hay red cuando se consulte a la ruta en progreso como no se va crear ruta se cree un offlineRouteId
+          positions,
+          offlineId);
       if (positions.length == 1) {
         Snackbars.showSnackbarSuccess(
             'Modo offline activado. La posición de la ruta se guardó y la podrás sincronizar luego.');

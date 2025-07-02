@@ -36,7 +36,6 @@ class _LoadPageState extends State<LoadPage> {
 
   Future<void> _determineInitialRoute() async {
     final authProvider = context.read<AuthProvider>();
-    final routeProvider = context.read<RouteProvider>();
 
     await authProvider.checkAuthStatus();
 
@@ -45,24 +44,7 @@ class _LoadPageState extends State<LoadPage> {
       return;
     }
 
-    try {
-      //TODO: Validar que tambien funcione para offline, que verifique si hay una ruta sin cancelar o sin finalizar, ya que cuando no es offline si podemos validar el readStorage('root.finalPosition');
-      final hasPendingRoute = await routeProvider.checkPendingRoute();
-
-      // Verificación adicional para asegurar que realmente hay una ruta activa
-      if (hasPendingRoute) {
-        final lastRouteId = readStorage('root.finalPosition');
-        if (lastRouteId == null) {
-          _navigateTo('/menu');
-          return;
-        }
-      }
-
-      _navigateTo(hasPendingRoute ? '/root/speedometer' : '/menu');
-    } catch (e) {
-      // En caso de error, redirigir al menú principal
-      _navigateTo('/menu');
-    }
+    _navigateTo('/menu');
   }
 
   void _navigateTo(String route) {
