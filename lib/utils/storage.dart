@@ -17,7 +17,7 @@ cleanPersonalStorage() {
   storage.remove('personal.licensePlate');
   storage.remove('personal.unitId');
   storage.remove('inspection.isCompleted');
-  storage.remove('personal.lastInitialInpectionDate');
+  storage.remove('personal.lastInitialInspectionDate');
   storage.remove('personal.lastRoute');
   storage.remove('personal.lastRouteStatus');
   storage.remove('personal.pushRouteSpeedometer');
@@ -88,7 +88,7 @@ printStorage() {
   console('personal.unitId: ${readStorage('personal.unitId')}');
   console('inspection.isCompleted: ${readStorage('inspection.isCompleted')}');
   console(
-      'personal.lastInitialInpectionDate: ${readStorage('personal.lastInitialInpectionDate')}');
+      'personal.lastInitialInspectionDate: ${readStorage('personal.lastInitialInspectionDate')}');
   console('personal.lastRoute: ${readStorage('personal.lastRoute')}');
   console(
       'personal.lastRouteStatus: ${readStorage('personal.lastRouteStatus')}');

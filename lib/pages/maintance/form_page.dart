@@ -104,7 +104,7 @@ class _FormPageState extends State<FormPage> {
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child:
-                      Text('Introducir le odometro del próximo mantenimiento'),
+                      Text('Introducir el odómetro del próximo mantenimiento'),
                 ),
               ),
               SizedBox(
@@ -134,7 +134,7 @@ class _FormPageState extends State<FormPage> {
                       controller: _odometerInputController,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Se require el odometro';
+                          return 'Se requiere el odómetro';
                         }
 
                         int newOdometerValue = int.tryParse(value) ?? 0;
@@ -146,7 +146,7 @@ class _FormPageState extends State<FormPage> {
                         print(
                             'Validation odometers: ${newOdometerValue <= oldOdometer}');
                         if (newOdometerValue <= oldOdometer) {
-                          return 'Se require una cantidad mayor al anterior registro';
+                          return 'Se requiere una cantidad mayor al anterior registro';
                         }
 
                         return null;
@@ -155,7 +155,7 @@ class _FormPageState extends State<FormPage> {
               ),
               Expanded(child: Container()),
               Text(
-                'La ultima ubicación del carro será enviada',
+                'La última ubicación del carro será enviada',
                 style: TextStyle(fontSize: 16),
               ),
               SizedBox(

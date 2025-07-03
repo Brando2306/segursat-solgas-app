@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:safe_driving_app/features/offline_operations/presentation/pages/offline_operations_screen.dart';
+import 'package:safe_driving_app/features/offline_operations/presentation/pages/offline_operations_list_widget.dart';
 import 'package:safe_driving_app/pages/inspection/accessories_page.dart';
 import 'package:safe_driving_app/pages/inspection/finish_page.dart';
 import 'package:safe_driving_app/pages/inspection/odometer_page.dart';
@@ -14,7 +17,7 @@ import 'package:safe_driving_app/pages/maintance/form_page.dart';
 import 'package:safe_driving_app/pages/maintance/odometer_maintance_page.dart';
 import 'package:safe_driving_app/pages/maintance/upload_page.dart';
 import 'package:safe_driving_app/pages/menu_page.dart';
-import 'package:safe_driving_app/pages/root/Speedometer_page.dart';
+import 'package:safe_driving_app/pages/root/speedometer_page.dart';
 import 'package:safe_driving_app/pages/root/control_stop_page.dart';
 import 'package:safe_driving_app/pages/root/finish_root_page.dart';
 import 'package:safe_driving_app/pages/root/incident_report_page.dart';
@@ -23,9 +26,7 @@ import 'package:safe_driving_app/pages/root/select_source_page.dart';
 import 'package:safe_driving_app/pages/sesion_page.dart';
 import 'package:safe_driving_app/pages/start_page.dart';
 import 'package:safe_driving_app/pages/statement_page.dart';
-import 'package:safe_driving_app/services/notification_services.dart';
 import 'package:safe_driving_app/utils/snackbars.dart';
-import 'package:safe_driving_app/utils/storage.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 class MyApp extends StatefulWidget {
@@ -41,8 +42,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.initState();
 
     WidgetsBinding.instance.addObserver(this);
-
-    cleanAll();
   }
 
   @override
@@ -55,11 +54,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Future<void> main() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    await initNotifications();
-
-    runApp(MaterialApp(
-      home: LoadPage(),
-    ));
+    runApp(
+      MaterialApp(
+        home: LoadPage(),
+      ),
+    );
   }
 
   @override
@@ -67,18 +66,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
     switch (state) {
       case AppLifecycleState.paused:
-        debugPrint('app paused');
+        log('==> MyApp: ${AppLifecycleState.paused}');
         break;
       case AppLifecycleState.resumed:
-        print('==> MyApp: ${AppLifecycleState.resumed}');
-
+        log('==> MyApp: ${AppLifecycleState.resumed}');
         break;
       case AppLifecycleState.inactive:
-        debugPrint('app inactive');
-        // cleanAll();
+        log('==> MyApp: ${AppLifecycleState.inactive}');
         break;
       case AppLifecycleState.detached:
-        debugPrint('app detached');
+        log('==> MyApp: ${AppLifecycleState.detached}');
         break;
     }
   }
@@ -88,13 +85,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Safe Driving App',
-      initialRoute: '/', //Ruta inicial
+      initialRoute: '/',
       routes: {
         '/': (context) => LoadPage(),
         '/startPage': (context) => StartPage(),
         '/statement': (context) => StatementPage(),
         '/sesion': (content) => SesionPage(),
         '/menu': (context) => MenuPage(),
+        '/offlineOperations': (context) => OfflineOperationsPage(),
+        '/offlineOperationsList': (context) => OfflineOperationsListPage(
+              title: 'Operaciones Offline',
+              operations: const [],
+            ),
         '/inspection/question': (context) => QuestionPage(),
         '/inspection/odometer': (context) => OdometerPage(),
         '/inspection/selfie': (context) => SelfiePage(), // Photo
@@ -113,6 +115,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         '/maintance/form': (context) => FormPage(),
         '/maintance/upload': (context) => UploadPage(),
         '/maintance/finish': (context) => FinishMaintancePage(),
+        '/offline-operations': (context) => OfflineOperationsPage(),
       },
       builder: EasyLoading.init(),
       scaffoldMessengerKey: Snackbars.messengerKey,

@@ -9,6 +9,7 @@ class ENDPOINTS {
   static const String INSPECTION_UPLOAD = 'control/inspections/upload/';
   static const String CREATE_ROUTE = 'web/api/control/create-route/';
   static const String GET_ROUTE = 'web/api/routes/get-route/<int:id>/';
+  static const String SAVE_POSITION = 'web/api/control/insert-route-positions/';
   static const String CREATE_ROUTE_POSITIONS =
       'web/api/control/insert-route-positions/';
   static const String CREATE_ROUTE_STOPS =
@@ -21,6 +22,8 @@ class ENDPOINTS {
   static const String CANCEL_ROUTE = 'web/api/control/cancel-route/';
   static const String EMERGENCY_PHONE = 'web/api/control/get-emergency-phone/';
   static const String INSERT_ROUTE_SOS = 'web/api/control/insert-route-soss/';
+  static const String INSERT_ROUTE_POSITIONS_BATCH =
+      'web/api/control/insert-route-positions-batch/';
 
   static auth() {
     var credentials = base64Encode(

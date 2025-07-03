@@ -12,7 +12,7 @@ class FinishRootPage extends StatefulWidget {
 }
 
 class _FinishRootPageState extends State<FinishRootPage> {
-  bool buttonFinish = true;
+  late String _message;
 
   @override
   void initState() {
@@ -21,9 +21,20 @@ class _FinishRootPageState extends State<FinishRootPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args != null && args is String) {
+      _message = args;
+    } else {
+      _message = 'La unidad ha llegado su destino';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: (() async => true),
+      onWillPop: (() async => false),
       child: Scaffold(
           body: Column(children: [
         Expanded(child: Container()),
@@ -31,7 +42,7 @@ class _FinishRootPageState extends State<FinishRootPage> {
         SizedBox(
           width: getWidth(context, 80),
           child: Text(
-            'La unidad llego a su destino',
+            _message,
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
@@ -41,26 +52,24 @@ class _FinishRootPageState extends State<FinishRootPage> {
         // cleanInspection();
         // })
         Expanded(child: Container()),
-        buttonFinish
-            ? MaterialButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/menu');
-                },
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                color: CustomColors.primary,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: MediaQuery.of(context).size.height * 0.15,
-                      vertical: 15),
-                  child: Text(
-                    FINISH.TEXT_BUTTON,
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              )
-            : Container(),
+        MaterialButton(
+          onPressed: () {
+            Navigator.pushNamed(context, '/menu');
+          },
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          color: CustomColors.primary,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.height * 0.15,
+                vertical: 15),
+            child: Text(
+              FINISH.TEXT_BUTTON,
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ),
         SizedBox(
           height: getHeight(context, 3),
         )

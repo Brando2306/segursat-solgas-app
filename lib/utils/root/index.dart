@@ -10,9 +10,10 @@ class SELECTDESTINATION {
 }
 
 class QUESTIONSTOP {
-  static const String ONE = '¿Hiciste estiramiento para tu circulación?';
+  static const String ONE =
+      '¿Realizaste estiramientos para mejorar tu circulación?';
   static const String TWO = '¿Te hidrataste?';
-  static const String THREE = '¿Todos llevan cinturon de seguridad?';
+  static const String THREE = '¿Todos llevan cinturón de seguridad?';
   static const String FOUR = '¿Diste la vuelta de seguridad?';
   static const String FIVE = '¿El tablero del vehículo registra alguna falla?';
 }

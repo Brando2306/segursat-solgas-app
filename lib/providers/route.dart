@@ -27,7 +27,7 @@ Future<Map<String, dynamic>> createRoute() async {
       },
       body: body);
 
-  print('createRoute.response: ${response.body}');
+  // print('createRoute.response: ${response.body}');
 
   return formatResponse(response);
 }
@@ -43,7 +43,7 @@ Future<Map<String, dynamic>> getRoute(int id) async {
     },
   );
 
-  print('createRoute.response: ${response.body}');
+  // print('getRoute.response: ${response.body}');
 
   return formatResponse(response);
 }

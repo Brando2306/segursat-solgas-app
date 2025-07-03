@@ -22,7 +22,7 @@ class STATEMENT {
   static const String TEXT_STATEMENT_4 =
       '3) Usaré el aplicativo únicamente para los servicios brindados a Solgas S.A.';
   static const String TEXT_CHECKBOX =
-      'Acepto haber leído los terminos y condirciones';
+      'Acepto haber leído los términos y condiciones';
   static const String TEXT_HEADER = 'Declaración jurada';
   static const String TEXT_BUTTON = 'Siguiente';
 }
@@ -35,9 +35,9 @@ class SESION {
   static const String PLACEHOLDER_DOCUMENTINPUT = 'Ingrese su documento';
   static const String LABEL_LICENSEPLATE = 'Placa del vehiculo';
   static const String PLACEHOLDER_LICENSEPLATE = 'Ingrese la placa de vehiculo';
-  static const String REQUIRED_DOCUMEND = 'Se require el documento';
+  static const String REQUIRED_DOCUMEND = 'Se requiere el documento';
   static const String REQUIRED_LICENSEPLATE =
-      'Se require la placa del vehiculo';
+      'Se requiere la placa del vehiculo';
   static const String LOGO_PERSONAL = 'assets/images/informacion_personal.jpg';
   static const String FINISHED = 'F';
   static const String CANCELLED = 'C';
@@ -50,7 +50,7 @@ class MENU {
 
 class STATUSCODE {
   static const num OK = 200;
-  static const num BAB_REQUEST = 400;
+  static const num BAD_REQUEST = 400;
 }
 
 class ROOT_TYPE {

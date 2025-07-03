@@ -1,12 +1,14 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:safe_driving_app/features/maintenance/domain/entities/maintenance_entity.dart';
+import 'package:safe_driving_app/features/maintenance/presentation/providers/maintenance_provider.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
+import 'package:safe_driving_app/shared/button_widget.dart';
 import 'package:safe_driving_app/utils/maintance/index.dart';
 import 'package:safe_driving_app/utils/storage.dart';
+import 'package:safe_driving_app/utils/style.dart';
 import 'package:safe_driving_app/widgets/header.dart';
-import 'package:safe_driving_app/widgets/next_button.dart';
 
 class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
@@ -76,7 +78,7 @@ class _UploadPageState extends State<UploadPage> {
                 child: Align(
                   // alignment: Alignment.centerLeft,
                   child: Text(
-                    'Evidencia - Imagen 01 (opciónal)',
+                    'Evidencia - Imagen 01 (opcional)',
                     style: TextStyle(fontSize: 16),
                   ),
                 ),
@@ -102,7 +104,7 @@ class _UploadPageState extends State<UploadPage> {
                   ElevatedButton.icon(
                     onPressed: () => _takePhoto('one'),
                     label: Text(
-                      'Tomar fotografia',
+                      'Tomar fotografía',
                       style: TextStyle(color: Color(0xff00a86b)),
                     ),
                     icon: Icon(Icons.camera_alt, color: Color(0xff00a86b)),
@@ -135,7 +137,7 @@ class _UploadPageState extends State<UploadPage> {
                 child: Align(
                   // alignment: Alignment.centerLeft,
                   child: Text(
-                    'Evidencia - Imagen 02 (opciónal)',
+                    'Evidencia - Imagen 02 (opcional)',
                     style: TextStyle(fontSize: 16),
                   ),
                 ),
@@ -161,7 +163,7 @@ class _UploadPageState extends State<UploadPage> {
                   ElevatedButton.icon(
                     onPressed: () => _takePhoto('thow'),
                     label: Text(
-                      'Tomar fotografia',
+                      'Tomar fotografía',
                       style: TextStyle(color: Color(0xff00a86b)),
                     ),
                     icon: Icon(Icons.camera_alt, color: Color(0xff00a86b)),
@@ -194,7 +196,7 @@ class _UploadPageState extends State<UploadPage> {
                 child: Align(
                   // alignment: Alignment.centerLeft,
                   child: Text(
-                    'Evidencia - Imagen 03 (opciónal)',
+                    'Evidencia - Imagen 03 (opcional)',
                     style: TextStyle(fontSize: 16),
                   ),
                 ),
@@ -220,7 +222,7 @@ class _UploadPageState extends State<UploadPage> {
                   ElevatedButton.icon(
                     onPressed: () => _takePhoto('three'),
                     label: Text(
-                      'Tomar fotografia',
+                      'Tomar fotografía',
                       style: TextStyle(color: Color(0xff00a86b)),
                     ),
                     icon: Icon(Icons.camera_alt, color: Color(0xff00a86b)),
@@ -246,8 +248,31 @@ class _UploadPageState extends State<UploadPage> {
                 ),
               ),
               Expanded(child: Container()),
-              nextButton(
-                  context, 'siguiente', '/maintance/finish', true, () {}, null),
+              Consumer<MaintenanceProvider>(
+                builder: (context, provider,  child) {
+                  return ButtonWidget(
+                    width: double.infinity,
+                    loading: provider.isLoading,
+                    disabled: provider.isLoading,
+                    colorDisabled: CustomColors.primary.withOpacity(0.5),
+                    padding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    margin: EdgeInsets.symmetric(horizontal: 40),
+                    text: provider.isLoading ? 'Enviando...' : 'Guardar',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                    ),
+                    color: CustomColors.primary,
+                    onPressed: provider.isLoading
+                        ? null
+                        : () async {
+                            await _submit(context, provider);
+                          },
+                  );
+                },
+              ),
+              // nextButton(
+              //     context, 'siguiente', '/maintance/finish', true, () {}, null),
               SizedBox(
                 height: getHeight(context, 3),
               ),
@@ -255,5 +280,44 @@ class _UploadPageState extends State<UploadPage> {
             ],
           ),
         ));
+  }
+
+  Future<void> _submit(
+      BuildContext context, MaintenanceProvider provider) async {
+    bool wasSavedOnline = true;
+
+    try {
+      final maintenance = MaintenanceEntity(
+        driverIdNumber: readStorage('personal.document'),
+        driverFullName:
+            '${readStorage('personal.name')} ${readStorage('personal.lastName')}',
+        unitName: readStorage('personal.licensePlate'),
+        odometer: readStorage('maintance.odometer.odometerNumber'),
+        nextMaintenanceOdometer:
+            readStorage('maintance.form.nextOdometerNumber'),
+        durationTime: 123151, // Este valor debería venir de algún cálculo
+        timestamp: getDate(),
+        odometerImagePath: readStorage('maintance.odometer.file'),
+        additionalImagePaths: [
+          if (readStorage('maintance.form.file.one') != null)
+            readStorage('maintance.form.file.one'),
+          if (readStorage('maintance.form.file.thow') != null)
+            readStorage('maintance.form.file.thow'),
+          if (readStorage('maintance.form.file.three') != null)
+            readStorage('maintance.form.file.three'),
+        ].where((path) => path != null).cast<String>().toList(),
+      );
+
+      await provider.submitMaintenanceData(maintenance);
+    } catch (e) {
+      wasSavedOnline = false;
+    } finally {
+      cleanMaintance();
+      Navigator.pushNamed(
+        context,
+        '/maintance/finish',
+        arguments: wasSavedOnline,
+      );
+    }
   }
 }

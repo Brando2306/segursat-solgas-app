@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
+import 'package:safe_driving_app/features/route/domain/entities/incident_route_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_response_entity.dart';
+import 'package:safe_driving_app/features/route/presentation/providers/incident_provider.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/endpoints.dart';
@@ -49,7 +53,7 @@ class _IncidentReportPageState extends State<IncidentReportPage> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-        onWillPop: () async => false,
+        onWillPop: () async => true,
         child: GestureDetector(
           onTap: () {
             FocusScope.of(context).unfocus();
@@ -68,7 +72,7 @@ class _IncidentReportPageState extends State<IncidentReportPage> {
                     child: FormBuilderDropdown(
                       name: 'categoria',
                       decoration: InputDecoration(
-                        labelText: 'Seleccionar categoría',
+                        labelText: 'Seleccione una categoría',
                         // contentPadding: EdgeInsets.symmetric(
                         //     horizontal: 16.0),
                       ),
@@ -144,7 +148,7 @@ class _IncidentReportPageState extends State<IncidentReportPage> {
                 ),
                 Expanded(child: Container()),
                 Text(
-                  'La ultima ubicación del carro será enviada',
+                  'La última ubicación del carro será enviada',
                   style: TextStyle(fontSize: 16),
                 ),
                 SizedBox(
@@ -188,53 +192,36 @@ class _IncidentReportPageState extends State<IncidentReportPage> {
     EasyLoading.show(status: 'Enviando...');
 
     try {
-      var urlAuth = Uri.http(ENDPOINTS.HOST, ENDPOINTS.CREATE_ROUTE_INCIDENTS);
+      final provider = Provider.of<IncidentProvider>(context, listen: false);
 
       Position position = await Geolocator.getCurrentPosition();
 
-      var body = json.encode([
-        {
-          "routeid": readStorage('root.createRoute.id'),
-          "timestamp": getDate(),
-          "latitude": position.latitude,
-          "longitude": position.longitude,
-          "type": categoriaSeleccionada,
-          "description": texto,
-          "address": readStorage('root.address') ?? "No Encontrado",
-          "unitid": readStorage('personal.unitId')
-        }
-      ]);
-      print('body: $body');
-      var response = await http.post(urlAuth, body: body, headers: {
-        "Content-Type": "application/json",
-        "Authorization": ENDPOINTS.auth()
-      });
+      final incident = IncidentRouteEntity(
+        routeId: readStorage('root.createRoute.id'),
+        timestamp: getDate(),
+        latitude: position.latitude,
+        longitude: position.longitude,
+        type: categoriaSeleccionada,
+        description: texto,
+        address: readStorage('root.address') ?? "No Encontrado",
+        unitId: readStorage('personal.unitId'),
+      );
 
-      print('response.statusCode ${response.statusCode}');
-      print('response.body ${response.body}');
-
-      Map<String, dynamic> jsonResponse = json.decode(response.body);
-
-      if (!jsonResponse.containsKey('errors')) {
-        EasyLoading.dismiss();
-        writeStorage('root.type', ROOT_TYPE.INCIDENTS);
-        if (readStorage('root.incident.type') != null) {
-          await removeStorage('root.incident.type');
-          Navigator.pushNamed(context, '/root/controlStop');
-        } else {
-          Navigator.pushNamed(context, '/root/speedometer');
-        }
-      } else {
-        notificationAlert(context, handleApiError(jsonResponse));
-
-        setState(() => blockButton = true);
-      }
+      await provider.submitIncident(incident);
     } catch (e) {
-      notificationError(context, e.toString());
+      EasyLoading.dismiss();
+      notificationAlert(context, e.toString());
       setState(() => blockButton = true);
       print(e);
+    } finally {
+      EasyLoading.dismiss();
+      writeStorage('root.type', ROOT_TYPE.INCIDENTS);
+      if (readStorage('root.incident.type') != null) {
+        await removeStorage('root.incident.type');
+        Navigator.pushNamed(context, '/root/controlStop');
+      } else {
+        Navigator.pushNamed(context, '/root/speedometer');
+      }
     }
-
-    EasyLoading.dismiss();
   }
 }
