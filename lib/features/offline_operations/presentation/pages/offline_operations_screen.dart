@@ -366,7 +366,7 @@ class _OfflineOperationsPageState extends State<OfflineOperationsPage> {
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: Colors.blue.withOpacity(0.1),
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             Icons.route,
