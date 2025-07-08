@@ -25,7 +25,7 @@ class SelectDestinationProvider with ChangeNotifier {
   Position _position = Position(
     longitude: -77.06337978247707,
     latitude: -12.047933614518184,
-    timestamp: null,
+    timestamp: DateTime.now(),
     accuracy: 0,
     altitude: 0,
     heading: 0,
@@ -113,7 +113,7 @@ class SelectDestinationProvider with ChangeNotifier {
     position = Position(
       longitude: tappedPoint.longitude,
       latitude: tappedPoint.latitude,
-      timestamp: null,
+      timestamp: DateTime.now(),
       accuracy: 0,
       altitude: 0,
       heading: 0,
@@ -151,7 +151,7 @@ class SelectDestinationProvider with ChangeNotifier {
       position = Position(
         longitude: double.parse(_longitudeText!.trim()),
         latitude: double.parse(_latitudeText!.trim()),
-        timestamp: null,
+        timestamp: DateTime.now(),
         accuracy: 0,
         altitude: 0,
         heading: 0,
@@ -254,7 +254,7 @@ class SelectDestinationProvider with ChangeNotifier {
     position = Position(
       longitude: double.parse(direction.longitude),
       latitude: double.parse(direction.latitude),
-      timestamp: null,
+      timestamp: DateTime.now(),
       accuracy: 0,
       altitude: 0,
       heading: 0,

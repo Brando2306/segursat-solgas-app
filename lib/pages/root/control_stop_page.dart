@@ -302,14 +302,14 @@ class _ControlStopPageState extends State<ControlStopPage> {
                 Navigator.of(context, rootNavigator: true).pop();
                 Navigator.pushNamed(context, '/root/finish');
               },
-              style: ElevatedButton.styleFrom(primary: Colors.green),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               child: Text('Confirmar'),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
               },
-              style: ElevatedButton.styleFrom(primary: Colors.deepOrange),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
               child: Text('Cerrar'),
             ),
           ],

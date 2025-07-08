@@ -25,7 +25,7 @@ class _LoadPageState extends State<LoadPage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(
-        Duration(milliseconds: 100),
+        Duration(milliseconds: 200),
         () => Provider.of<AuthProvider>(context, listen: false)
             .toggleVisibility(),
       );
@@ -49,7 +49,8 @@ class _LoadPageState extends State<LoadPage> {
 
   void _navigateTo(String route) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Navigator.pushReplacementNamed(context, route);
+      Future.delayed(Duration(milliseconds: 1500),
+          () => Navigator.pushReplacementNamed(context, route));
     });
   }
 

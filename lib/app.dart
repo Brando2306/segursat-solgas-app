@@ -77,6 +77,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       case AppLifecycleState.detached:
         log('==> MyApp: ${AppLifecycleState.detached}');
         break;
+      case AppLifecycleState.hidden:
+        log('==> MyApp: ${AppLifecycleState.detached}');
+        break;
     }
   }
 
@@ -84,8 +87,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Safe Driving App',
+      title: 'Conduce Seguro Solgas',
       initialRoute: '/',
+      theme: ThemeData(
+        useMaterial3: false,
+        primarySwatch: Colors.blue,
+      ),
       routes: {
         '/': (context) => LoadPage(),
         '/startPage': (context) => StartPage(),

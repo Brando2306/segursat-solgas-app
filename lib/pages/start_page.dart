@@ -65,9 +65,10 @@ class _StartPageState extends State<StartPage> with WidgetsBindingObserver {
             ),
             Padding(
               padding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.height * 0.10),
+                  horizontal: MediaQuery.of(context).size.height * 0.05),
               child: Text(
                 'Conduce Seguro',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                     color: Colors.black,
                     fontSize: 28,

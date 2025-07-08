@@ -532,14 +532,14 @@ class _SpeedometerPageState extends State<SpeedometerPage>
                 await callEmergecyPhone();
                 await finishRoute(context);
               },
-              style: ElevatedButton.styleFrom(primary: Colors.green),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               child: Text('Sí'),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
               },
-              style: ElevatedButton.styleFrom(primary: Colors.deepOrange),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
               child: Text('No'),
             ),
           ],

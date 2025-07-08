@@ -525,13 +525,13 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
               }
               EasyLoading.dismiss();
             },
-            style: ElevatedButton.styleFrom(primary: Colors.green),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             child: const Text('Sí'),
           ),
           ElevatedButton(
             onPressed: () =>
                 Navigator.of(dialogContext, rootNavigator: true).pop(),
-            style: ElevatedButton.styleFrom(primary: Colors.deepOrange),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
             child: const Text('No'),
           ),
         ],

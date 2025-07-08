@@ -29,7 +29,7 @@ class SelectSourceProvider with ChangeNotifier {
   Position _position = Position(
     longitude: 0,
     latitude: 0,
-    timestamp: null,
+    timestamp: DateTime.now(),
     accuracy: 0,
     altitude: 0,
     heading: 0,

@@ -1,6 +1,6 @@
 {
-    "name": "safe_driving_app",
-    "short_name": "safe_driving_app",
+    "name": "mi_proyecto",
+    "short_name": "mi_proyecto",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

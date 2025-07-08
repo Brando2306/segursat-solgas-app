@@ -31,7 +31,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
   Position position = Position(
       longitude: 0,
       latitude: 0,
-      timestamp: null,
+      timestamp: DateTime.now(),
       accuracy: 0,
       altitude: 0,
       heading: 0,
@@ -239,7 +239,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
       position = Position(
           longitude: tappedPoint.longitude,
           latitude: tappedPoint.latitude,
-          timestamp: null,
+          timestamp: DateTime.now(),
           accuracy: 0,
           altitude: 0,
           heading: 0,
@@ -325,7 +325,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
                     position = Position(
                       longitude: double.parse(raw[1].trim()),
                       latitude: double.parse(raw[0].trim()),
-                      timestamp: null,
+                      timestamp: DateTime.now(),
                       accuracy: 0,
                       altitude: 0,
                       heading: 0,
@@ -422,7 +422,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
               position = Position(
                   longitude: double.parse(direction.longitude),
                   latitude: double.parse(direction.latitude),
-                  timestamp: null,
+                  timestamp: DateTime.now(),
                   accuracy: 0,
                   altitude: 0,
                   heading: 0,
@@ -444,7 +444,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
             //     position = Position(
             //         longitude: -77.06337978247707,
             //         latitude: -12.047933614518184,
-            //         timestamp: null,
+            //         timestamp: DateTime.now(),
             //         accuracy: 0,
             //         altitude: 0,
             //         heading: 0,
