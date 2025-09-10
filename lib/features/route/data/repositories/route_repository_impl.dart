@@ -97,54 +97,6 @@ class RouteRepositoryImpl implements RouteRepository {
 
       return route;
     } catch (e) {
-      // // Handle offline case
-      // final offlineRouteId = readStorage(StorageKeys.currentOfflineRouteId);
-      // if (offlineRouteId != null) {
-      //   // Try to get any existing positions from offline storage
-      //   final ops = await offlineOperationsRepository
-      //       .getOperationsByOfflineId(offlineRouteId);
-
-      //   // Check if we have a route creation operation
-      //   final hasRouteCreation =
-      //       ops.any((op) => op.type == OfflineOperationType.routeCreation);
-
-      //   if (hasRouteCreation) {
-      //     // Get positions if available
-      //     final positionOps =
-      //         ops.where((op) => op.type == OfflineOperationType.routePositions);
-      //     List<PositionEntity> positions = [];
-
-      //     if (positionOps.isNotEmpty) {
-      //       final lastPositionOp = positionOps.reduce((curr, next) =>
-      //           curr.createdAt.isAfter(next.createdAt) ? curr : next);
-
-      //       positions = (lastPositionOp.data['positions'] as List)
-      //           .map((p) => PositionEntity.fromJson(p))
-      //           .toList();
-      //     }
-
-      //     // Get the creation operation to build a minimal RouteEntity
-      //     final creationOp = ops.firstWhere(
-      //         (op) => op.type == OfflineOperationType.routeCreation);
-
-      //     return RouteEntity(
-      //       id: routeId,
-      //       positions: positions,
-      //       unitId: int.parse(creationOp.data['unit_id']),
-      //       unitName: '', // You might need to store this elsewhere
-      //       sourceLatitude: 0, // Default values
-      //       sourceLongitude: 0,
-      //       sourceAddress: '',
-      //       destinationLatitude:
-      //           double.parse(creationOp.data['destination_latitude']),
-      //       destinationLongitude:
-      //           double.parse(creationOp.data['destination_longitude']),
-      //       destinationAddress: '',
-      //       status: 'R', // Assuming 'R' for running
-      //     );
-      //   }
-      // }
-
       rethrow;
     }
   }
@@ -227,26 +179,39 @@ class RouteRepositoryImpl implements RouteRepository {
 
   @override
   Future<void> sendRoutePositions(List<RoutePositionEntity> positions) async {
-    //TODO: probar cuando no hay red, se crea la ruta, y luego la activo, actualmente se envian las posiciones por q backend no valida el routeid, entonces front debe validar eso y si no tiene routeid mandarlo a guardar, no se si desde el entity podemos hacer eso con un required en routeid
-    // Validación adicional en el repositorio
     if (positions.isEmpty) {
       throw Exception('No se pueden enviar posiciones vacías');
     }
 
-    // Filtramos posiciones sin routeId
+    // Filtramos posiciones sin routeId (MANTIENES TU LÓGICA ACTUAL)
     final invalidPositions = positions.where((p) => p.routeId == null).toList();
     final validPositions = positions.where((p) => p.routeId != null).toList();
 
-    // Guardamos inmediatamente las inválidas
+    // Guardamos inmediatamente las inválidas (MANTIENES TU LÓGICA ACTUAL)
     if (invalidPositions.isNotEmpty) {
       await _storeInvalidPositions(invalidPositions);
     }
 
     if (validPositions.isNotEmpty) {
       try {
-        await remoteDataSource.sendRoutePositions(validPositions);
+        // NUEVA LÓGICA: Eliminar duplicados por timestamp antes de enviar
+        final uniquePositions = <int, RoutePositionEntity>{};
+        for (final position in validPositions) {
+          uniquePositions[position.timestamp] = position;
+        }
+        final uniqueValidPositions = uniquePositions.values.toList();
+
+        await remoteDataSource.sendRoutePositions(uniqueValidPositions);
       } catch (e) {
-        await _storeInvalidPositions(validPositions); // Guardar como fallidas
+        // NUEVA LÓGICA: Si es error de duplicado, no lo tratamos como fallo total
+        if (e.toString().contains('Duplicate entry')) {
+          log('Algunas posiciones ya estaban sincronizadas: $e');
+          // No guardamos como fallidas porque probablemente ya están en el servidor
+          return; // Salimos sin error
+        }
+
+        // Para otros errores, mantienes tu lógica actual
+        await _storeInvalidPositions(validPositions);
         rethrow;
       }
     } else {

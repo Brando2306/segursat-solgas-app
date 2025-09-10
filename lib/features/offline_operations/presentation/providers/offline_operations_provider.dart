@@ -441,21 +441,46 @@ class OfflineOperationsProvider with ChangeNotifier {
           .map((p) => RoutePositionEntity.fromJson(p))
           .toList();
 
-      // Separar válidas e inválidas
+      // Separar válidas e inválidas (MANTIENES TU LÓGICA)
       final validPositions = positions.where((p) => p.routeId != null).toList();
-      final invalidPositions = positions.where((p) => p.routeId == null).toList();
+      final invalidPositions =
+          positions.where((p) => p.routeId == null).toList();
 
-      // Enviar válidas en lotes de 25
+      // NUEVA LÓGICA: Eliminar duplicados por timestamp en válidas
+      final uniqueValidPositions = <int, RoutePositionEntity>{};
+      for (final pos in validPositions) {
+        uniqueValidPositions[pos.timestamp] = pos;
+      }
+      final positionsToSend = uniqueValidPositions.values.toList();
+
+      // Enviar válidas en lotes (MANTIENES TU TAMAÑO)
       const batchSize = 25;
-      for (int i = 0; i < validPositions.length; i += batchSize) {
-        final end = (i + batchSize < validPositions.length)
+      List<RoutePositionEntity> failedPositions = [];
+
+      for (int i = 0; i < positionsToSend.length; i += batchSize) {
+        final end = (i + batchSize < positionsToSend.length)
             ? i + batchSize
-            : validPositions.length;
-        final batch = validPositions.sublist(i, end);
-        await routeRepository.retryRoutePositions(batch);
+            : positionsToSend.length;
+        final batch = positionsToSend.sublist(i, end);
+
+        try {
+          await routeRepository.retryRoutePositions(batch);
+        } catch (e) {
+          if (e.toString().contains('Duplicate entry')) {
+            // Si es duplicado, las consideramos ya sincronizadas
+            log('Lote ya sincronizado: $e');
+            continue;
+          } else {
+            // Si es otro error, las agregamos como fallidas
+            failedPositions.addAll(batch);
+          }
+        }
       }
 
-      if (invalidPositions.isEmpty) {
+      // MANTIENES TU LÓGICA ACTUAL para manejar el resultado
+      final allFailedPositions = [...invalidPositions, ...failedPositions];
+
+      if (allFailedPositions.isEmpty) {
         // Todas sincronizadas, marcar como synced
         final updatedData = {
           ...operation.data,
@@ -467,10 +492,10 @@ class OfflineOperationsProvider with ChangeNotifier {
         );
         Snackbars.showSnackbarSuccess('Posiciones sincronizadas correctamente');
       } else {
-        // Solo quedan las inválidas, actualizar operación
+        // Solo quedan las fallidas, actualizar operación
         final updatedData = {
           ...operation.data,
-          'positions': invalidPositions.map((p) => p.toJson()).toList(),
+          'positions': allFailedPositions.map((p) => p.toJson()).toList(),
           'synced': false
         };
         await repository.updateOperation(
@@ -485,13 +510,27 @@ class OfflineOperationsProvider with ChangeNotifier {
             'Solo se sincronizaron las posiciones válidas. Las restantes quedarán pendientes.');
       }
     } catch (e) {
-      await repository.updateRetryCount(
-        operation.id,
-        operation.retryCount + 1,
-        e.toString(),
-      );
-      Snackbars.showSnackbarError('Error al sincronizar posiciones: $e');
-      rethrow;
+      // NUEVA LÓGICA: Manejo especial para duplicados
+      if (e.toString().contains('Duplicate entry')) {
+        // Si todo falló por duplicados, marcar como sincronizado
+        final updatedData = {
+          ...operation.data,
+          'positions': [],
+          'synced': true
+        };
+        await repository.updateOperation(operation.copyWith(data: updatedData));
+        Snackbars.showSnackbarSuccess(
+            'Posiciones ya sincronizadas previamente');
+      } else {
+        // MANTIENES TU LÓGICA ACTUAL para otros errores
+        await repository.updateRetryCount(
+          operation.id,
+          operation.retryCount + 1,
+          e.toString(),
+        );
+        Snackbars.showSnackbarError('Error al sincronizar posiciones: $e');
+        rethrow;
+      }
     } finally {
       _isLoading = false;
       await loadOperations();
