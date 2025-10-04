@@ -26,7 +26,7 @@ class _SelectSourcePageState extends State<SelectSourcePage> {
   Position position = Position(
       longitude: 0,
       latitude: 0,
-      timestamp: null,
+      timestamp: DateTime.now(),
       accuracy: 0,
       altitude: 0,
       heading: 0,
@@ -177,7 +177,7 @@ class _SelectSourcePageState extends State<SelectSourcePage> {
               onPressed: () {
                 Navigator.pushNamed(context, '/menu');
               },
-              style: ElevatedButton.styleFrom(primary: Colors.grey),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
               child: Text('Ir al Menú'),
             ),
             ElevatedButton(
@@ -185,7 +185,7 @@ class _SelectSourcePageState extends State<SelectSourcePage> {
                 Navigator.of(context, rootNavigator: true).pop();
                 _getLocation();
               },
-              style: ElevatedButton.styleFrom(primary: Colors.blue),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
               child: Text('Reintentar'),
             ),
           ],

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:safe_driving_app/features/auth/presentation/providers/auth_provider.dart';
-import 'package:safe_driving_app/features/route/presentation/providers/route_provider.dart';
-import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/widgets/background.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 

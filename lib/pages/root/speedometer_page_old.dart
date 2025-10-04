@@ -1,14 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:floating/floating.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/helpers/gps.dart';
@@ -532,14 +530,14 @@ class _SpeedometerPageState extends State<SpeedometerPage>
                 await callEmergecyPhone();
                 await finishRoute(context);
               },
-              style: ElevatedButton.styleFrom(primary: Colors.green),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               child: Text('Sí'),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
               },
-              style: ElevatedButton.styleFrom(primary: Colors.deepOrange),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
               child: Text('No'),
             ),
           ],
@@ -591,11 +589,12 @@ class _SpeedometerPageState extends State<SpeedometerPage>
           onPressed: () => notificationSoS(context),
           color: Colors.red,
           textColor: Colors.white,
-          child: FaIcon(
-            FontAwesomeIcons.warning,
-            color: Colors.white,
-            size: 25,
-          ),
+          //TODO: Make icon here
+          // child: FaIcon(
+          //   FontAwesomeIcons.warning,
+          //   color: Colors.white,
+          //   size: 25,
+          // ),
           padding: EdgeInsets.all(16),
           shape: CircleBorder(),
         ),
@@ -618,11 +617,12 @@ class _SpeedometerPageState extends State<SpeedometerPage>
           },
           color: Colors.amber,
           textColor: Colors.white,
-          child: FaIcon(
-            FontAwesomeIcons.circleStop,
-            color: Colors.white,
-            size: 25,
-          ),
+          //TODO: Make icon here
+          // child: FaIcon(
+          //   FontAwesomeIcons.circleStop,
+          //   color: Colors.white,
+          //   size: 25,
+          // ),
           padding: EdgeInsets.all(16),
           shape: CircleBorder(),
         ),

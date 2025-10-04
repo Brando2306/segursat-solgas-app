@@ -7,7 +7,6 @@ import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/style.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:geolocator/geolocator.dart';
 
 class StartPage extends StatefulWidget {
   const StartPage({super.key});

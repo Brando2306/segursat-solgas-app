@@ -77,6 +77,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       case AppLifecycleState.detached:
         log('==> MyApp: ${AppLifecycleState.detached}');
         break;
+      case AppLifecycleState.hidden:
+        log('==> MyApp: ${AppLifecycleState.hidden}');
+        break;
     }
   }
 

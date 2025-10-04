@@ -54,7 +54,7 @@ void notificationError(BuildContext context, String content) {
                   Navigator.of(context, rootNavigator: true).pop();
                 },
                 style: ElevatedButton.styleFrom(
-                  primary: Colors.red,
+                  backgroundColor: Colors.red,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -119,7 +119,7 @@ void notificationAlert(BuildContext context, String content) {
                   Navigator.of(context, rootNavigator: true).pop();
                 },
                 style: ElevatedButton.styleFrom(
-                  primary: Colors.blue,
+                  backgroundColor: Colors.blue,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -187,7 +187,7 @@ void notificationInfo(BuildContext context, String content, Function callBack) {
                     callBack();
                   },
                   style: ElevatedButton.styleFrom(
-                    primary: Colors.orange, // Color de aviso
+                    backgroundColor: Colors.orange, // Color de aviso
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

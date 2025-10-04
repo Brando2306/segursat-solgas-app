@@ -1,20 +1,15 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:safe_driving_app/features/route/domain/entities/incident_route_entity.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_response_entity.dart';
 import 'package:safe_driving_app/features/route/presentation/providers/incident_provider.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/utils/constants.dart';
-import 'package:safe_driving_app/utils/endpoints.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/style.dart';
 import 'package:safe_driving_app/widgets/header.dart';
-import 'package:http/http.dart' as http;
 
 class IncidentReportPage extends StatefulWidget {
   const IncidentReportPage({super.key});

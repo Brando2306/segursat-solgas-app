@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:floating/floating.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:safe_driving_app/helpers/gps.dart';
 import 'package:safe_driving_app/utils/style.dart';
@@ -257,11 +256,13 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
         MaterialButton(
           onPressed: () => _showEmergencyConfirmation(context, provider),
           color: Colors.red,
-          child: const FaIcon(
-            FontAwesomeIcons.warning,
-            color: Colors.white,
-            size: 25,
-          ),
+          //TODO: Make icon here
+          // child: const FaIcon(
+          //   FontAwesomeIcons.warning,
+          //   color: Colors.white,
+          //   size: 25,
+          // ),
+          child: Icon(Icons.warning, color: Colors.white, size: 25),
           padding: const EdgeInsets.all(16),
           shape: const CircleBorder(),
         ),
@@ -282,11 +283,13 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
             Navigator.pushNamed(context, '/root/incidentReport');
           },
           color: Colors.amber,
-          child: const FaIcon(
-            FontAwesomeIcons.circleStop,
-            color: Colors.white,
-            size: 25,
-          ),
+          //TODO: Make icon here
+          // child: const FaIcon(
+          //   FontAwesomeIcons.circleStop,
+          //   color: Colors.white,
+          //   size: 25,
+          // ),
+          child: Icon(Icons.stop, color: Colors.white, size: 25),
           padding: const EdgeInsets.all(16),
           shape: const CircleBorder(),
         ),
@@ -525,13 +528,13 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
               }
               EasyLoading.dismiss();
             },
-            style: ElevatedButton.styleFrom(primary: Colors.green),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             child: const Text('Sí'),
           ),
           ElevatedButton(
             onPressed: () =>
                 Navigator.of(dialogContext, rootNavigator: true).pop(),
-            style: ElevatedButton.styleFrom(primary: Colors.deepOrange),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
             child: const Text('No'),
           ),
         ],

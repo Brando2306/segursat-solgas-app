@@ -3,10 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_response_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/stop_route_entity.dart';
 import 'package:safe_driving_app/features/route/presentation/providers/control_stop_provider.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
@@ -237,11 +235,13 @@ class _ControlStopPageState extends State<ControlStopPage> {
           },
           color: Colors.amber,
           textColor: Colors.white,
-          child: FaIcon(
-            FontAwesomeIcons.circleStop,
-            color: Colors.white,
-            size: 25,
-          ),
+          //TODO: Make icon here
+          // child: FaIcon(
+          //   FontAwesomeIcons.circleStop,
+          //   color: Colors.white,
+          //   size: 25,
+          // ),
+          child: Icon(Icons.stop, color: Colors.white, size: 25),
           padding: EdgeInsets.all(16),
           shape: CircleBorder(),
         ),
@@ -265,11 +265,13 @@ class _ControlStopPageState extends State<ControlStopPage> {
           },
           color: Colors.red,
           textColor: Colors.white,
-          child: FaIcon(
-            FontAwesomeIcons.warning,
-            color: Colors.white,
-            size: 25,
-          ),
+          //TODO: Make icon here
+          // child: FaIcon(
+          //   FontAwesomeIcons.warning,
+          //   color: Colors.white,
+          //   size: 25,
+          // ),
+          child: Icon(Icons.warning, color: Colors.white, size: 25),
           padding: EdgeInsets.all(16),
           shape: CircleBorder(),
         ),
@@ -302,14 +304,14 @@ class _ControlStopPageState extends State<ControlStopPage> {
                 Navigator.of(context, rootNavigator: true).pop();
                 Navigator.pushNamed(context, '/root/finish');
               },
-              style: ElevatedButton.styleFrom(primary: Colors.green),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               child: Text('Confirmar'),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
               },
-              style: ElevatedButton.styleFrom(primary: Colors.deepOrange),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
               child: Text('Cerrar'),
             ),
           ],

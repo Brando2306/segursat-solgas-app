@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -29,7 +28,7 @@ class SelectSourceProvider with ChangeNotifier {
   Position _position = Position(
     longitude: 0,
     latitude: 0,
-    timestamp: null,
+    timestamp: DateTime.now(),
     accuracy: 0,
     altitude: 0,
     heading: 0,

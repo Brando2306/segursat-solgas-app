@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/providers/index.dart';
 import 'package:safe_driving_app/utils/constants.dart';
@@ -233,11 +232,12 @@ class _ControlStopPageState extends State<ControlStopPage> {
           },
           color: Colors.amber,
           textColor: Colors.white,
-          child: FaIcon(
-            FontAwesomeIcons.circleStop,
-            color: Colors.white,
-            size: 25,
-          ),
+          //TODO: Make icon here
+          // child: FaIcon(
+          //   FontAwesomeIcons.circleStop,
+          //   color: Colors.white,
+          //   size: 25,
+          // ),
           padding: EdgeInsets.all(16),
           shape: CircleBorder(),
         ),
@@ -261,11 +261,12 @@ class _ControlStopPageState extends State<ControlStopPage> {
           },
           color: Colors.red,
           textColor: Colors.white,
-          child: FaIcon(
-            FontAwesomeIcons.warning,
-            color: Colors.white,
-            size: 25,
-          ),
+          //TODO: Make icon here
+          // child: FaIcon(
+          //   FontAwesomeIcons.warning,
+          //   color: Colors.white,
+          //   size: 25,
+          // ),
           padding: EdgeInsets.all(16),
           shape: CircleBorder(),
         ),

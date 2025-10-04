@@ -1,17 +1,12 @@
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:safe_driving_app/core/utils/dialog_util.dart';
-import 'package:safe_driving_app/core/utils/location_util.dart';
 
 import 'package:safe_driving_app/core/validators/auth_validator.dart';
 import 'package:safe_driving_app/features/auth/presentation/providers/auth_provider.dart';
-import 'package:safe_driving_app/features/driver/domain/entities/driver_entity.dart';
 import 'package:safe_driving_app/features/driver/presentation/providers/driver_provider.dart';
 import 'package:safe_driving_app/features/route/presentation/providers/route_provider.dart';
-import 'package:safe_driving_app/features/unit/domain/entities/unit_entity.dart';
 import 'package:safe_driving_app/features/unit/presentation/providers/unit_provider.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/helpers/gps.dart';

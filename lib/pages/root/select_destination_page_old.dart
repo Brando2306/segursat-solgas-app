@@ -10,10 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:safe_driving_app/class/index.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
-import 'package:safe_driving_app/providers/route.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/endpoints.dart';
-// import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/root/index.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/style.dart';
@@ -31,7 +29,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
   Position position = Position(
       longitude: 0,
       latitude: 0,
-      timestamp: null,
+      timestamp: DateTime.now(),
       accuracy: 0,
       altitude: 0,
       heading: 0,
@@ -239,7 +237,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
       position = Position(
           longitude: tappedPoint.longitude,
           latitude: tappedPoint.latitude,
-          timestamp: null,
+          timestamp: DateTime.now(),
           accuracy: 0,
           altitude: 0,
           heading: 0,
@@ -325,7 +323,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
                     position = Position(
                       longitude: double.parse(raw[1].trim()),
                       latitude: double.parse(raw[0].trim()),
-                      timestamp: null,
+                      timestamp: DateTime.now(),
                       accuracy: 0,
                       altitude: 0,
                       heading: 0,
@@ -422,7 +420,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
               position = Position(
                   longitude: double.parse(direction.longitude),
                   latitude: double.parse(direction.latitude),
-                  timestamp: null,
+                  timestamp: DateTime.now(),
                   accuracy: 0,
                   altitude: 0,
                   heading: 0,
