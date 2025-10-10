@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:safe_driving_app/utils/style.dart';
+import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/utils/inspection/index.dart';
-import 'package:safe_driving_app/utils/storage.dart';
-import 'package:safe_driving_app/utils/style.dart';
 
 class FinishPage extends StatefulWidget {
   const FinishPage({super.key});
@@ -36,43 +36,46 @@ class _FinishPageState extends State<FinishPage> {
         ? FINISH.TEXT_CENTER
         : 'Datos guardados en el dispositivo correctamente';
 
-    return Scaffold(
-        body: Column(children: [
-      Expanded(child: Container()),
-      Image.asset(FINISH.IMAGE),
-      SizedBox(
-        width: getWidth(context, 80),
-        child: Text(
-          message,
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-      ),
-      // ...nextButtonV2(context, FINISH.TEXT_BUTTON, '/menu', true, () {
-      //   submit();
-      // })
-      Expanded(child: Container()),
-      MaterialButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/menu');
-        },
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        color: CustomColors.primary,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-              horizontal: MediaQuery.of(context).size.height * 0.15,
-              vertical: 15),
+    return WillPopScope(
+      onWillPop: (() async => false),
+      child: Scaffold(
+          body: Column(children: [
+        Expanded(child: Container()),
+        Image.asset(FINISH.IMAGE),
+        SizedBox(
+          width: getWidth(context, 80),
           child: Text(
-            FINISH.TEXT_BUTTON,
-            style: TextStyle(color: Colors.white),
+            message,
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
           ),
         ),
-      ),
-      SizedBox(
-        height: getHeight(context, 3),
-      )
-    ]));
+        // ...nextButtonV2(context, FINISH.TEXT_BUTTON, '/menu', true, () {
+        //   submit();
+        // })
+        Expanded(child: Container()),
+        MaterialButton(
+          onPressed: () {
+            Navigator.pushNamed(context, '/menu');
+          },
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          color: CustomColors.primary,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.height * 0.15,
+                vertical: 15),
+            child: Text(
+              FINISH.TEXT_BUTTON,
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: getHeight(context, 3),
+        )
+      ])),
+    );
   }
 }

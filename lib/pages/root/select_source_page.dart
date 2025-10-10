@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -426,8 +425,8 @@ class _SelectSourcePageState extends State<SelectSourcePage> {
               '/root/selectDestination',
               provider.blockNextButton,
               () {
-                final storedPosition = readStorage('root.initialPosition');
-                log('Contenido de root.initialPosition: $storedPosition');
+                // final storedPosition = readStorage('root.initialPosition');
+                // log('Contenido de root.initialPosition: $storedPosition');
               },
               // provider.hasInternet ? null : Colors.green[700],
               null,

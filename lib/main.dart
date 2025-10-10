@@ -174,6 +174,7 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => MenuProvider(
             offlineOperationsRepository: offlineOperationRepo,
+            routeRepository: routeRepository,
           ),
         ),
       ],

@@ -42,7 +42,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
 
   @override
   Future<void> saveSession(AuthUser user) async {
-    log('Saving user session: ${user.toJson()}');
+    // log('Saving user session: ${user.toJson()}');
 
     await Future.wait([
       if (user.name != null) writeStorage('personal.name', user.name),

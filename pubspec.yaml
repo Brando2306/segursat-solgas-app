@@ -32,7 +32,7 @@ dependencies:
   connectivity_plus: ^5.0.2
   cupertino_icons: ^1.0.8
   dio: ^5.2.1+1
-  floating: ^2.0.0
+  floating: ^6.0.0
   flutter:
     sdk: flutter
   flutter_easyloading: ^3.0.3

@@ -250,7 +250,7 @@ class SelectSourceProvider with ChangeNotifier {
           'hasInternet': _hasInternet,
         }),
       );
-      log('Datos guardados: ${readStorage('root.initialPosition')}');
+      // log('Datos guardados: ${readStorage('root.initialPosition')}');
 
       mapController.move(LatLng(_position.latitude, _position.longitude), 18);
 

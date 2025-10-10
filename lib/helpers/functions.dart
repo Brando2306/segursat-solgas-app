@@ -213,6 +213,7 @@ void notificationInfoWithoutWillPopScope({
   required BuildContext context,
   required String content,
   required Function callBack,
+  Function? callBackDont,
   bool onWillPop = false,
   bool barrierDismissible = false,
 }) {
@@ -259,43 +260,48 @@ void notificationInfoWithoutWillPopScope({
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(dialogContext, rootNavigator: true).pop();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(dialogContext, rootNavigator: true)
+                              .pop();
+                          if (callBackDont != null) callBackDont();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                      ),
-                      child: Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Text(
-                          'No',
-                          style: TextStyle(fontSize: 16),
+                        child: Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Text(
+                            'No, finalizar',
+                            style: TextStyle(fontSize: 14),
+                          ),
                         ),
                       ),
                     ),
                     SizedBox(width: 10),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(dialogContext, rootNavigator: true).pop();
-                        callBack();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange, // Color de aviso
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(dialogContext, rootNavigator: true)
+                              .pop();
+                          callBack();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange, // Color de aviso
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                      ),
-                      child: Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Text(
-                          'Sí, recuperar',
-                          style: TextStyle(fontSize: 16),
+                        child: Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Text(
+                            'Sí, recuperar',
+                            style: TextStyle(fontSize: 14),
+                          ),
                         ),
                       ),
                     ),

@@ -250,7 +250,7 @@ class _SpeedometerPageState extends State<SpeedometerPage>
                         onTap: () async {
                           final canUsePiP = await floating.isPipAvailable;
                           if (canUsePiP) {
-                            final statusAfterEnabling = await floating.enable();
+                            final statusAfterEnabling = await floating.enable(ImmediatePiP());
                             print(statusAfterEnabling);
                           }
                         },

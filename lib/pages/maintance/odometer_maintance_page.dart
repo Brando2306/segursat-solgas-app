@@ -7,6 +7,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/utils/maintance/index.dart';
+import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/widgets/header.dart';
 import 'package:safe_driving_app/widgets/next_button.dart';
@@ -36,6 +37,9 @@ class _OdometerMaintancePageState extends State<OdometerMaintancePage> {
 
   @override
   Widget build(BuildContext context) {
+    final int previousOdometer =
+        (readStorage('inspection.lastOdometer') ?? 0) as int;
+
     return WillPopScope(
       onWillPop: (() async => false),
       child: GestureDetector(
@@ -43,71 +47,148 @@ class _OdometerMaintancePageState extends State<OdometerMaintancePage> {
           FocusScope.of(context).unfocus();
         },
         child: Scaffold(
-            appBar: header(context),
-            resizeToAvoidBottomInset: false,
-            body: Column(
-              children: [
-                SizedBox(
-                  height: getHeight(context, 4),
-                ),
-                form(context),
-                SizedBox(
-                  height: getHeight(context, 4),
-                ),
-                Container(
-                  padding: EdgeInsets.fromLTRB(
-                      getWidth(context, 5), 0, getWidth(context, 5), 0),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      ODOMETERMAINTANCE.LABEL_IMAGE,
-                      // textAlign: TextAlign.left,
-                      style: TextStyle(
-                          fontSize: 14,
-                          // fontWeight: FontWeight.bold,
-                          color: Colors.black),
+          backgroundColor: Colors.white,
+          appBar: header(context),
+          resizeToAvoidBottomInset: false,
+          body: SingleChildScrollView(
+            physics: BouncingScrollPhysics(),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: getWidth(context, 5)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: getHeight(context, 1)),
+
+                  // 💬 Subtítulo
+                  Text(
+                    'Por favor ingresa el valor actual del odómetro y toma una fotografía como evidencia para continuar con el mantenimiento.',
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  ),
+                  SizedBox(height: getHeight(context, 3)),
+
+                  // 🕓 Mostrar odómetro anterior si existe
+                  if (previousOdometer > 0) ...[
+                    Row(
+                      children: [
+                        Icon(Icons.history,
+                            color: Colors.grey.shade600, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Tu odómetro anterior fue:',
+                          style: TextStyle(
+                              fontSize: 13, color: Colors.grey.shade700),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$previousOdometer km',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.blueGrey.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: getHeight(context, 2)),
+                  ],
+
+                  // ⚠️ Mensaje informativo
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline,
+                            color: Colors.amber.shade800, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Recuerda: el valor que ingreses debe ser mayor al odómetro anterior.',
+                            style: TextStyle(
+                                color: Colors.amber.shade800, fontSize: 13.5),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                SizedBox(
-                  height: getHeight(context, 1.5),
-                ),
-                Container(
-                  padding: EdgeInsets.fromLTRB(
-                      getWidth(context, 5), 0, getWidth(context, 5), 0),
-                  height: getHeight(context, 40),
-                  child: FadeInImage(
-                      placeholder: AssetImage('assets/images/odometer.jpg'),
-                      image: fileImage ??
-                          AssetImage('assets/images/odometer.jpg')),
-                ),
-                SizedBox(
-                  height: getHeight(context, 1),
-                ),
-                ElevatedButton.icon(
-                  onPressed: captureImage,
-                  label: Text(
-                    'Tomar fotografía',
-                    style: TextStyle(color: Color(0xff00a86b)),
+                  SizedBox(height: getHeight(context, 3)),
+
+                  // 🧮 Campo de texto (odómetro
+                  Text(
+                    ODOMETERMAINTANCE.LABEL_ODOMETER,
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                   ),
-                  icon: Icon(Icons.camera_alt, color: Color(0xff00a86b)),
-                  style: ButtonStyle(
-                      // overlayColor: MaterialStateProperty.all(Colors.green),
-                      backgroundColor:
-                          MaterialStateProperty.all(Color(0xffcffaea))),
-                ),
-                Expanded(child: Container()),
-                nextButton(context, 'Siguiente', '/maintance/form',
-                    validationNextButton && (fileImage == null ? false : true),
-                    () {
-                  writeStorage('maintance.odometer.odometerNumber',
-                      _odometerInpuController.text);
-                }, null),
-                SizedBox(
-                  height: getHeight(context, 3),
-                ),
-              ],
-            )),
+
+                  SizedBox(height: getHeight(context, 1.5)),
+
+                  // 🧮 Campo de texto (Formulario)
+                  odometerInput(context),
+                  SizedBox(height: getHeight(context, 4)),
+
+                  // 📷 Imagen del odómetro
+                  Text(
+                    ODOMETERMAINTANCE.LABEL_IMAGE,
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                  SizedBox(height: getHeight(context, 1)),
+                  Container(
+                    height: getHeight(context, 40),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.grey.shade100,
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: FadeInImage(
+                      placeholder: AssetImage('assets/images/odometer.jpg'),
+                      image:
+                          fileImage ?? AssetImage('assets/images/odometer.jpg'),
+                      fit: BoxFit.fill,
+                    ),
+                  ),
+
+                  SizedBox(height: getHeight(context, 1.5)),
+
+                  Center(
+                    child: ElevatedButton.icon(
+                      onPressed: captureImage,
+                      label: Text(
+                        'Tomar fotografía',
+                        style: TextStyle(color: Color(0xff00a86b)),
+                      ),
+                      icon: Icon(Icons.camera_alt, color: Color(0xff00a86b)),
+                      style: ButtonStyle(
+                        backgroundColor:
+                            MaterialStateProperty.all(Color(0xffcffaea)),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: getHeight(context, 4)),
+
+                  // 🔘 Botón siguiente
+                  Center(
+                    child: nextButton(
+                      context,
+                      'Siguiente',
+                      '/maintance/form',
+                      validationNextButton && (fileImage != null),
+                      () {
+                        writeStorage('maintance.odometer.odometerNumber',
+                            _odometerInpuController.text);
+                      },
+                      null,
+                    ),
+                  ),
+                  SizedBox(height: getHeight(context, 5)),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -130,6 +211,9 @@ class _OdometerMaintancePageState extends State<OdometerMaintancePage> {
           writeStorage('maintance.odometer.file', file.path);
 
           EasyLoading.dismiss();
+
+          Snackbars.showSnackbarSuccess(
+              'Foto del odómetro guardada correctamente');
         }
       } catch (e) {
         print(e);
@@ -138,17 +222,77 @@ class _OdometerMaintancePageState extends State<OdometerMaintancePage> {
   }
 
   Container form(context) {
+    int? previousOdometerValue = readStorage('inspection.lastOdometer');
+
     return Container(
       margin:
           EdgeInsets.fromLTRB(getWidth(context, 5), 0, getWidth(context, 5), 0),
-      child: Column(children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: const [Text(ODOMETERMAINTANCE.LABEL_ODOMETER)],
-        ),
-        SizedBox(height: getHeight(context, 2)),
-        odometerInput(context)
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: const [
+              Text(ODOMETERMAINTANCE.LABEL_ODOMETER),
+            ],
+          ),
+          SizedBox(height: getHeight(context, 1.5)),
+
+          // 👇 Aquí viene el mensaje si hay un odómetro anterior
+          if (previousOdometerValue != null && previousOdometerValue > 0)
+            Container(
+              margin: EdgeInsets.only(bottom: getHeight(context, 1)),
+              child: Row(
+                children: [
+                  Icon(Icons.history, color: Colors.grey.shade600, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Tu odómetro anterior fue: ',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                  ),
+                  Text(
+                    '$previousOdometerValue km',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.blueGrey.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // 👇 Este mensaje informativo siempre aparece antes del input
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline,
+                    color: Colors.amber.shade800, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Recuerda: el valor del odómetro que ingreses debe ser mayor al registrado anteriormente.',
+                    style:
+                        TextStyle(color: Colors.amber.shade800, fontSize: 13.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: getHeight(context, 3)),
+
+          SizedBox(height: getHeight(context, 1.5)),
+
+          // 👇 Aquí sigue tu campo de texto original
+          odometerInput(context),
+        ],
+      ),
     );
   }
 
@@ -165,6 +309,7 @@ class _OdometerMaintancePageState extends State<OdometerMaintancePage> {
           decoration: InputDecoration(
               enabled: true,
               labelText: ODOMETERMAINTANCE.TEXT_LABEL,
+              hintText: 'Ejemplo: 125000',
               filled: true,
               fillColor: Colors.blue.shade100,
               border:

@@ -1,26 +1,26 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-
-import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:intl/intl.dart';
+import 'package:collection/collection.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'package:safe_driving_app/utils/storage.dart';
+import 'package:safe_driving_app/utils/constants.dart';
+import 'package:safe_driving_app/helpers/functions.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:safe_driving_app/core/constants/storage_keys.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
-import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
 import 'package:safe_driving_app/features/route/domain/entities/cancel_route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/create_route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/finish_route_entity.dart';
-import 'package:safe_driving_app/features/route/domain/entities/emergency_event_entity.dart';
-import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
 import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
-import 'package:safe_driving_app/helpers/functions.dart';
-import 'package:safe_driving_app/utils/constants.dart';
-import 'package:safe_driving_app/utils/storage.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:collection/collection.dart';
+import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
+import 'package:safe_driving_app/features/route/domain/entities/emergency_event_entity.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
 
 class SpeedometerProvider with ChangeNotifier {
   late final RouteRepository routeRepository;
@@ -72,6 +72,10 @@ class SpeedometerProvider with ChangeNotifier {
   // Initialization
   Future<void> initialize() async {
     _buttonFinishEnabled = true;
+
+    // VERIFICAR Y ACTUALIZAR EL ID DE RUTA ACTUAL
+    await _verifyAndUpdateCurrentRouteId();
+
     await _setupLocationStream();
     await createOrResumeRoute();
     _initializeTimers();
@@ -79,6 +83,17 @@ class SpeedometerProvider with ChangeNotifier {
 
     // Envía la primera posición inmediatamente
     await _attemptToSendPosition();
+  }
+
+  Future<void> _verifyAndUpdateCurrentRouteId() async {
+    final currentRouteId = readStorage('root.createRoute.id');
+    final lastRoute = readStorage('personal.lastRoute');
+
+    // Si hay discrepancia, usar el último routeId conocido
+    if (currentRouteId != lastRoute && lastRoute != null) {
+      // await writeStorage('root.createRoute.id', lastRoute);
+      log('🔄 Actualizado ID de ruta: $currentRouteId -> $lastRoute');
+    }
   }
 
   Future<void> _setupLocationStream() async {
@@ -131,14 +146,22 @@ class SpeedometerProvider with ChangeNotifier {
   }
 
   Future<void> createOrResumeRoute() async {
+    final currentRouteId = readStorage('root.createRoute.id');
+    if (currentRouteId != null) {
+      log('<<<<<<<<<<<<<<<<<Ruta ya activa con ID: $currentRouteId, no se crea ni reanuda otra.');
+      return;
+    }
+
     try {
       if (isNotEmptyString(readStorage('root.cronometer')) &&
           isNotEmptyString(readStorage('root.finalPosition'))) {
         if (isNotEmptyString(readStorage('personal.lastRoute'))) {
+          log('<<<<<<<<<<<<<<<<<Reanudando ruta existente con ID: ${readStorage('personal.lastRoute')}');
           writeStorage(
               'root.createRoute.id', readStorage('personal.lastRoute'));
         }
       } else {
+        log('<<<<<<<<<<<<<<<<<Creando nueva ruta...');
         final initialPosition =
             json.decode(readStorage('root.initialPosition'));
         final finalPosition = json.decode(readStorage('root.finalPosition'));
@@ -358,6 +381,9 @@ class SpeedometerProvider with ChangeNotifier {
 
       _cleanup();
       // rethrow;
+    } finally {
+      _buttonFinishEnabled = true;
+      notifyListeners();
     }
   }
 

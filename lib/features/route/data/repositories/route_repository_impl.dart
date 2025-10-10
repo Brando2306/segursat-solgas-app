@@ -92,7 +92,7 @@ class RouteRepositoryImpl implements RouteRepository {
 
         await offlineOperationsRepository.saveOperation(operation);
 
-        log('Created new offlineRouteId for existing route: $newOfflineRouteId');
+        // log('Created new offlineRouteId for existing route: $newOfflineRouteId');
       }
 
       return route;
@@ -121,8 +121,8 @@ class RouteRepositoryImpl implements RouteRepository {
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedRouteFinish(
             route, offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. La finalización de la ruta se guardó y lo podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. La finalización de la ruta se guardó y lo podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -148,8 +148,8 @@ class RouteRepositoryImpl implements RouteRepository {
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedRouteCancel(
             route, offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. La cancelación de la ruta se guardó y lo podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. La cancelación de la ruta se guardó y lo podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -170,8 +170,8 @@ class RouteRepositoryImpl implements RouteRepository {
             offlineRouteId: offlineId,
           ),
         );
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. El evento SOS se guardó y lo podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. El evento SOS se guardó y lo podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -222,15 +222,16 @@ class RouteRepositoryImpl implements RouteRepository {
   Future<void> _storeInvalidPositions(
       List<RoutePositionEntity> positions) async {
     final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+    //TODO: Aquí las rutas que se crearon desde otro dispositivo o postman no van a funcionar
     if (offlineId != null && positions.isNotEmpty) {
       await offlineOperationsRepository.saveFailedPositions(
           positions, offlineId);
       if (positions.length == 1) {
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. La posición de la ruta se guardó y la podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. La posición de la ruta se guardó y la podrás sincronizar luego.');
       } else {
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. Las posiciones de la ruta se guardaron y las podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. Las posiciones de la ruta se guardaron y las podrás sincronizar luego.');
       }
     }
   }
@@ -244,8 +245,8 @@ class RouteRepositoryImpl implements RouteRepository {
       final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedEmergencyCall(offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. El número de emergencia se guardó y lo podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. El número de emergencia se guardó y lo podrás sincronizar luego.');
       }
       throw Exception('Failed to get emergency number: $e');
     }
@@ -260,8 +261,8 @@ class RouteRepositoryImpl implements RouteRepository {
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedIncident(
             incident, offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. El incidente se guardó y lo podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. El incidente se guardó y lo podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -275,8 +276,8 @@ class RouteRepositoryImpl implements RouteRepository {
       final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedRouteStop(stop, offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. La parada de la ruta se guardó y la podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. La parada de la ruta se guardó y la podrás sincronizar luego.');
       }
       rethrow;
     }
