@@ -66,19 +66,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
     switch (state) {
       case AppLifecycleState.paused:
-        log('==> MyApp: ${AppLifecycleState.paused}');
+        // log('==> MyApp: ${AppLifecycleState.paused}');
         break;
       case AppLifecycleState.resumed:
-        log('==> MyApp: ${AppLifecycleState.resumed}');
+        // log('==> MyApp: ${AppLifecycleState.resumed}');
         break;
       case AppLifecycleState.inactive:
-        log('==> MyApp: ${AppLifecycleState.inactive}');
+        // log('==> MyApp: ${AppLifecycleState.inactive}');
         break;
       case AppLifecycleState.detached:
-        log('==> MyApp: ${AppLifecycleState.detached}');
+        // log('==> MyApp: ${AppLifecycleState.detached}');
         break;
       case AppLifecycleState.hidden:
-        log('==> MyApp: ${AppLifecycleState.hidden}');
+        // log('==> MyApp: ${AppLifecycleState.hidden}');
         break;
     }
   }

@@ -43,7 +43,7 @@ class _MenuPageState extends State<MenuPage> {
 
     // Snackbars.showSnackbarSuccess(
     //     '🔍 initState - hasPendingRoute: ${menuProvider.hasPendingRoute}, dialogShown: $_dialogShown');
-    log('======🔍 initState - hasPendingRoute: ${menuProvider.hasPendingRoute}, dialogShown: $_dialogShown');
+    // log('======🔍 initState - hasPendingRoute: ${menuProvider.hasPendingRoute}, dialogShown: $_dialogShown');
 
     if (!mounted) return;
 
@@ -52,12 +52,12 @@ class _MenuPageState extends State<MenuPage> {
 
       // Snackbars.showSnackbarSuccess(
       //     '🚨 CONDICIÓN CUMPLIDA - Mostrar modal de recuperar ruta');
-      log('======🚨 CONDICIÓN CUMPLIDA - Mostrar modal de recuperar ruta');
+      // log('======🚨 CONDICIÓN CUMPLIDA - Mostrar modal de recuperar ruta');
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           // Snackbars.showSnackbarSuccess('🔄 PostFrameCallback ejecutado');
-          log('======🔄 PostFrameCallback ejecutado');
+          // log('======🔄 PostFrameCallback ejecutado');
 
           _showRecoverRouteDialog(context);
         }
@@ -348,7 +348,7 @@ class _MenuPageState extends State<MenuPage> {
       }
 
       var cronometer = readStorage('root.cronometer');
-      log('Cronómetro inicial: $cronometer');
+      // log('Cronómetro inicial: $cronometer');
 
       // 3. Inicializar cronómetro si no existe
       if (readStorage('root.cronometer') == null) {
@@ -382,7 +382,7 @@ class _MenuPageState extends State<MenuPage> {
         tooltip: 'Salir de la sesión',
       ),
       actions: [
-        _buildOfflineOperationsButton(),
+        // _buildOfflineOperationsButton(),
       ],
     );
   }

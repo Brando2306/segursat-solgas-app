@@ -41,7 +41,7 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
   @override
   Future<RouteEntity> createRoute(CreateRouteEntity route) async {
     final data = route.toJson();
-    _log('📤 Enviando createRoute', data);
+    // _log('📤 Enviando createRoute', data);
 
     final response = await _dio.post(
       'http://${ENDPOINTS.HOST}/${ENDPOINTS.CREATE_ROUTE}',
@@ -51,20 +51,20 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
       }),
     );
 
-    _log('📥 Respuesta createRoute', response.data);
+    // _log('📥 Respuesta createRoute', response.data);
 
     if (response.statusCode != 200) {
-      _log('❌ Error al crear ruta: ${response.statusCode}');
+      // _log('❌ Error al crear ruta: ${response.statusCode}');
       throw Exception('Failed to create route');
     }
 
-    _log('✅ Ruta creada exitosamente');
+    // _log('✅ Ruta creada exitosamente');
     return RouteEntity.fromJson(response.data);
   }
 
   @override
   Future<RouteEntity> getRoute(int routeId) async {
-    _log('📤 Solicitando getRoute', {'routeId': routeId});
+    // _log('📤 Solicitando getRoute', {'routeId': routeId});
 
     final response = await _dio.get(
       'http://${ENDPOINTS.HOST}/${ENDPOINTS.GET_ROUTE.replaceAll('<int:id>', '$routeId')}',
@@ -73,21 +73,21 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
       }),
     );
 
-    _log('📥 Respuesta getRoute', response.data);
+    // _log('📥 Respuesta getRoute', response.data);
 
     if (response.statusCode != 200) {
-      _log('❌ Error al obtener ruta: ${response.statusCode}');
+      // _log('❌ Error al obtener ruta: ${response.statusCode}');
       throw Exception('Failed to get route');
     }
 
-    _log('✅ Ruta obtenida correctamente');
+    // _log('✅ Ruta obtenida correctamente');
     return RouteEntity.fromJson(response.data);
   }
 
   @override
   Future<void> finishRoute(FinishRouteEntity route) async {
     final data = route.toJson();
-    _log('📤 Enviando finishRoute', data);
+    // _log('📤 Enviando finishRoute', data);
 
     final response = await _dio.post(
       'http://${ENDPOINTS.HOST}/${ENDPOINTS.FINISH_ROUTE}',
@@ -97,19 +97,19 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
       }),
     );
 
-    _log('📥 Respuesta finishRoute', response.data);
+    // _log('📥 Respuesta finishRoute', response.data);
 
     if (response.statusCode != 200) {
-      _log('❌ Error al finalizar ruta: ${response.statusCode}');
+      // _log('❌ Error al finalizar ruta: ${response.statusCode}');
       throw Exception('Failed to finish route');
     }
 
-    _log('✅ Ruta finalizada correctamente');
+    // _log('✅ Ruta finalizada correctamente');
   }
 
   @override
   Future<void> cancelRoute(CancelRouteEntity route) async {
-    _log('📤 Enviando cancelRoute', route.toJson());
+    // _log('📤 Enviando cancelRoute', route.toJson());
 
     final response = await _dio.post(
       'http://${ENDPOINTS.HOST}/${ENDPOINTS.CANCEL_ROUTE}',
@@ -119,19 +119,20 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
       }),
     );
 
-    _log('📥 Respuesta cancelRoute', response.data);
+    // _log('📥 Respuesta cancelRoute', response.data);
 
     if (response.statusCode != 200) {
-      _log('❌ Error al cancelar ruta: ${response.statusCode}');
+      // _log('❌ Error al cancelar ruta: ${response.statusCode}');
       throw Exception('Failed to cancel route');
     }
 
-    _log('✅ Ruta cancelada correctamente');
+    // _log('✅ Ruta cancelada correctamente');
   }
 
   @override
   Future<void> sendSos(EmergencyEventEntity event) async {
-    _log('📤 Enviando SOS', event.toJson());
+    // _log('📤 Enviando SOS', event.toJson());
+
 
     final response = await _dio.post(
       'http://${ENDPOINTS.HOST}/${ENDPOINTS.INSERT_ROUTE_SOS}',
@@ -141,20 +142,20 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
       }),
     );
 
-    _log('📥 Respuesta sendSos', response.data);
+    // _log('📥 Respuesta sendSos', response.data);
 
     if (response.statusCode != 200) {
-      _log('❌ Error al enviar SOS: ${response.statusCode}');
+      // _log('❌ Error al enviar SOS: ${response.statusCode}');
       throw Exception('Failed to send SOS');
     }
 
-    _log('✅ SOS enviado correctamente');
+    // _log('✅ SOS enviado correctamente');
   }
 
   @override
   Future<void> sendRoutePositions(List<RoutePositionEntity> positions) async {
     final data = positions.map((p) => p.toJson()).toList();
-    _log('📤 Enviando posiciones de ruta (batch)', data);
+    // _log('📤 Enviando posiciones de ruta (batch)', data);
 
     final response = await _dio.post(
       'http://${ENDPOINTS.HOST}/${ENDPOINTS.INSERT_ROUTE_POSITIONS_BATCH}',
@@ -164,10 +165,10 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
       }),
     );
 
-    _log('📥 Respuesta sendRoutePositions', response.data);
+    // _log('📥 Respuesta sendRoutePositions', response.data);
 
     if (response.statusCode != 200) {
-      _log('❌ Error al enviar posiciones: ${response.statusCode}');
+      // _log('❌ Error al enviar posiciones: ${response.statusCode}');
       throw Exception('Failed to send route positions');
     }
 
@@ -175,17 +176,17 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
     if (responseData is Map && responseData.containsKey('errors')) {
       final errors = responseData['errors'];
       if (errors is List && errors.isNotEmpty) {
-        _log('⚠️ Errores en envío de posiciones', errors);
+        // _log('⚠️ Errores en envío de posiciones', errors);
         throw Exception('Failed to send route positions: $errors');
       }
     }
 
-    _log('✅ Posiciones enviadas correctamente');
+    // _log('✅ Posiciones enviadas correctamente');
   }
 
   @override
   Future<String> getEmergencyPhoneNumber() async {
-    _log('📤 Solicitando número de emergencia');
+    // _log('📤 Solicitando número de emergencia');
 
     final response = await _client.get(
       Uri.http(ENDPOINTS.HOST, ENDPOINTS.EMERGENCY_PHONE),
@@ -195,22 +196,22 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
       },
     );
 
-    _log('📥 Respuesta getEmergencyPhoneNumber', response.body);
+    // _log('📥 Respuesta getEmergencyPhoneNumber', response.body);
 
     if (response.statusCode != 200) {
-      _log('❌ Error al obtener número de emergencia: ${response.statusCode}');
+      // _log('❌ Error al obtener número de emergencia: ${response.statusCode}');
       throw Exception('Failed to get emergency number');
     }
 
     final data = json.decode(response.body);
     final number = data['emergency_phone'] as String;
-    _log('✅ Número de emergencia obtenido', {'phone': number});
+    // _log('✅ Número de emergencia obtenido', {'phone': number});
     return number;
   }
 
   @override
   Future<void> sendIncident(IncidentRouteEntity incident) async {
-    _log('📤 Enviando incidente', incident.toJson());
+    // _log('📤 Enviando incidente', incident.toJson());
 
     final response = await _client.post(
       Uri.http(ENDPOINTS.HOST, ENDPOINTS.CREATE_ROUTE_INCIDENTS),
@@ -222,24 +223,24 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
     );
 
     final jsonResponse = json.decode(response.body);
-    _log('📥 Respuesta sendIncident', jsonResponse);
+    // _log('📥 Respuesta sendIncident', jsonResponse);
 
     if (jsonResponse is Map && jsonResponse.containsKey('errors')) {
-      _log('⚠️ Errores en envío de incidente', jsonResponse['errors']);
+      // _log('⚠️ Errores en envío de incidente', jsonResponse['errors']);
       throw Exception(handleApiError(jsonResponse));
     }
 
     if (response.statusCode != 200) {
-      _log('❌ Error HTTP al enviar incidente: ${response.statusCode}');
+      // _log('❌ Error HTTP al enviar incidente: ${response.statusCode}');
       throw Exception('Failed to send incident');
     }
 
-    _log('✅ Incidente enviado correctamente');
+    // _log('✅ Incidente enviado correctamente');
   }
 
   @override
   Future<void> sendRouteStop(StopRouteEntity stop) async {
-    _log('📤 Enviando parada de ruta', stop.toJson());
+    // _log('📤 Enviando parada de ruta', stop.toJson());
 
     final response = await _client.post(
       Uri.http(ENDPOINTS.HOST, ENDPOINTS.CREATE_ROUTE_STOPS),
@@ -251,18 +252,18 @@ class RouteRemoteDataSourceImpl implements RouteRemoteDataSource {
     );
 
     final jsonResponse = json.decode(response.body);
-    _log('📥 Respuesta sendRouteStop', jsonResponse);
+    // _log('📥 Respuesta sendRouteStop', jsonResponse);
 
     if (jsonResponse is Map && jsonResponse.containsKey('errors')) {
-      _log('⚠️ Errores en envío de parada', jsonResponse['errors']);
+      // _log('⚠️ Errores en envío de parada', jsonResponse['errors']);
       throw Exception(handleApiError(jsonResponse));
     }
 
     if (response.statusCode != 200) {
-      _log('❌ Error HTTP al enviar parada: ${response.statusCode}');
+      // _log('❌ Error HTTP al enviar parada: ${response.statusCode}');
       throw Exception('Failed to send route stop');
     }
 
-    _log('✅ Parada de ruta enviada correctamente');
+    // _log('✅ Parada de ruta enviada correctamente');
   }
 }

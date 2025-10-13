@@ -62,38 +62,38 @@ class RouteRepositoryImpl implements RouteRepository {
       // Check if we have an offlineRouteId in storage
       final offlineRouteId = readStorage(StorageKeys.currentOfflineRouteId);
 
-      if (offlineRouteId == null) {
-        // Create a new offlineRouteId since this is a new device
-        final newOfflineRouteId =
-            '${StorageKeys.offlineRoutePrefix}${DateTime.now().millisecondsSinceEpoch}';
-        await writeStorage(
-            StorageKeys.currentOfflineRouteId, newOfflineRouteId);
+      // if (offlineRouteId == null) {
+      //   // Create a new offlineRouteId since this is a new device
+      //   final newOfflineRouteId =
+      //       '${StorageKeys.offlineRoutePrefix}${DateTime.now().millisecondsSinceEpoch}';
+      //   await writeStorage(
+      //       StorageKeys.currentOfflineRouteId, newOfflineRouteId);
 
-        // Create a fake route creation operation for offline consistency
-        final createRouteEntity = CreateRouteEntity(
-          destinationLatitude: route.destinationLatitude.toString(),
-          destinationLongitude: route.destinationLongitude.toString(),
-          unitName: route.unitName, // Assuming route has unitName
-          timestamp: getDate(), // Assuming route has timestamp
-          sourceLatitude: route.sourceLatitude
-              .toString(), // Assuming route has sourceLatitude
-          sourceLongitude: route.sourceLongitude
-              .toString(), // Assuming route has sourceLongitude
-          // Add other required fields based on your CreateRouteEntity
-        );
+      //   // Create a fake route creation operation for offline consistency
+      //   final createRouteEntity = CreateRouteEntity(
+      //     destinationLatitude: route.destinationLatitude.toString(),
+      //     destinationLongitude: route.destinationLongitude.toString(),
+      //     unitName: route.unitName, // Assuming route has unitName
+      //     timestamp: getDate(), // Assuming route has timestamp
+      //     sourceLatitude: route.sourceLatitude
+      //         .toString(), // Assuming route has sourceLatitude
+      //     sourceLongitude: route.sourceLongitude
+      //         .toString(), // Assuming route has sourceLongitude
+      //     // Add other required fields based on your CreateRouteEntity
+      //   );
 
-        final operation = OfflineOperation(
-            type: OfflineOperationType.routeCreation,
-            data: createRouteEntity.toJson(),
-            offlineRouteId: newOfflineRouteId,
-            synced: true,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now());
+      //   final operation = OfflineOperation(
+      //       type: OfflineOperationType.routeCreation,
+      //       data: createRouteEntity.toJson(),
+      //       offlineRouteId: newOfflineRouteId,
+      //       synced: true,
+      //       createdAt: DateTime.now(),
+      //       updatedAt: DateTime.now());
 
-        await offlineOperationsRepository.saveOperation(operation);
+      //   await offlineOperationsRepository.saveOperation(operation);
 
-        // log('Created new offlineRouteId for existing route: $newOfflineRouteId');
-      }
+      //   // log('Created new offlineRouteId for existing route: $newOfflineRouteId');
+      // }
 
       return route;
     } catch (e) {

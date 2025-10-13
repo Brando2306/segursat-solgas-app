@@ -100,9 +100,9 @@ class MenuProvider with ChangeNotifier {
 
       _pendingOperationsCount = pendingOps.length;
 
-      log('Operaciones offline pendientes: $_pendingOperationsCount');
+      // log('Operaciones offline pendientes: $_pendingOperationsCount');
     } catch (e) {
-      log('Error cargando contador de operaciones offline: $e');
+      // log('Error cargando contador de operaciones offline: $e');
       _pendingOperationsCount = 0;
     } finally {
       _isLoadingOperations = false;
@@ -151,7 +151,7 @@ class MenuProvider with ChangeNotifier {
             .length,
       };
     } catch (e) {
-      log('Error obteniendo estadísticas de operaciones: $e');
+      // log('Error obteniendo estadísticas de operaciones: $e');
       return {
         'total': 0,
         'positions': 0,
@@ -195,7 +195,7 @@ class MenuProvider with ChangeNotifier {
       _lastRouteData = routeMap;
       return routeMap;
     } catch (e) {
-      log('Error al obtener última ruta del backend: $e');
+      // log('Error al obtener última ruta del backend: $e');
       return null;
     }
   }
@@ -220,7 +220,7 @@ class MenuProvider with ChangeNotifier {
     if (hasFinishedOffline) {
       // Snackbars.showSnackbarSuccess(
       //     '🐛 _processRouteData() - Ruta offline finalizada, no hay ruta pendiente');
-      log('=====🐛 _processRouteData() - Ruta offline finalizada, no hay ruta pendiente');
+      // log('=====🐛 _processRouteData() - Ruta offline finalizada, no hay ruta pendiente');
       _hasPendingRoute = false;
       return;
     }
@@ -230,7 +230,7 @@ class MenuProvider with ChangeNotifier {
     if (hasBackendRoute) {
       // Snackbars.showSnackbarSuccess(
       //     '🐛 _processRouteData() - Ruta backend pendiente encontrada');
-      log('=====🐛 _processRouteData() - Ruta backend pendiente encontrada');
+      // log('=====🐛 _processRouteData() - Ruta backend pendiente encontrada');
       _hasPendingRoute = true;
 
       if (lastRoute != null && lastRoute['status'] == STATUSCODE.OK) {
@@ -239,7 +239,7 @@ class MenuProvider with ChangeNotifier {
     } else {
       // Snackbars.showSnackbarSuccess(
       //     '🐛 _processRouteData() - No hay ruta backend pendiente, verificando ruta offline');
-      log('=====🐛 _processRouteData() - No hay ruta backend pendiente, verificando ruta offline');
+      // log('=====🐛 _processRouteData() - No hay ruta backend pendiente, verificando ruta offline');
       _hasPendingRoute = await _checkOfflinePendingRoute();
     }
   }
@@ -269,7 +269,7 @@ class MenuProvider with ChangeNotifier {
     try {
       final finalPos = readStorage('root.finalPosition');
       if (finalPos == null) {
-        log('No hay posición final guardada para recuperación offline');
+        // log('No hay posición final guardada para recuperación offline');
         return false;
       }
 
@@ -285,20 +285,20 @@ class MenuProvider with ChangeNotifier {
               'timestamp': DateTime.now().toIso8601String(),
             }),
           );
-          log('Posición actual obtenida para recuperación offline');
+          // log('Posición actual obtenida para recuperación offline');
         } catch (e) {
-          log('No se pudo obtener posición actual para recuperación offline: $e');
+          // log('No se pudo obtener posición actual para recuperación offline: $e');
         }
       }
 
       if (readStorage('root.cronometer') == null) {
         await writeStorage('root.cronometer', '0');
-        log('Cronómetro inicializado a 0 para recuperación offline');
+        // log('Cronómetro inicializado a 0 para recuperación offline');
       }
 
       return true;
     } catch (e) {
-      log('Error en _prepareOfflineRouteData: $e');
+      // log('Error en _prepareOfflineRouteData: $e');
       return false;
     }
   }
@@ -327,7 +327,7 @@ class MenuProvider with ChangeNotifier {
 
       return hasUnsyncedFinishOrCancel;
     } catch (e) {
-      log('Error checking offline finished routes: $e');
+      // log('Error checking offline finished routes: $e');
       return false;
     }
   }
@@ -337,12 +337,12 @@ class MenuProvider with ChangeNotifier {
 
     // Snackbars.showSnackbarSuccess(
     //     '🐛 _checkOfflinePendingRoute() - offlineRouteId: $offlineRouteId');
-    log('======🐛 _checkOfflinePendingRoute() - offlineRouteId: $offlineRouteId');
+    // log('======🐛 _checkOfflinePendingRoute() - offlineRouteId: $offlineRouteId');
 
     if (offlineRouteId == null) {
       // Snackbars.showSnackbarSuccess(
       //     '🐛 _checkOfflinePendingRoute() - NO hay offlineRouteId, retornando false');
-      log('======🐛 _checkOfflinePendingRoute() - NO hay offlineRouteId, retornando false');
+      // log('======🐛 _checkOfflinePendingRoute() - NO hay offlineRouteId, retornando false');
       return false;
     }
 
@@ -351,7 +351,7 @@ class MenuProvider with ChangeNotifier {
     if (currentRouteId != null) {
       // Snackbars.showSnackbarSuccess(
       //     '🐛 _checkOfflinePendingRoute() - Ya hay ruta activa (ID: $currentRouteId), no recuperar offline');
-      log('======🐛 _checkOfflinePendingRoute() - Ya hay ruta activa (ID: $currentRouteId), no recuperar offline');
+      // log('======🐛 _checkOfflinePendingRoute() - Ya hay ruta activa (ID: $currentRouteId), no recuperar offline');
       return false;
     }
 
@@ -371,14 +371,14 @@ class MenuProvider with ChangeNotifier {
 
     // Snackbars.showSnackbarSuccess(
     //     '🐛 _checkOfflinePendingRoute() - positionOps: ${positionOps.length}');
-    log('======🐛 _checkOfflinePendingRoute() - positionOps: ${positionOps.length}');
+    // log('======🐛 _checkOfflinePendingRoute() - positionOps: ${positionOps.length}');
 
     // 🎯 CAMBIO CLAVE: Si no hay posiciones, no hay ruta para recuperar
     if (positionOps.isEmpty) return false; // ← NUEVA LÍNEA
 
     // Snackbars.showSnackbarSuccess(
     //     '🐛 _checkOfflinePendingRoute() - positionOps no está vacío, procesando...');
-    log('======🐛 _checkOfflinePendingRoute() - positionOps no está vacío, procesando...');
+    // log('======🐛 _checkOfflinePendingRoute() - positionOps no está vacío, procesando...');
 
     final lastOp = positionOps.reduce(
         (curr, next) => curr.createdAt.isAfter(next.createdAt) ? curr : next);
@@ -399,7 +399,7 @@ class MenuProvider with ChangeNotifier {
 
     // Snackbars.showSnackbarSuccess(
     //     '🐛 _checkOfflinePendingRoute() - Ruta offline pendiente encontrada');
-    log('======🐛 _checkOfflinePendingRoute() - Ruta offline pendiente encontrada');
+    // log('======🐛 _checkOfflinePendingRoute() - Ruta offline pendiente encontrada');
     return true;
   }
 
@@ -427,14 +427,14 @@ class MenuProvider with ChangeNotifier {
       EasyLoading.dismiss();
 
       if (result.failed > 0) {
-        log('Sincronización completada con ${result.failed} errores');
+        // log('Sincronización completada con ${result.failed} errores');
         // Puedes manejar errores parciales aquí
       }
 
       return result.successful > 0 || result.total == 0;
     } catch (e) {
       EasyLoading.dismiss();
-      log('Error en syncPendingRoutesAndContinue: $e');
+      // log('Error en syncPendingRoutesAndContinue: $e');
       rethrow;
     }
   }

@@ -468,7 +468,7 @@ class OfflineOperationsProvider with ChangeNotifier {
         } catch (e) {
           if (e.toString().contains('Duplicate entry')) {
             // Si es duplicado, las consideramos ya sincronizadas
-            log('Lote ya sincronizado: $e');
+            // log('Lote ya sincronizado: $e');
             continue;
           } else {
             // Si es otro error, las agregamos como fallidas
@@ -562,7 +562,7 @@ class OfflineOperationsProvider with ChangeNotifier {
           await repository.removeOperation(op.id);
         }
       } catch (e) {
-        log('Failed to retry positions for route $routeId: $e');
+        // log('Failed to retry positions for route $routeId: $e');
       }
     }
 

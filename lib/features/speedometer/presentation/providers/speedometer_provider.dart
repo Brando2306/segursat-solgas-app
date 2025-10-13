@@ -92,7 +92,7 @@ class SpeedometerProvider with ChangeNotifier {
     // Si hay discrepancia, usar el último routeId conocido
     if (currentRouteId != lastRoute && lastRoute != null) {
       // await writeStorage('root.createRoute.id', lastRoute);
-      log('🔄 Actualizado ID de ruta: $currentRouteId -> $lastRoute');
+      // log('🔄 Actualizado ID de ruta: $currentRouteId -> $lastRoute');
     }
   }
 
@@ -148,7 +148,7 @@ class SpeedometerProvider with ChangeNotifier {
   Future<void> createOrResumeRoute() async {
     final currentRouteId = readStorage('root.createRoute.id');
     if (currentRouteId != null) {
-      log('<<<<<<<<<<<<<<<<<Ruta ya activa con ID: $currentRouteId, no se crea ni reanuda otra.');
+      // log('<<<<<<<<<<<<<<<<<Ruta ya activa con ID: $currentRouteId, no se crea ni reanuda otra.');
       return;
     }
 
@@ -156,12 +156,12 @@ class SpeedometerProvider with ChangeNotifier {
       if (isNotEmptyString(readStorage('root.cronometer')) &&
           isNotEmptyString(readStorage('root.finalPosition'))) {
         if (isNotEmptyString(readStorage('personal.lastRoute'))) {
-          log('<<<<<<<<<<<<<<<<<Reanudando ruta existente con ID: ${readStorage('personal.lastRoute')}');
+          // log('<<<<<<<<<<<<<<<<<Reanudando ruta existente con ID: ${readStorage('personal.lastRoute')}');
           writeStorage(
               'root.createRoute.id', readStorage('personal.lastRoute'));
         }
       } else {
-        log('<<<<<<<<<<<<<<<<<Creando nueva ruta...');
+        // log('<<<<<<<<<<<<<<<<<Creando nueva ruta...');
         final initialPosition =
             json.decode(readStorage('root.initialPosition'));
         final finalPosition = json.decode(readStorage('root.finalPosition'));
@@ -179,7 +179,7 @@ class SpeedometerProvider with ChangeNotifier {
         writeStorage('root.createRoute.id', createdRoute.id);
       }
     } catch (e) {
-      log('Error creating or resuming route: $e');
+      // log('Error creating or resuming route: $e');
     }
   }
 
@@ -268,7 +268,7 @@ class SpeedometerProvider with ChangeNotifier {
       await routeRepository.sendRoutePositions([positionData]);
       _updatePendingPositionsCount();
     } catch (e) {
-      log('Error sending position: $e');
+      // log('Error sending position: $e');
     }
   }
 
@@ -338,7 +338,7 @@ class SpeedometerProvider with ChangeNotifier {
         await offlineOperationsRepository.removeOperation(op.id);
       }
     } catch (e) {
-      log('Error al reenviar posiciones: $e');
+      // log('Error al reenviar posiciones: $e');
     }
   }
 
@@ -496,7 +496,7 @@ class SpeedometerProvider with ChangeNotifier {
 
       await action();
     } catch (e) {
-      log('Error en operación $offlineType, guardando offline: $e');
+      // log('Error en operación $offlineType, guardando offline: $e');
 
       // Verificar nuevamente antes de guardar para evitar duplicados
       final existingOps =
@@ -527,7 +527,7 @@ class SpeedometerProvider with ChangeNotifier {
         throw Exception('Could not launch phone call');
       }
     } catch (e) {
-      log('Emergency call failed: $e');
+      // log('Emergency call failed: $e');
       rethrow;
     }
   }

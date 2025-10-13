@@ -14,9 +14,9 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<bool> isAuthenticated() async {
     const value = 'personal.document';
-    log('Checking authentication status for key: $value');
+    // log('Checking authentication status for key: $value');
     var val = readStorage('personal.document');
-    log('Authentication status: ${val != null}');
+    // log('Authentication status: ${val != null}');
     return readStorage('personal.document') != null;
   }
 
