@@ -101,9 +101,9 @@ class _SpeedometerPageState extends State<SpeedometerPage>
             // Al presionar back, activar PiP en lugar de salir
             if (Platform.isAndroid) {
               // await _enterPipModeAutomatically();
-              return false;
+              return true;
             }
-            return false;
+            return true;
           },
           child: Scaffold(
             backgroundColor: Colors.white,

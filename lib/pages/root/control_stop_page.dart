@@ -88,7 +88,7 @@ class _ControlStopPageState extends State<ControlStopPage> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-        onWillPop: () async => false,
+        onWillPop: () async => true,
         child: Scaffold(
           appBar: header(title),
           body: Column(children: controlPage(keyPage)),
@@ -311,7 +311,8 @@ class _ControlStopPageState extends State<ControlStopPage> {
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
               },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
               child: Text('Cerrar'),
             ),
           ],
@@ -533,10 +534,7 @@ class _ControlStopPageState extends State<ControlStopPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
-              color: ((_formTwoValidationOne ?? false) &&
-                      (_formTwoValidationTwo ?? false))
-                  ? CustomColors.primary
-                  : CustomColors.primaryOff,
+              color: CustomColors.primary,
               child: Padding(
                 padding: EdgeInsets.symmetric(
                     horizontal: getHeight(context, 12), vertical: 16),

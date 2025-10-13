@@ -8,12 +8,18 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:safe_driving_app/core/constants/storage_keys.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class SelectSourceProvider with ChangeNotifier {
   final MapController mapController = MapController();
+
+  late final OfflineOperationsRepository offlineOperationsRepository;
+
+  SelectSourceProvider({required this.offlineOperationsRepository});
 
   // Connectivity
   bool _hasInternet = false;
@@ -91,6 +97,9 @@ class SelectSourceProvider with ChangeNotifier {
   }
 
   Future<void> initialize(BuildContext context) async {
+    // LIMPIAR EVENTOS PENDIENTES AL INICIAR NUEVA RUTA
+    await _cleanAllPendingOperations();
+
     // GUARDAR REFERENCIA AL CONTEXT
     _currentContext = context;
     _blockNextButton = false;
@@ -110,6 +119,63 @@ class SelectSourceProvider with ChangeNotifier {
     if (_blockNextButton || !_isValidContext()) return;
 
     await _getLocationWithRetry();
+  }
+
+  Future<void> _cleanAllPendingOperations() async {
+    try {
+      // Obtener todas las operaciones pendientes
+      final pendingOps =
+          await offlineOperationsRepository.getPendingOperations();
+
+      // Filtrar solo operaciones no sincronizadas
+      final unsyncedOps =
+          pendingOps.where((op) => op.data['synced'] != true).toList();
+
+      if (unsyncedOps.isNotEmpty) {
+        log('🧹 SelectSourceProvider - Limpiando ${unsyncedOps.length} operaciones pendientes');
+
+        // Eliminar cada operación
+        for (final op in unsyncedOps) {
+          await offlineOperationsRepository.removeOperation(op.id);
+        }
+
+        log('✅ SelectSourceProvider - Operaciones pendientes limpiadas exitosamente');
+      }
+
+      // Limpiar storages relacionados con rutas
+      await _cleanRouteStorages();
+    } catch (e) {
+      log('❌ SelectSourceProvider - Error limpiando operaciones pendientes: $e');
+      // No lanzar excepción para no bloquear el flujo de nueva ruta
+    }
+  }
+
+  Future<void> _cleanRouteStorages() async {
+    try {
+      final keysToRemove = [
+        'root.createRoute.id',
+        'personal.lastRoute',
+        'personal.lastRouteStatus',
+        'root.cronometer',
+        'root.finalPosition',
+        'root.initialPosition',
+        'root.departureDate',
+        'root.initialDate',
+        'personal.pushRouteSpeedometer',
+        // Limpiar también la ruta offline actual si existe
+        'current_offline_route_id', // Ajusta según tu StorageKeys
+        StorageKeys.currentOfflineRouteId,
+        StorageKeys.offlineRoutePrefix,
+      ];
+
+      for (final key in keysToRemove) {
+        await removeStorage(key);
+      }
+
+      log('✅ SelectSourceProvider - Storages de ruta limpiados');
+    } catch (e) {
+      log('⚠️ SelectSourceProvider - Error limpiando storages: $e');
+    }
   }
 
   Future<void> _initializeConnectivity() async {

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
@@ -39,8 +41,8 @@ class _MenuPageState extends State<MenuPage> {
     final menuProvider = Provider.of<MenuProvider>(context, listen: false);
     await menuProvider.init();
 
-    Snackbars.showSnackbarSuccess(
-        '🔍 initState - hasPendingRoute: ${menuProvider.hasPendingRoute}, dialogShown: $_dialogShown');
+    // Snackbars.showSnackbarSuccess(
+    //     '🔍 initState - hasPendingRoute: ${menuProvider.hasPendingRoute}, dialogShown: $_dialogShown');
     log('======🔍 initState - hasPendingRoute: ${menuProvider.hasPendingRoute}, dialogShown: $_dialogShown');
 
     if (!mounted) return;
@@ -48,13 +50,13 @@ class _MenuPageState extends State<MenuPage> {
     if (menuProvider.hasPendingRoute && !_dialogShown) {
       _dialogShown = true;
 
-      Snackbars.showSnackbarSuccess(
-          '🚨 CONDICIÓN CUMPLIDA - Mostrar modal de recuperar ruta');
+      // Snackbars.showSnackbarSuccess(
+      //     '🚨 CONDICIÓN CUMPLIDA - Mostrar modal de recuperar ruta');
       log('======🚨 CONDICIÓN CUMPLIDA - Mostrar modal de recuperar ruta');
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          Snackbars.showSnackbarSuccess('🔄 PostFrameCallback ejecutado');
+          // Snackbars.showSnackbarSuccess('🔄 PostFrameCallback ejecutado');
           log('======🔄 PostFrameCallback ejecutado');
 
           _showRecoverRouteDialog(context);
@@ -192,8 +194,8 @@ class _MenuPageState extends State<MenuPage> {
   void _showRecoverRouteDialog(BuildContext context) {
     notificationInfoWithoutWillPopScope(
       context: context,
-      onWillPop: true,
-      barrierDismissible: true,
+      onWillPop: false,
+      barrierDismissible: false,
       content: 'Tienes una ruta activa en curso.\n¿Deseas recuperar la ruta?',
       callBack: () async {
         final navigatorContext = Navigator.of(context).context;
@@ -460,8 +462,50 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
+  Future<bool> _checkInternetInRealTime(BuildContext context) async {
+    try {
+      EasyLoading.show(status: 'Verificando conexión...');
+
+      // Verificar conectividad del dispositivo
+      final connectivityResult = await Connectivity().checkConnectivity();
+      final hasConnection = connectivityResult != ConnectivityResult.none;
+
+      if (!hasConnection) {
+        EasyLoading.dismiss();
+        return false;
+      }
+
+      // Verificar si realmente puede alcanzar internet (opcional pero recomendado)
+      final canReachInternet = await _canReachInternet();
+
+      EasyLoading.dismiss();
+      return canReachInternet;
+    } catch (e) {
+      EasyLoading.dismiss();
+      return false;
+    }
+  }
+
+  Future<bool> _canReachInternet() async {
+    try {
+      // Intentar hacer un ping a un servidor confiable
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 5));
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
+  }
+
   void _handleStartRoute(
       BuildContext context, MenuProvider menuProvider) async {
+    final hasInternet = await _checkInternetInRealTime(context);
+
+    if (!hasInternet) {
+      _showNoInternetDialog(context, MenuActionType.route);
+      return;
+    }
+
     if (!menuProvider.hasInternet) {
       _showNoInternetDialog(context, MenuActionType.route);
       return;
@@ -484,7 +528,15 @@ class _MenuPageState extends State<MenuPage> {
     }
   }
 
-  void _handleStartInspection(BuildContext context, MenuProvider menuProvider) {
+  void _handleStartInspection(
+      BuildContext context, MenuProvider menuProvider) async {
+    final hasInternet = await _checkInternetInRealTime(context);
+
+    if (!hasInternet) {
+      _showNoInternetDialog(context, MenuActionType.inspection);
+      return;
+    }
+
     if (!menuProvider.hasInternet) {
       _showNoInternetDialog(context, MenuActionType.inspection);
     } else {
@@ -493,7 +545,14 @@ class _MenuPageState extends State<MenuPage> {
   }
 
   void _handleStartMaintenance(
-      BuildContext context, MenuProvider menuProvider) {
+      BuildContext context, MenuProvider menuProvider) async {
+    final hasInternet = await _checkInternetInRealTime(context);
+
+    if (!hasInternet) {
+      _showNoInternetDialog(context, MenuActionType.maintenance);
+      return;
+    }
+
     if (!menuProvider.hasInternet) {
       _showNoInternetDialog(context, MenuActionType.maintenance);
     } else {

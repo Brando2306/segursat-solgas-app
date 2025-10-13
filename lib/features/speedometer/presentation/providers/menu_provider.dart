@@ -218,8 +218,8 @@ class MenuProvider with ChangeNotifier {
     final hasFinishedOffline = await _hasOfflineFinishedRoute();
 
     if (hasFinishedOffline) {
-      Snackbars.showSnackbarSuccess(
-          '🐛 _processRouteData() - Ruta offline finalizada, no hay ruta pendiente');
+      // Snackbars.showSnackbarSuccess(
+      //     '🐛 _processRouteData() - Ruta offline finalizada, no hay ruta pendiente');
       log('=====🐛 _processRouteData() - Ruta offline finalizada, no hay ruta pendiente');
       _hasPendingRoute = false;
       return;
@@ -228,8 +228,8 @@ class MenuProvider with ChangeNotifier {
     final hasBackendRoute = await _checkPendingRoute(unit);
 
     if (hasBackendRoute) {
-      Snackbars.showSnackbarSuccess(
-          '🐛 _processRouteData() - Ruta backend pendiente encontrada');
+      // Snackbars.showSnackbarSuccess(
+      //     '🐛 _processRouteData() - Ruta backend pendiente encontrada');
       log('=====🐛 _processRouteData() - Ruta backend pendiente encontrada');
       _hasPendingRoute = true;
 
@@ -237,8 +237,8 @@ class MenuProvider with ChangeNotifier {
         await _prepareRouteRecoveryData(lastRoute);
       }
     } else {
-      Snackbars.showSnackbarSuccess(
-          '🐛 _processRouteData() - No hay ruta backend pendiente, verificando ruta offline');
+      // Snackbars.showSnackbarSuccess(
+      //     '🐛 _processRouteData() - No hay ruta backend pendiente, verificando ruta offline');
       log('=====🐛 _processRouteData() - No hay ruta backend pendiente, verificando ruta offline');
       _hasPendingRoute = await _checkOfflinePendingRoute();
     }
@@ -335,13 +335,13 @@ class MenuProvider with ChangeNotifier {
   Future<bool> _checkOfflinePendingRoute() async {
     final offlineRouteId = readStorage(StorageKeys.currentOfflineRouteId);
 
-    Snackbars.showSnackbarSuccess(
-        '🐛 _checkOfflinePendingRoute() - offlineRouteId: $offlineRouteId');
+    // Snackbars.showSnackbarSuccess(
+    //     '🐛 _checkOfflinePendingRoute() - offlineRouteId: $offlineRouteId');
     log('======🐛 _checkOfflinePendingRoute() - offlineRouteId: $offlineRouteId');
 
     if (offlineRouteId == null) {
-      Snackbars.showSnackbarSuccess(
-          '🐛 _checkOfflinePendingRoute() - NO hay offlineRouteId, retornando false');
+      // Snackbars.showSnackbarSuccess(
+      //     '🐛 _checkOfflinePendingRoute() - NO hay offlineRouteId, retornando false');
       log('======🐛 _checkOfflinePendingRoute() - NO hay offlineRouteId, retornando false');
       return false;
     }
@@ -349,8 +349,8 @@ class MenuProvider with ChangeNotifier {
     // 🎯 NUEVA VERIFICACIÓN: Si ya tenemos una ruta activa en curso, no recuperar una anterior
     final currentRouteId = readStorage('root.createRoute.id');
     if (currentRouteId != null) {
-      Snackbars.showSnackbarSuccess(
-          '🐛 _checkOfflinePendingRoute() - Ya hay ruta activa (ID: $currentRouteId), no recuperar offline');
+      // Snackbars.showSnackbarSuccess(
+      //     '🐛 _checkOfflinePendingRoute() - Ya hay ruta activa (ID: $currentRouteId), no recuperar offline');
       log('======🐛 _checkOfflinePendingRoute() - Ya hay ruta activa (ID: $currentRouteId), no recuperar offline');
       return false;
     }
@@ -369,15 +369,15 @@ class MenuProvider with ChangeNotifier {
     final positionOps =
         ops.where((op) => op.type == OfflineOperationType.routePositions);
 
-    Snackbars.showSnackbarSuccess(
-        '🐛 _checkOfflinePendingRoute() - positionOps: ${positionOps.length}');
+    // Snackbars.showSnackbarSuccess(
+    //     '🐛 _checkOfflinePendingRoute() - positionOps: ${positionOps.length}');
     log('======🐛 _checkOfflinePendingRoute() - positionOps: ${positionOps.length}');
 
     // 🎯 CAMBIO CLAVE: Si no hay posiciones, no hay ruta para recuperar
     if (positionOps.isEmpty) return false; // ← NUEVA LÍNEA
 
-    Snackbars.showSnackbarSuccess(
-        '🐛 _checkOfflinePendingRoute() - positionOps no está vacío, procesando...');
+    // Snackbars.showSnackbarSuccess(
+    //     '🐛 _checkOfflinePendingRoute() - positionOps no está vacío, procesando...');
     log('======🐛 _checkOfflinePendingRoute() - positionOps no está vacío, procesando...');
 
     final lastOp = positionOps.reduce(
@@ -397,8 +397,8 @@ class MenuProvider with ChangeNotifier {
           }));
     }
 
-    Snackbars.showSnackbarSuccess(
-        '🐛 _checkOfflinePendingRoute() - Ruta offline pendiente encontrada');
+    // Snackbars.showSnackbarSuccess(
+    //     '🐛 _checkOfflinePendingRoute() - Ruta offline pendiente encontrada');
     log('======🐛 _checkOfflinePendingRoute() - Ruta offline pendiente encontrada');
     return true;
   }
