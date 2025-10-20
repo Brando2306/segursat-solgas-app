@@ -5,8 +5,10 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:safe_driving_app/core/constants/storage_keys.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/entities/offline_operation.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/entities/operation_type.enum.dart';
 import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
+import 'package:safe_driving_app/features/route/domain/entities/create_route_entity.dart';
 import 'package:safe_driving_app/features/route/domain/entities/route_position_entity.dart';
 import 'package:safe_driving_app/features/route/domain/repositories/route_repository.dart';
 import 'package:safe_driving_app/features/speedometer/presentation/providers/sync_service.dart';
@@ -73,7 +75,9 @@ class MenuProvider with ChangeNotifier {
       // Si falla, asumimos que no hay internet
       _hasInternet = false;
       _hasValidInspection = false;
-      _hasPendingRoute = await _checkOfflinePendingRoute();
+      // 🚨 MEJORA: En caso de error, verificar offline más exhaustivamente
+      _hasPendingRoute = await _checkOfflinePendingRoute() ||
+          await _hasIncompleteRouteOperations();
 
       buttonInspectionEnabled = true;
       buttonRootEnabled = true;
@@ -240,7 +244,122 @@ class MenuProvider with ChangeNotifier {
       // Snackbars.showSnackbarSuccess(
       //     '🐛 _processRouteData() - No hay ruta backend pendiente, verificando ruta offline');
       // log('=====🐛 _processRouteData() - No hay ruta backend pendiente, verificando ruta offline');
-      _hasPendingRoute = await _checkOfflinePendingRoute();
+      _hasPendingRoute = await _checkOfflinePendingRoute() ||
+          await _hasIncompleteRouteOperations();
+    }
+  }
+
+  // NUEVO MÉTODO: Detectar rutas incompletas con operaciones pendientes
+  Future<bool> _hasIncompleteRouteOperations() async {
+    try {
+      final offlineRouteId = readStorage(StorageKeys.currentOfflineRouteId);
+      if (offlineRouteId == null) {
+        // log('🔍 _hasIncompleteRouteOperations - No hay offlineRouteId');
+        return false;
+      }
+
+      final operations = await offlineOperationsRepository
+          .getOperationsByOfflineId(offlineRouteId);
+
+      // Filtrar solo operaciones no sincronizadas
+      final pendingOps =
+          operations.where((op) => op.data['synced'] != true).toList();
+
+      if (pendingOps.isEmpty) {
+        // log('🔍 _hasIncompleteRouteOperations - No hay operaciones pendientes');
+        return false;
+      }
+
+      // Verificar si hay operaciones que indiquen ruta activa
+      final hasRouteOperations = pendingOps.any((op) =>
+          op.type == OfflineOperationType.routePositions ||
+          op.type == OfflineOperationType.routeStop ||
+          op.type == OfflineOperationType.incidentReport ||
+          op.type == OfflineOperationType.routeSos);
+
+      // Verificar que NO tenga finish o cancel (ruta aún activa)
+      final hasFinishOrCancel = pendingOps.any((op) =>
+          op.type == OfflineOperationType.routeFinish ||
+          op.type == OfflineOperationType.routeCancel);
+
+      final hasRouteCreation =
+          pendingOps.any((op) => op.type == OfflineOperationType.routeCreation);
+
+      // log('🔍 _hasIncompleteRouteOperations - '
+      //     'hasRouteOperations: $hasRouteOperations, '
+      //     'hasFinishOrCancel: $hasFinishOrCancel, '
+      //     'hasRouteCreation: $hasRouteCreation, '
+      //     'totalPending: ${pendingOps.length}');
+
+      // Si tiene operaciones de ruta activa Y no está finalizada/cancelada
+      final shouldRecover =
+          (hasRouteOperations || hasRouteCreation) && !hasFinishOrCancel;
+
+      if (shouldRecover) {
+        // log('🚨 _hasIncompleteRouteOperations - Ruta pendiente detectada por operaciones incompletas');
+
+        // Preparar datos para recuperación
+        await _prepareOfflineRouteRecovery(offlineRouteId, pendingOps);
+      }
+
+      return shouldRecover;
+    } catch (e) {
+      // log('❌ _hasIncompleteRouteOperations - Error: $e');
+      return false;
+    }
+  }
+
+  // NUEVO MÉTODO: Preparar recuperación de ruta offline
+  Future<void> _prepareOfflineRouteRecovery(
+      String offlineRouteId, List<OfflineOperation> pendingOps) async {
+    try {
+      // Buscar la última posición para restaurar el cronómetro
+      final positionOps = pendingOps
+          .where((op) => op.type == OfflineOperationType.routePositions)
+          .toList();
+
+      if (positionOps.isNotEmpty) {
+        // Obtener la última operación de posiciones
+        final lastPositionOp = positionOps.reduce((curr, next) =>
+            curr.createdAt.isAfter(next.createdAt) ? curr : next);
+
+        final positions = (lastPositionOp.data['positions'] as List)
+            .map((p) => RoutePositionEntity.fromJson(p))
+            .toList();
+
+        if (positions.isNotEmpty) {
+          final lastPosition = positions.last;
+          // Restaurar cronómetro desde la última posición
+          await writeStorage('root.cronometer', lastPosition.angle ?? 0);
+          // log('🔄 Cronómetro restaurado: ${lastPosition.angle}');
+        }
+      }
+
+      // Buscar datos de la ruta en operaciones de creación
+      final creationOps = pendingOps
+          .where((op) => op.type == OfflineOperationType.routeCreation)
+          .toList();
+
+      if (creationOps.isNotEmpty) {
+        final creationOp = creationOps.first;
+        final route = CreateRouteEntity.fromJson(creationOp.data);
+
+        // Restaurar posición final si existe
+        if (route.destinationLatitude != null &&
+            route.destinationLongitude != null) {
+          await writeStorage(
+              'root.finalPosition',
+              json.encode({
+                'latitude': double.parse(route.destinationLatitude.toString()),
+                'longitude': double.parse(route.destinationLongitude.toString())
+              }));
+          // log('🔄 Posición final restaurada desde creación offline');
+        }
+      }
+
+      // log('✅ Preparación de recuperación offline completada');
+    } catch (e) {
+      // log('❌ Error en _prepareOfflineRouteRecovery: $e');
     }
   }
 
