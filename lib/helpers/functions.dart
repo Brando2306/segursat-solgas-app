@@ -423,7 +423,7 @@ String handleApiError(dynamic response) {
       if (errors.isNotEmpty && errors.first is Map<String, dynamic>) {
         Map<String, dynamic> firstError = errors.first;
 
-        String errorText = "Ocurrió un error en la API";
+        String errorText = "No tiene acceso a internet";
 
         for (String propertyName in firstError.keys) {
           dynamic propertyErrors = firstError[propertyName];
@@ -441,7 +441,7 @@ String handleApiError(dynamic response) {
     }
   }
 
-  return "Ocurrió un error en la API";
+  return "No tiene acceso a internet";
 }
 
 Map<String, dynamic> formatResponse(http.Response response) {

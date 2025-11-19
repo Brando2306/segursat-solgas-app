@@ -524,7 +524,7 @@ class _MenuPageState extends State<MenuPage> {
     } else if (!success && context.mounted) {
       // Mostrar diálogo de error de sincronización
       _showSyncErrorDialog(context,
-          'No se pudieron sincronizar todas las rutas pendientes. Puedes continuar, pero algunas operaciones quedarán pendientes.');
+          'Error de conexión al sincronizar datos. Verifique su internet e intente nuevamente.');
     }
   }
 
