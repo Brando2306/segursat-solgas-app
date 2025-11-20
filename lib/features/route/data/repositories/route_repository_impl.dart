@@ -62,89 +62,41 @@ class RouteRepositoryImpl implements RouteRepository {
       // Check if we have an offlineRouteId in storage
       final offlineRouteId = readStorage(StorageKeys.currentOfflineRouteId);
 
-      if (offlineRouteId == null) {
-        // Create a new offlineRouteId since this is a new device
-        final newOfflineRouteId =
-            '${StorageKeys.offlineRoutePrefix}${DateTime.now().millisecondsSinceEpoch}';
-        await writeStorage(
-            StorageKeys.currentOfflineRouteId, newOfflineRouteId);
+      // if (offlineRouteId == null) {
+      //   // Create a new offlineRouteId since this is a new device
+      //   final newOfflineRouteId =
+      //       '${StorageKeys.offlineRoutePrefix}${DateTime.now().millisecondsSinceEpoch}';
+      //   await writeStorage(
+      //       StorageKeys.currentOfflineRouteId, newOfflineRouteId);
 
-        // Create a fake route creation operation for offline consistency
-        final createRouteEntity = CreateRouteEntity(
-          destinationLatitude: route.destinationLatitude.toString(),
-          destinationLongitude: route.destinationLongitude.toString(),
-          unitName: route.unitName, // Assuming route has unitName
-          timestamp: getDate(), // Assuming route has timestamp
-          sourceLatitude: route.sourceLatitude
-              .toString(), // Assuming route has sourceLatitude
-          sourceLongitude: route.sourceLongitude
-              .toString(), // Assuming route has sourceLongitude
-          // Add other required fields based on your CreateRouteEntity
-        );
+      //   // Create a fake route creation operation for offline consistency
+      //   final createRouteEntity = CreateRouteEntity(
+      //     destinationLatitude: route.destinationLatitude.toString(),
+      //     destinationLongitude: route.destinationLongitude.toString(),
+      //     unitName: route.unitName, // Assuming route has unitName
+      //     timestamp: getDate(), // Assuming route has timestamp
+      //     sourceLatitude: route.sourceLatitude
+      //         .toString(), // Assuming route has sourceLatitude
+      //     sourceLongitude: route.sourceLongitude
+      //         .toString(), // Assuming route has sourceLongitude
+      //     // Add other required fields based on your CreateRouteEntity
+      //   );
 
-        final operation = OfflineOperation(
-            type: OfflineOperationType.routeCreation,
-            data: createRouteEntity.toJson(),
-            offlineRouteId: newOfflineRouteId,
-            synced: true,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now());
+      //   final operation = OfflineOperation(
+      //       type: OfflineOperationType.routeCreation,
+      //       data: createRouteEntity.toJson(),
+      //       offlineRouteId: newOfflineRouteId,
+      //       synced: true,
+      //       createdAt: DateTime.now(),
+      //       updatedAt: DateTime.now());
 
-        await offlineOperationsRepository.saveOperation(operation);
+      //   await offlineOperationsRepository.saveOperation(operation);
 
-        log('Created new offlineRouteId for existing route: $newOfflineRouteId');
-      }
+      //   // log('Created new offlineRouteId for existing route: $newOfflineRouteId');
+      // }
 
       return route;
     } catch (e) {
-      // // Handle offline case
-      // final offlineRouteId = readStorage(StorageKeys.currentOfflineRouteId);
-      // if (offlineRouteId != null) {
-      //   // Try to get any existing positions from offline storage
-      //   final ops = await offlineOperationsRepository
-      //       .getOperationsByOfflineId(offlineRouteId);
-
-      //   // Check if we have a route creation operation
-      //   final hasRouteCreation =
-      //       ops.any((op) => op.type == OfflineOperationType.routeCreation);
-
-      //   if (hasRouteCreation) {
-      //     // Get positions if available
-      //     final positionOps =
-      //         ops.where((op) => op.type == OfflineOperationType.routePositions);
-      //     List<PositionEntity> positions = [];
-
-      //     if (positionOps.isNotEmpty) {
-      //       final lastPositionOp = positionOps.reduce((curr, next) =>
-      //           curr.createdAt.isAfter(next.createdAt) ? curr : next);
-
-      //       positions = (lastPositionOp.data['positions'] as List)
-      //           .map((p) => PositionEntity.fromJson(p))
-      //           .toList();
-      //     }
-
-      //     // Get the creation operation to build a minimal RouteEntity
-      //     final creationOp = ops.firstWhere(
-      //         (op) => op.type == OfflineOperationType.routeCreation);
-
-      //     return RouteEntity(
-      //       id: routeId,
-      //       positions: positions,
-      //       unitId: int.parse(creationOp.data['unit_id']),
-      //       unitName: '', // You might need to store this elsewhere
-      //       sourceLatitude: 0, // Default values
-      //       sourceLongitude: 0,
-      //       sourceAddress: '',
-      //       destinationLatitude:
-      //           double.parse(creationOp.data['destination_latitude']),
-      //       destinationLongitude:
-      //           double.parse(creationOp.data['destination_longitude']),
-      //       destinationAddress: '',
-      //       status: 'R', // Assuming 'R' for running
-      //     );
-      //   }
-      // }
-
       rethrow;
     }
   }
@@ -169,8 +121,8 @@ class RouteRepositoryImpl implements RouteRepository {
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedRouteFinish(
             route, offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. La finalización de la ruta se guardó y lo podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. La finalización de la ruta se guardó y lo podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -196,8 +148,8 @@ class RouteRepositoryImpl implements RouteRepository {
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedRouteCancel(
             route, offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. La cancelación de la ruta se guardó y lo podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. La cancelación de la ruta se guardó y lo podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -218,8 +170,8 @@ class RouteRepositoryImpl implements RouteRepository {
             offlineRouteId: offlineId,
           ),
         );
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. El evento SOS se guardó y lo podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. El evento SOS se guardó y lo podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -227,26 +179,39 @@ class RouteRepositoryImpl implements RouteRepository {
 
   @override
   Future<void> sendRoutePositions(List<RoutePositionEntity> positions) async {
-    //TODO: probar cuando no hay red, se crea la ruta, y luego la activo, actualmente se envian las posiciones por q backend no valida el routeid, entonces front debe validar eso y si no tiene routeid mandarlo a guardar, no se si desde el entity podemos hacer eso con un required en routeid
-    // Validación adicional en el repositorio
     if (positions.isEmpty) {
       throw Exception('No se pueden enviar posiciones vacías');
     }
 
-    // Filtramos posiciones sin routeId
+    // Filtramos posiciones sin routeId (MANTIENES TU LÓGICA ACTUAL)
     final invalidPositions = positions.where((p) => p.routeId == null).toList();
     final validPositions = positions.where((p) => p.routeId != null).toList();
 
-    // Guardamos inmediatamente las inválidas
+    // Guardamos inmediatamente las inválidas (MANTIENES TU LÓGICA ACTUAL)
     if (invalidPositions.isNotEmpty) {
       await _storeInvalidPositions(invalidPositions);
     }
 
     if (validPositions.isNotEmpty) {
       try {
-        await remoteDataSource.sendRoutePositions(validPositions);
+        // NUEVA LÓGICA: Eliminar duplicados por timestamp antes de enviar
+        final uniquePositions = <int, RoutePositionEntity>{};
+        for (final position in validPositions) {
+          uniquePositions[position.timestamp] = position;
+        }
+        final uniqueValidPositions = uniquePositions.values.toList();
+
+        await remoteDataSource.sendRoutePositions(uniqueValidPositions);
       } catch (e) {
-        await _storeInvalidPositions(validPositions); // Guardar como fallidas
+        // NUEVA LÓGICA: Si es error de duplicado, no lo tratamos como fallo total
+        if (e.toString().contains('Duplicate entry')) {
+          log('Algunas posiciones ya estaban sincronizadas: $e');
+          // No guardamos como fallidas porque probablemente ya están en el servidor
+          return; // Salimos sin error
+        }
+
+        // Para otros errores, mantienes tu lógica actual
+        await _storeInvalidPositions(validPositions);
         rethrow;
       }
     } else {
@@ -257,15 +222,16 @@ class RouteRepositoryImpl implements RouteRepository {
   Future<void> _storeInvalidPositions(
       List<RoutePositionEntity> positions) async {
     final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
+    //TODO: Aquí las rutas que se crearon desde otro dispositivo o postman no van a funcionar
     if (offlineId != null && positions.isNotEmpty) {
       await offlineOperationsRepository.saveFailedPositions(
           positions, offlineId);
       if (positions.length == 1) {
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. La posición de la ruta se guardó y la podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. La posición de la ruta se guardó y la podrás sincronizar luego.');
       } else {
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. Las posiciones de la ruta se guardaron y las podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. Las posiciones de la ruta se guardaron y las podrás sincronizar luego.');
       }
     }
   }
@@ -279,8 +245,8 @@ class RouteRepositoryImpl implements RouteRepository {
       final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedEmergencyCall(offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. El número de emergencia se guardó y lo podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. El número de emergencia se guardó y lo podrás sincronizar luego.');
       }
       throw Exception('Failed to get emergency number: $e');
     }
@@ -295,8 +261,8 @@ class RouteRepositoryImpl implements RouteRepository {
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedIncident(
             incident, offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. El incidente se guardó y lo podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. El incidente se guardó y lo podrás sincronizar luego.');
       }
       rethrow;
     }
@@ -310,8 +276,8 @@ class RouteRepositoryImpl implements RouteRepository {
       final offlineId = readStorage(StorageKeys.currentOfflineRouteId);
       if (offlineId != null) {
         await offlineOperationsRepository.saveFailedRouteStop(stop, offlineId);
-        Snackbars.showSnackbarSuccess(
-            'Modo offline activado. La parada de la ruta se guardó y la podrás sincronizar luego.');
+        // Snackbars.showSnackbarSuccess(
+        //     'Modo offline activado. La parada de la ruta se guardó y la podrás sincronizar luego.');
       }
       rethrow;
     }

@@ -31,17 +31,17 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>camera</string>
+	<string>La cámara se usa para tomar fotos como evidencia durante la inspección y mantenimiento del vehículo.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Always and when in use!</string>
+	<string>La ubicación se usa para registrar de manera precisa el inicio y fin de las rutas, aun cuando la app esté en segundo plano.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Can I have location always?</string>
+	<string>La ubicación en todo momento permite registrar con precisión el inicio y fin de las rutas, incluso si la app no está activa.</string>
 	<key>NSLocationUsageDescription</key>
 	<string>Older devices need location.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Need location when in use</string>
+	<string>La ubicación se usa para identificar el punto donde inicia y finaliza la ruta del usuario durante el uso de la app.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>photos</string>
+	<string>La galería se usa para adjuntar fotos existentes como evidencia durante la inspección y mantenimiento del vehículo.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

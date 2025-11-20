@@ -155,7 +155,8 @@ void main() async {
           create: (_) => InspectionProvider(repository: inspectionRepository),
         ),
         ChangeNotifierProvider(
-          create: (_) => SelectSourceProvider(),
+          create: (_) => SelectSourceProvider(
+              offlineOperationsRepository: offlineOperationRepo),
         ),
         ChangeNotifierProvider(
           create: (_) => SelectDestinationProvider(),
@@ -174,6 +175,7 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => MenuProvider(
             offlineOperationsRepository: offlineOperationRepo,
+            routeRepository: routeRepository,
           ),
         ),
       ],

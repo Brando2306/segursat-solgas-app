@@ -1,27 +1,24 @@
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:safe_driving_app/core/utils/dialog_util.dart';
-import 'package:safe_driving_app/core/utils/location_util.dart';
 
-import 'package:safe_driving_app/core/validators/auth_validator.dart';
-import 'package:safe_driving_app/features/auth/presentation/providers/auth_provider.dart';
-import 'package:safe_driving_app/features/driver/domain/entities/driver_entity.dart';
-import 'package:safe_driving_app/features/driver/presentation/providers/driver_provider.dart';
-import 'package:safe_driving_app/features/route/presentation/providers/route_provider.dart';
-import 'package:safe_driving_app/features/unit/domain/entities/unit_entity.dart';
-import 'package:safe_driving_app/features/unit/presentation/providers/unit_provider.dart';
-import 'package:safe_driving_app/helpers/functions.dart';
+import 'package:safe_driving_app/utils/style.dart';
 import 'package:safe_driving_app/helpers/gps.dart';
-import 'package:safe_driving_app/shared/button_widget.dart';
-import 'package:safe_driving_app/shared/form_field_widget.dart';
-import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/errors.dart';
 import 'package:safe_driving_app/utils/storage.dart';
-import 'package:safe_driving_app/utils/style.dart';
+import 'package:safe_driving_app/utils/constants.dart';
+import 'package:safe_driving_app/utils/snackbars.dart';
+import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/widgets/next_button.dart';
+import 'package:safe_driving_app/shared/button_widget.dart';
+import 'package:safe_driving_app/shared/form_field_widget.dart';
+import 'package:safe_driving_app/core/validators/auth_validator.dart';
+import 'package:safe_driving_app/features/unit/presentation/providers/unit_provider.dart';
+import 'package:safe_driving_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:safe_driving_app/features/route/presentation/providers/route_provider.dart';
+import 'package:safe_driving_app/features/driver/presentation/providers/driver_provider.dart';
+import 'package:safe_driving_app/features/speedometer/presentation/providers/speedometer_provider.dart';
 
 class SesionPage extends StatefulWidget {
   const SesionPage({super.key});
@@ -91,6 +88,7 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
+              const SizedBox(height: 20),
               _buildForm(authProvider, context),
               if (authProvider.nextButtonValidation) _buildUserInfoCard(),
               const Spacer(),
@@ -287,8 +285,8 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 notificationInfoWithoutWillPopScope(
                   context: safeContext,
-                  onWillPop: true,
-                  barrierDismissible: true,
+                  onWillPop: false,
+                  barrierDismissible: false,
                   content:
                       'Tienes una ruta activa en curso.\n¿Deseas recuperar la ruta?',
                   callBack: () async {
@@ -302,6 +300,32 @@ class _SesionPageState extends State<SesionPage> with WidgetsBindingObserver {
                       safeContext
                           .read<RouteProvider>()
                           .showLocationSettingsDialog(safeContext);
+                    }
+                  },
+                  callBackDont: () async {
+                    final navigatorContext = Navigator.of(context).context;
+
+                    try {
+                      EasyLoading.show(status: 'Finalizando ruta...');
+
+                      // Reutilizar finishRoute del SpeedometerProvider
+                      final speedometerProvider =
+                          Provider.of<SpeedometerProvider>(navigatorContext,
+                              listen: false);
+
+                      await speedometerProvider.finishRoute();
+
+                      EasyLoading.dismiss();
+
+                      // Mostrar confirmación
+                      Snackbars.showSnackbarSuccess(
+                          'Ruta finalizada correctamente');
+                    } catch (e) {
+                      EasyLoading.dismiss();
+                      if (mounted) {
+                        notificationError(
+                            context, 'Error al finalizar ruta: $e');
+                      }
                     }
                   },
                 );

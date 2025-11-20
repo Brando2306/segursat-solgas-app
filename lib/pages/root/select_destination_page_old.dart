@@ -10,10 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:safe_driving_app/class/index.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
-import 'package:safe_driving_app/providers/route.dart';
 import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/endpoints.dart';
-// import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/root/index.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/style.dart';
@@ -444,7 +442,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
             //     position = Position(
             //         longitude: -77.06337978247707,
             //         latitude: -12.047933614518184,
-            //         timestamp: DateTime.now(),
+            //         timestamp: null,
             //         accuracy: 0,
             //         altitude: 0,
             //         heading: 0,

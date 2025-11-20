@@ -9,6 +9,7 @@ import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/shared/dropdown_field_widget.dart';
 import 'package:safe_driving_app/shared/form_field_widget.dart';
 import 'package:safe_driving_app/utils/root/index.dart';
+import 'package:safe_driving_app/utils/snackbars.dart';
 import 'package:safe_driving_app/utils/style.dart';
 
 class SelectDestinationPage extends StatefulWidget {
@@ -206,10 +207,8 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
                   provider.toggleInputMode();
                 } else {
                   // Mostrar mensaje si no hay internet
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('Modo texto no disponible sin conexión')),
-                  );
+                  Snackbars.showSnackbarSuccess(
+                      'Modo texto no disponible sin conexión');
                 }
               },
             );
@@ -260,9 +259,7 @@ class _SelectDestinationPageState extends State<SelectDestinationPage> {
       key: _formKeyText,
       child: FormFieldWidget(
         onChanged: (value) {
-          if (value != null) {
-            provider.handleTextChanged(value);
-          }
+          provider.handleTextChanged(value);
         },
         controller: _textInputController,
         validator: (value) {

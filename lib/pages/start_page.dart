@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -7,7 +9,6 @@ import 'package:safe_driving_app/utils/constants.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:safe_driving_app/utils/style.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:geolocator/geolocator.dart';
 
 class StartPage extends StatefulWidget {
   const StartPage({super.key});
@@ -38,7 +39,7 @@ class _StartPageState extends State<StartPage> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
 
     if (state == AppLifecycleState.resumed) {
-      print('==> StartPage: ${AppLifecycleState.resumed}');
+      log('==> StartPage: ${AppLifecycleState.resumed}');
 
       if (readStorage('startPageValidation') != null) {
         setState(() {

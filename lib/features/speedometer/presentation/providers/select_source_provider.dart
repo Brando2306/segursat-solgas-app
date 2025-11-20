@@ -4,17 +4,22 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:safe_driving_app/core/constants/storage_keys.dart';
+import 'package:safe_driving_app/features/offline_operations/domain/repositories/offline_operation_repository.dart';
 import 'package:safe_driving_app/utils/storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class SelectSourceProvider with ChangeNotifier {
   final MapController mapController = MapController();
+
+  late final OfflineOperationsRepository offlineOperationsRepository;
+
+  SelectSourceProvider({required this.offlineOperationsRepository});
 
   // Connectivity
   bool _hasInternet = false;
@@ -75,7 +80,7 @@ class SelectSourceProvider with ChangeNotifier {
     bool barrierDismissible = false,
   }) async {
     if (!_isValidContext()) {
-      log('Context no válido, no se puede mostrar diálogo');
+      // log('Context no válido, no se puede mostrar diálogo');
       return null;
     }
 
@@ -86,12 +91,15 @@ class SelectSourceProvider with ChangeNotifier {
         builder: builder,
       );
     } catch (e) {
-      log('Error mostrando diálogo: $e');
+      // log('Error mostrando diálogo: $e');
       return null;
     }
   }
 
   Future<void> initialize(BuildContext context) async {
+    // LIMPIAR EVENTOS PENDIENTES AL INICIAR NUEVA RUTA
+    await _cleanAllPendingOperations();
+
     // GUARDAR REFERENCIA AL CONTEXT
     _currentContext = context;
     _blockNextButton = false;
@@ -111,6 +119,63 @@ class SelectSourceProvider with ChangeNotifier {
     if (_blockNextButton || !_isValidContext()) return;
 
     await _getLocationWithRetry();
+  }
+
+  Future<void> _cleanAllPendingOperations() async {
+    try {
+      // Obtener todas las operaciones pendientes
+      final pendingOps =
+          await offlineOperationsRepository.getPendingOperations();
+
+      // Filtrar solo operaciones no sincronizadas
+      final unsyncedOps =
+          pendingOps.where((op) => op.data['synced'] != true).toList();
+
+      if (unsyncedOps.isNotEmpty) {
+        // log('🧹 SelectSourceProvider - Limpiando ${unsyncedOps.length} operaciones pendientes');
+
+        // Eliminar cada operación
+        for (final op in unsyncedOps) {
+          await offlineOperationsRepository.removeOperation(op.id);
+        }
+
+        // log('✅ SelectSourceProvider - Operaciones pendientes limpiadas exitosamente');
+      }
+
+      // Limpiar storages relacionados con rutas
+      await _cleanRouteStorages();
+    } catch (e) {
+      // log('❌ SelectSourceProvider - Error limpiando operaciones pendientes: $e');
+      // No lanzar excepción para no bloquear el flujo de nueva ruta
+    }
+  }
+
+  Future<void> _cleanRouteStorages() async {
+    try {
+      final keysToRemove = [
+        'root.createRoute.id',
+        'personal.lastRoute',
+        'personal.lastRouteStatus',
+        'root.cronometer',
+        'root.finalPosition',
+        'root.initialPosition',
+        'root.departureDate',
+        'root.initialDate',
+        'personal.pushRouteSpeedometer',
+        // Limpiar también la ruta offline actual si existe
+        'current_offline_route_id', // Ajusta según tu StorageKeys
+        StorageKeys.currentOfflineRouteId,
+        StorageKeys.offlineRoutePrefix,
+      ];
+
+      for (final key in keysToRemove) {
+        await removeStorage(key);
+      }
+
+      // log('✅ SelectSourceProvider - Storages de ruta limpiados');
+    } catch (e) {
+      // log('⚠️ SelectSourceProvider - Error limpiando storages: $e');
+    }
   }
 
   Future<void> _initializeConnectivity() async {
@@ -251,7 +316,7 @@ class SelectSourceProvider with ChangeNotifier {
           'hasInternet': _hasInternet,
         }),
       );
-      log('Datos guardados: ${readStorage('root.initialPosition')}');
+      // log('Datos guardados: ${readStorage('root.initialPosition')}');
 
       mapController.move(LatLng(_position.latitude, _position.longitude), 18);
 
@@ -261,9 +326,9 @@ class SelectSourceProvider with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      log('Error al guardar posición: $e');
+      // log('Error al guardar posición: $e');
       _blockNextButton = false; // Mantener deshabilitado si hay error
-      log('Error en select_source_provider.dart + $e');
+      // log('Error en select_source_provider.dart + $e');
       notifyListeners();
     }
 

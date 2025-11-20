@@ -1,11 +1,13 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
+import 'dart:math' show Rectangle;
 
 import 'package:flutter/material.dart';
 import 'package:floating/floating.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:safe_driving_app/helpers/gps.dart';
 import 'package:safe_driving_app/utils/style.dart';
@@ -23,10 +25,13 @@ class SpeedometerPage extends StatefulWidget {
   _SpeedometerPageState createState() => _SpeedometerPageState();
 }
 
-class _SpeedometerPageState extends State<SpeedometerPage> {
+class _SpeedometerPageState extends State<SpeedometerPage>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     // EasyLoading.show(status: 'Iniciando ruta...');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<SpeedometerProvider>();
@@ -36,12 +41,72 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
   }
 
   @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Escuchar cambios en el estado de la aplicación
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!Platform.isAndroid) return;
+
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        // _enterPipModeAutomatically();
+        break;
+      case AppLifecycleState.resumed:
+        // El PiP se cierra automáticamente cuando la app vuelve al frente
+        break;
+      case AppLifecycleState.detached:
+        break;
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  Future<void> _enterPipModeAutomatically() async {
+    try {
+      final canUsePiP = await Floating().isPipAvailable;
+      if (canUsePiP && mounted) {
+        // await Floating().enable(ImmediatePiP());
+        print('PiP automático activado al minimizar la app');
+      }
+    } catch (e) {
+      print('Error activando PiP automático: $e');
+    }
+  }
+
+  Future<void> _enterPipModeManually() async {
+    try {
+      final canUsePiP = await Floating().isPipAvailable;
+      if (canUsePiP && mounted) {
+        // await Floating().enable(ImmediatePiP());
+      } else {
+        _showPipNotAvailableDialog();
+      }
+    } catch (e) {
+      print('Error activando PiP manual: $e');
+      _showPipErrorDialog();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<SpeedometerProvider>(
       builder: (context, provider, child) {
         final content = WillPopScope(
-          onWillPop: () async => false,
+          onWillPop: () async {
+            // Al presionar back, activar PiP en lugar de salir
+            if (Platform.isAndroid) {
+              // await _enterPipModeAutomatically();
+              return false;
+            }
+            return false;
+          },
           child: Scaffold(
+            backgroundColor: Colors.white,
             appBar: AppBar(
               title: Text(
                 'Velocímetro',
@@ -55,7 +120,11 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
               elevation: 0.0,
               backgroundColor: Colors.white,
               leading: Container(),
-              actions: Platform.isAndroid ? [_pipButton(context)] : null,
+              actions: Platform.isAndroid
+                  ? [
+                      _pipButton(), // Nuevo control de PiP
+                    ]
+                  : null,
             ),
             body: _buildBody(context, provider),
           ),
@@ -71,6 +140,40 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
 
         return content;
       },
+    );
+  }
+
+  // Diálogo para cuando PiP no está disponible
+  void _showPipNotAvailableDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('PiP No Disponible'),
+        content: Text(
+            'El modo Picture-in-Picture no está disponible en este dispositivo.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Aceptar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPipErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Error de PiP'),
+        content: Text('No se pudo activar el modo Picture-in-Picture.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Aceptar'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -150,18 +253,14 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
     );
   }
 
-  Widget _pipButton(BuildContext context) {
+  Widget _pipButton() {
     return Padding(
       padding: const EdgeInsets.only(right: 20.0),
       child: GestureDetector(
-        onTap: () async {
-          final canUsePiP = await Floating().isPipAvailable;
-          if (canUsePiP) {
-            await Floating().enable();
-          }
-        },
+        onTap: _enterPipModeManually,
         child: const Icon(
-          Icons.photo_size_select_large,
+          // Icons.photo_size_select_large,
+          Icons.picture_in_picture_alt,
           size: 30,
           color: Colors.black,
         ),
@@ -172,7 +271,7 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
   Widget _buildBody(BuildContext context, SpeedometerProvider provider) {
     return Column(
       children: [
-        _buildPendingPositionsCount(),
+        // _buildPendingPositionsCount(),
         const SizedBox(height: 20),
         _topActionButtons(context, provider),
         const Spacer(),
@@ -257,11 +356,13 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
         MaterialButton(
           onPressed: () => _showEmergencyConfirmation(context, provider),
           color: Colors.red,
-          child: const FaIcon(
-            FontAwesomeIcons.warning,
-            color: Colors.white,
-            size: 25,
-          ),
+          //TODO: Make icon here
+          // child: const FaIcon(
+          //   FontAwesomeIcons.warning,
+          //   color: Colors.white,
+          //   size: 25,
+          // ),
+          child: Icon(Icons.warning, color: Colors.white, size: 25),
           padding: const EdgeInsets.all(16),
           shape: const CircleBorder(),
         ),
@@ -282,11 +383,13 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
             Navigator.pushNamed(context, '/root/incidentReport');
           },
           color: Colors.amber,
-          child: const FaIcon(
-            FontAwesomeIcons.circleStop,
-            color: Colors.white,
-            size: 25,
-          ),
+          //TODO: Make icon here
+          // child: const FaIcon(
+          //   FontAwesomeIcons.circleStop,
+          //   color: Colors.white,
+          //   size: 25,
+          // ),
+          child: Icon(Icons.stop, color: Colors.white, size: 25),
           padding: const EdgeInsets.all(16),
           shape: const CircleBorder(),
         ),
@@ -438,12 +541,24 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
 
   bool _hasValidPositions() {
     try {
-      final currentPos = readStorage('root.currentPosition');
-      final finalPos = readStorage('root.finalPosition');
+      // Si no hay currentPosition, usar posición actual
+      var currentPos = readStorage('root.currentPosition');
+      if (currentPos == null) {
+        // Intentar obtener posición actual
+        _setCurrentPositionAsFallback();
+        currentPos = readStorage('root.currentPosition');
+      }
+
+      // Si no hay finalPosition, usar posición actual como destino
+      var finalPos = readStorage('root.finalPosition');
+      if (finalPos == null) {
+        _setCurrentPositionAsFinal();
+        finalPos = readStorage('root.finalPosition');
+      }
 
       if (currentPos == null || finalPos == null) return false;
 
-      // Verifica que el JSON sea válido y tenga lat/long
+      // Verificar que el JSON sea válido
       final currentJson = json.decode(currentPos) as Map<String, dynamic>;
       final finalJson = json.decode(finalPos) as Map<String, dynamic>;
 
@@ -453,6 +568,42 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
           finalJson['longitude'] != null;
     } catch (e) {
       return false;
+    }
+  }
+
+  Future<void> _setCurrentPositionAsFallback() async {
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.bestForNavigation,
+      );
+
+      await writeStorage(
+        'root.currentPosition',
+        json.encode({
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+        }),
+      );
+    } catch (e) {
+      log('Error al obtener posición actual: $e');
+    }
+  }
+
+  Future<void> _setCurrentPositionAsFinal() async {
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.bestForNavigation,
+      );
+
+      await writeStorage(
+        'root.finalPosition',
+        json.encode({
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+        }),
+      );
+    } catch (e) {
+      log('Error al establecer posición final: $e');
     }
   }
 
@@ -480,6 +631,11 @@ class _SpeedometerPageState extends State<SpeedometerPage> {
 
       if (distance < 100) {
         await provider.finishRoute();
+        //TODO: Creo ruta desde postman, luego activo internet para que me aparezca modal de recuperar ruta
+        // Hay internet para validar ruta luego desactivo mi internet y clic en recuperar ruta luego entro al
+        // velocimetro y se habilitaron los botones luego como no hay internet finalizo la ruta y no se guarda
+        // en el storage del celular, ocurre porque no se creo una  ruta offline y no se guardo el id offline
+        // por q no hubo necesidad de guardar la ruta creada con internet que ahora la queremos terminar sin internet
         Navigator.pushNamed(context, '/root/finish',
             arguments: 'La unidad ha llegado a su destino');
       } else {

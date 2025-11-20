@@ -1,13 +1,9 @@
-import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:safe_driving_app/helpers/functions.dart';
 import 'package:safe_driving_app/utils/inspection/index.dart';
 import 'package:safe_driving_app/utils/storage.dart';
-import 'package:safe_driving_app/utils/style.dart';
 import 'package:safe_driving_app/widgets/header.dart';
 import 'package:safe_driving_app/widgets/next_button.dart';
 import 'dart:io';
